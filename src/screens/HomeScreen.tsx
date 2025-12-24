@@ -30,6 +30,7 @@ import {
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { AddDiaryModal } from '../components/AddDiaryModal';
 import { AddIncomeModal } from '../components/AddIncomeModal';
+import { AddBillModal } from '../components/AddBillModal';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -37,6 +38,7 @@ import { useGoals } from '../context/GoalsContext';
 import { useExpenseTemplates } from '../context/ExpenseTemplateContext';
 import { useIncome } from '../context/IncomeContext';
 import { useAchievements } from '../context/AchievementContext';
+import { useBills } from '../context/BillContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import {
   Colors,
@@ -51,6 +53,7 @@ export default function HomeScreen() {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddDiary, setShowAddDiary] = useState(false);
   const [showAddIncome, setShowAddIncome] = useState(false);
+  const [showAddBill, setShowAddBill] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
@@ -60,6 +63,7 @@ export default function HomeScreen() {
   const { templates, useTemplate, getFrequentTemplates, addTemplate } = useExpenseTemplates();
   const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes, incomes } = useIncome();
   const { achievements, unlockedCount, totalCount, recentUnlocked, updateProgress } = useAchievements();
+  const { bills, addBill, markAsPaid, getUpcomingBills, getOverdueBills, getTotalDue, getDaysUntilDue } = useBills();
   const todayDiary = getTodayEntry();
   const frequentTemplates = getFrequentTemplates(4);
 
@@ -554,6 +558,31 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
+        {/* Overdue Bills Alert */}
+        {getOverdueBills().length > 0 && (
+          <Animated.View entering={FadeInDown.delay(180).duration(400)}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowAddBill(true)}
+            >
+              <View style={[styles.warningCard, { borderColor: '#EF4444' }]}>
+                <View style={[styles.warningIconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
+                  <Text style={styles.warningIcon}>🔔</Text>
+                </View>
+                <View style={styles.warningContent}>
+                  <Text style={[styles.warningTitle, { color: '#EF4444' }]}>
+                    연체된 청구서 {getOverdueBills().length}건
+                  </Text>
+                  <Text style={styles.warningMessage}>
+                    ₩{getOverdueBills().reduce((sum, b) => sum + b.amount, 0).toLocaleString()} 미납
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
         {/* Today's Expense Card */}
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
           <GlassCard
@@ -709,6 +738,119 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Bill Reminders Card */}
+        <Animated.View entering={FadeInDown.delay(375).duration(500)}>
+          <GlassCard
+            gradient={['rgba(239, 68, 68, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(239, 68, 68, 0.3)"
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>🔔</Text>
+                <Text style={styles.cardTitleText}>청구서 알림</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.addBillBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowAddBill(true);
+                }}
+              >
+                <Ionicons name="add" size={16} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Total Due */}
+            {bills.length > 0 && (
+              <View style={styles.billTotalContainer}>
+                <Text style={styles.billTotalLabel}>이번 달 납부 예정</Text>
+                <View style={styles.billTotalRow}>
+                  <Text style={styles.billTotalCurrency}>₩</Text>
+                  <Text style={styles.billTotalValue}>{getTotalDue().toLocaleString()}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Upcoming Bills */}
+            {getUpcomingBills().length > 0 ? (
+              <View style={styles.billsList}>
+                <Text style={styles.billsSubtitle}>다가오는 납부일</Text>
+                {getUpcomingBills().slice(0, 3).map((bill) => (
+                  <TouchableOpacity
+                    key={bill.id}
+                    style={styles.billItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      markAsPaid(bill.id);
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.billIconContainer}>
+                      <Text style={styles.billIcon}>{bill.categoryIcon}</Text>
+                    </View>
+                    <View style={styles.billInfo}>
+                      <Text style={styles.billName}>{bill.name}</Text>
+                      <Text style={styles.billDue}>
+                        {getDaysUntilDue(bill) === 0 ? '오늘' : `${getDaysUntilDue(bill)}일 후`} • {bill.dueDay}일
+                      </Text>
+                    </View>
+                    <View style={styles.billAmountContainer}>
+                      <Text style={styles.billAmount}>₩{bill.amount.toLocaleString()}</Text>
+                      {bill.isAutoPay && (
+                        <View style={styles.autoPayBadge}>
+                          <Text style={styles.autoPayText}>자동</Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : bills.length > 0 ? (
+              <View style={styles.noBillsUpcoming}>
+                <Text style={styles.noBillsIcon}>✅</Text>
+                <Text style={styles.noBillsText}>이번 주 납부할 청구서가 없습니다</Text>
+              </View>
+            ) : (
+              <View style={styles.noBillsContainer}>
+                <Text style={styles.noBillsIcon}>📋</Text>
+                <Text style={styles.noBillsText}>청구서를 추가하고 납부일 알림을 받으세요</Text>
+                <TouchableOpacity
+                  style={styles.addFirstBillBtn}
+                  onPress={() => setShowAddBill(true)}
+                >
+                  <Text style={styles.addFirstBillText}>청구서 추가</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Overdue Summary in Card */}
+            {getOverdueBills().length > 0 && (
+              <View style={styles.overdueContainer}>
+                <View style={styles.overdueHeader}>
+                  <Text style={styles.overdueIcon}>⚠️</Text>
+                  <Text style={styles.overdueTitle}>연체된 청구서</Text>
+                </View>
+                {getOverdueBills().slice(0, 2).map((bill) => (
+                  <TouchableOpacity
+                    key={bill.id}
+                    style={styles.overdueItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      markAsPaid(bill.id);
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    }}
+                  >
+                    <Text style={styles.overdueItemIcon}>{bill.categoryIcon}</Text>
+                    <Text style={styles.overdueItemName}>{bill.name}</Text>
+                    <Text style={styles.overdueItemAmount}>₩{bill.amount.toLocaleString()}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </GlassCard>
         </Animated.View>
 
@@ -1084,6 +1226,16 @@ export default function HomeScreen() {
         onClose={() => setShowAddIncome(false)}
         onAdd={(income) => {
           addIncome(income);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+      />
+
+      {/* Add Bill Modal */}
+      <AddBillModal
+        visible={showAddBill}
+        onClose={() => setShowAddBill(false)}
+        onAdd={(bill) => {
+          addBill(bill);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
       />
@@ -1881,5 +2033,170 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.xs,
     color: '#F59E0B',
     fontWeight: '600',
+  },
+  // Bill Reminders Styles
+  addBillBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  billTotalContainer: {
+    marginBottom: Spacing.lg,
+  },
+  billTotalLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  billTotalRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  billTotalCurrency: {
+    fontSize: FontSizes.xl,
+    fontWeight: '500',
+    color: '#EF4444',
+    marginRight: Spacing.xs,
+  },
+  billTotalValue: {
+    fontSize: FontSizes.giant,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  billsList: {
+    gap: Spacing.sm,
+  },
+  billsSubtitle: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  billItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+  },
+  billIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  billIcon: {
+    fontSize: 18,
+  },
+  billInfo: {
+    flex: 1,
+  },
+  billName: {
+    fontSize: FontSizes.md,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  billDue: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+  },
+  billAmountContainer: {
+    alignItems: 'flex-end',
+  },
+  billAmount: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  autoPayBadge: {
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    marginTop: 4,
+  },
+  autoPayText: {
+    fontSize: FontSizes.xs,
+    color: '#22C55E',
+    fontWeight: '500',
+  },
+  noBillsContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  noBillsUpcoming: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  noBillsIcon: {
+    fontSize: 24,
+    marginBottom: Spacing.sm,
+  },
+  noBillsText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  addFirstBillBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+  },
+  addFirstBillText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  overdueContainer: {
+    marginTop: Spacing.lg,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  overdueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  overdueIcon: {
+    fontSize: 14,
+  },
+  overdueTitle: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  overdueItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  overdueItemIcon: {
+    fontSize: 16,
+  },
+  overdueItemName: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+  },
+  overdueItemAmount: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });

@@ -15,6 +15,7 @@ import { GoalsProvider } from './src/context/GoalsContext';
 import { ExpenseTemplateProvider } from './src/context/ExpenseTemplateContext';
 import { IncomeProvider } from './src/context/IncomeContext';
 import { AchievementProvider } from './src/context/AchievementContext';
+import { BillProvider } from './src/context/BillContext';
 
 export default function App() {
   return (
@@ -23,11 +24,12 @@ export default function App() {
         <ExpenseProvider>
           <IncomeProvider>
             <AchievementProvider>
-              <ExpenseTemplateProvider>
-                <RecurringExpenseProvider>
-                  <GoalsProvider>
-                    <DiaryProvider>
-                      <ShoppingProvider>
+              <BillProvider>
+                <ExpenseTemplateProvider>
+                  <RecurringExpenseProvider>
+                    <GoalsProvider>
+                      <DiaryProvider>
+                        <ShoppingProvider>
                 <View style={styles.container}>
           <StatusBar style="light" />
           <NavigationContainer
@@ -46,11 +48,12 @@ export default function App() {
           <TabNavigator />
                 </NavigationContainer>
               </View>
-                      </ShoppingProvider>
-                    </DiaryProvider>
-                  </GoalsProvider>
-                </RecurringExpenseProvider>
-              </ExpenseTemplateProvider>
+                        </ShoppingProvider>
+                      </DiaryProvider>
+                    </GoalsProvider>
+                  </RecurringExpenseProvider>
+                </ExpenseTemplateProvider>
+              </BillProvider>
             </AchievementProvider>
           </IncomeProvider>
         </ExpenseProvider>

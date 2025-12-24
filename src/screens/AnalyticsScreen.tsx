@@ -13,7 +13,11 @@ import Svg, { Circle, G } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
 import { Header, GlassCard, AnimatedBackground } from '../components';
+import { SpendingHeatmap } from '../components/SpendingHeatmap';
+import { SavingsCalculator } from '../components/SavingsCalculator';
 import { useExpenses } from '../context/ExpenseContext';
+import { useGoals } from '../context/GoalsContext';
+import { useIncome } from '../context/IncomeContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
 import { useRecurringExpenses } from '../context/RecurringExpenseContext';
@@ -82,10 +86,14 @@ export default function AnalyticsScreen() {
   const { entries: diaryEntries } = useDiary();
   const { settings } = useSettings();
   const { getTotalMonthly } = useRecurringExpenses();
+  const { getTotalSaved } = useGoals();
+  const { getTotalIncomeThisMonth } = useIncome();
 
   const monthlyTotal = getMonthlyTotal();
   const monthlyBudget = settings.monthlyBudget;
   const fixedExpensesTotal = getTotalMonthly();
+  const currentSavings = getTotalSaved();
+  const monthlyIncome = getTotalIncomeThisMonth();
 
   // Calculate weekly spending data
   const weeklyData = useMemo(() => {
@@ -395,6 +403,68 @@ export default function AnalyticsScreen() {
     }).slice(0, 4);
   }, [monthlyTotal, monthlyBudget, weeklyData, fixedExpensesTotal]);
 
+  // Spending forecast
+  const spendingForecast = useMemo(() => {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemaining = daysInMonth - dayOfMonth;
+
+    // Calculate daily average from this month
+    const dailyAverage = dayOfMonth > 0 ? monthlyTotal / dayOfMonth : 0;
+
+    // Projected total at month end
+    const projectedTotal = monthlyTotal + (dailyAverage * daysRemaining);
+
+    // Calculate trend-adjusted projection (weight recent days more)
+    const last7DaysTotal = weeklyData.reduce((sum, d) => sum + d.amount, 0);
+    const last7DaysAvg = last7DaysTotal / 7;
+    const trendAdjustedProjection = monthlyTotal + (last7DaysAvg * daysRemaining);
+
+    // Average of both projections for balanced forecast
+    const forecastTotal = Math.round((projectedTotal + trendAdjustedProjection) / 2);
+
+    // Determine status
+    let status: 'safe' | 'warning' | 'danger';
+    let statusMessage: string;
+    let statusIcon: string;
+
+    const budgetDiff = monthlyBudget - forecastTotal;
+    const budgetPercent = Math.round((forecastTotal / monthlyBudget) * 100);
+
+    if (forecastTotal <= monthlyBudget * 0.9) {
+      status = 'safe';
+      statusMessage = `예산 내 안전! ₩${Math.abs(budgetDiff).toLocaleString()} 여유`;
+      statusIcon = '✅';
+    } else if (forecastTotal <= monthlyBudget) {
+      status = 'warning';
+      statusMessage = `예산에 근접! 주의가 필요해요`;
+      statusIcon = '⚠️';
+    } else {
+      status = 'danger';
+      statusMessage = `예산 초과 예상! ₩${Math.abs(budgetDiff).toLocaleString()} 초과`;
+      statusIcon = '🚨';
+    }
+
+    // Calculate recommended daily budget for remaining days
+    const remainingBudget = monthlyBudget - monthlyTotal;
+    const recommendedDaily = daysRemaining > 0 ? Math.max(0, Math.round(remainingBudget / daysRemaining)) : 0;
+
+    return {
+      projectedTotal: forecastTotal,
+      budgetPercent,
+      status,
+      statusMessage,
+      statusIcon,
+      daysRemaining,
+      dailyAverage: Math.round(dailyAverage),
+      recommendedDaily,
+      willExceed: forecastTotal > monthlyBudget,
+      excessAmount: Math.max(0, forecastTotal - monthlyBudget),
+      savingsAmount: Math.max(0, monthlyBudget - forecastTotal),
+    };
+  }, [monthlyTotal, monthlyBudget, weeklyData]);
+
   const handlePeriodChange = (period: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActivePeriod(period);
@@ -564,6 +634,104 @@ export default function AnalyticsScreen() {
           </GlassCard>
         </Animated.View>
 
+        {/* Spending Forecast */}
+        <Animated.View entering={FadeInDown.delay(250).duration(500)}>
+          <GlassCard
+            gradient={
+              spendingForecast.status === 'danger'
+                ? ['rgba(239, 68, 68, 0.15)', 'rgba(10, 10, 15, 0.95)']
+                : spendingForecast.status === 'warning'
+                ? ['rgba(245, 158, 11, 0.15)', 'rgba(10, 10, 15, 0.95)']
+                : ['rgba(16, 185, 129, 0.15)', 'rgba(10, 10, 15, 0.95)']
+            }
+            borderColor={
+              spendingForecast.status === 'danger'
+                ? 'rgba(239, 68, 68, 0.3)'
+                : spendingForecast.status === 'warning'
+                ? 'rgba(245, 158, 11, 0.3)'
+                : 'rgba(16, 185, 129, 0.3)'
+            }
+          >
+            <View style={styles.forecastHeader}>
+              <Text style={styles.chartTitle}>🔮 월말 지출 예측</Text>
+              <View style={[
+                styles.forecastBadge,
+                spendingForecast.status === 'danger' && styles.forecastBadgeDanger,
+                spendingForecast.status === 'warning' && styles.forecastBadgeWarning,
+              ]}>
+                <Text style={styles.forecastBadgeText}>
+                  {spendingForecast.budgetPercent}%
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.forecastMain}>
+              <View style={styles.forecastProjection}>
+                <Text style={styles.forecastLabel}>예상 총 지출</Text>
+                <Text style={[
+                  styles.forecastValue,
+                  spendingForecast.status === 'danger' && styles.forecastValueDanger,
+                  spendingForecast.status === 'warning' && styles.forecastValueWarning,
+                ]}>
+                  ₩{spendingForecast.projectedTotal.toLocaleString()}
+                </Text>
+                <Text style={styles.forecastBudget}>
+                  예산: ₩{monthlyBudget.toLocaleString()}
+                </Text>
+              </View>
+
+              <View style={styles.forecastBar}>
+                <View style={styles.forecastBarBg}>
+                  <View
+                    style={[
+                      styles.forecastBarFill,
+                      { width: `${Math.min(spendingForecast.budgetPercent, 100)}%` },
+                      spendingForecast.status === 'danger' && styles.forecastBarDanger,
+                      spendingForecast.status === 'warning' && styles.forecastBarWarning,
+                    ]}
+                  />
+                  {spendingForecast.budgetPercent > 100 && (
+                    <View
+                      style={[
+                        styles.forecastBarExcess,
+                        { width: `${Math.min(spendingForecast.budgetPercent - 100, 50)}%` },
+                      ]}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.forecastStatus}>
+              <Text style={styles.forecastStatusIcon}>{spendingForecast.statusIcon}</Text>
+              <Text style={styles.forecastStatusText}>{spendingForecast.statusMessage}</Text>
+            </View>
+
+            <View style={styles.forecastGrid}>
+              <View style={styles.forecastGridItem}>
+                <Text style={styles.forecastGridIcon}>📅</Text>
+                <Text style={styles.forecastGridLabel}>남은 일수</Text>
+                <Text style={styles.forecastGridValue}>{spendingForecast.daysRemaining}일</Text>
+              </View>
+              <View style={styles.forecastGridItem}>
+                <Text style={styles.forecastGridIcon}>📊</Text>
+                <Text style={styles.forecastGridLabel}>현재 일평균</Text>
+                <Text style={styles.forecastGridValue}>₩{spendingForecast.dailyAverage.toLocaleString()}</Text>
+              </View>
+              <View style={styles.forecastGridItem}>
+                <Text style={styles.forecastGridIcon}>🎯</Text>
+                <Text style={styles.forecastGridLabel}>권장 일예산</Text>
+                <Text style={[
+                  styles.forecastGridValue,
+                  { color: spendingForecast.recommendedDaily < spendingForecast.dailyAverage ? Colors.success : Colors.textPrimary }
+                ]}>
+                  ₩{spendingForecast.recommendedDaily.toLocaleString()}
+                </Text>
+              </View>
+            </View>
+          </GlassCard>
+        </Animated.View>
+
         {/* Weekly Spending Chart */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <GlassCard>
@@ -607,6 +775,23 @@ export default function AnalyticsScreen() {
                 </Text>
               </View>
             </View>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Calendar Spending Heatmap */}
+        <Animated.View entering={FadeInDown.delay(310).duration(500)}>
+          <GlassCard>
+            <View style={styles.heatmapHeader}>
+              <Text style={styles.chartTitle}>📅 월간 지출 캘린더</Text>
+            </View>
+            <SpendingHeatmap
+              expenses={expenses}
+              monthlyBudget={monthlyBudget}
+              selectedMonth={new Date()}
+              onDayPress={(date, dayExpenses) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            />
           </GlassCard>
         </Animated.View>
 
@@ -914,6 +1099,21 @@ export default function AnalyticsScreen() {
           </Animated.View>
         )}
 
+        {/* Savings Calculator */}
+        <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+          <GlassCard
+            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(34, 197, 94, 0.3)"
+          >
+            <Text style={styles.chartTitle}>💰 저축 계산기</Text>
+            <SavingsCalculator
+              currentSavings={currentSavings}
+              monthlyIncome={monthlyIncome}
+              monthlyExpenses={monthlyTotal}
+            />
+          </GlassCard>
+        </Animated.View>
+
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
@@ -1055,6 +1255,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textSecondary,
     marginBottom: Spacing.lg,
+  },
+  heatmapHeader: {
+    marginBottom: Spacing.sm,
   },
   weeklyChart: {
     flexDirection: 'row',
@@ -1584,5 +1787,122 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
     lineHeight: 18,
+  },
+  forecastHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  forecastBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  forecastBadgeDanger: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  forecastBadgeWarning: {
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  forecastBadgeText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '700',
+    color: Colors.success,
+  },
+  forecastMain: {
+    marginBottom: Spacing.md,
+  },
+  forecastProjection: {
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  forecastLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  forecastValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: Colors.success,
+  },
+  forecastValueDanger: {
+    color: Colors.error,
+  },
+  forecastValueWarning: {
+    color: Colors.goldPrimary,
+  },
+  forecastBudget: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+  },
+  forecastBar: {
+    marginBottom: Spacing.md,
+  },
+  forecastBarBg: {
+    height: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  forecastBarFill: {
+    height: '100%',
+    backgroundColor: Colors.success,
+    borderRadius: 6,
+  },
+  forecastBarDanger: {
+    backgroundColor: Colors.error,
+  },
+  forecastBarWarning: {
+    backgroundColor: Colors.goldPrimary,
+  },
+  forecastBarExcess: {
+    height: '100%',
+    backgroundColor: 'rgba(239, 68, 68, 0.5)',
+  },
+  forecastStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  forecastStatusIcon: {
+    fontSize: 18,
+  },
+  forecastStatusText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  forecastGrid: {
+    flexDirection: 'row',
+  },
+  forecastGridItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  forecastGridIcon: {
+    fontSize: 20,
+    marginBottom: Spacing.xs,
+  },
+  forecastGridLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: 2,
+  },
+  forecastGridValue: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
   },
 });
