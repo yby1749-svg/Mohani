@@ -19,6 +19,8 @@ import { BillProvider } from './src/context/BillContext';
 import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import { ChallengeProvider } from './src/context/ChallengeContext';
 import { DebtProvider } from './src/context/DebtContext';
+import { CategoryBudgetProvider } from './src/context/CategoryBudgetContext';
+import { SplitExpenseProvider } from './src/context/SplitExpenseContext';
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
                 <SubscriptionProvider>
                   <ChallengeProvider>
                     <DebtProvider>
+                      <CategoryBudgetProvider>
+                        <SplitExpenseProvider>
                 <ExpenseTemplateProvider>
                   <RecurringExpenseProvider>
                     <GoalsProvider>
@@ -59,6 +63,8 @@ export default function App() {
                     </GoalsProvider>
                   </RecurringExpenseProvider>
                 </ExpenseTemplateProvider>
+                        </SplitExpenseProvider>
+                      </CategoryBudgetProvider>
                     </DebtProvider>
                   </ChallengeProvider>
                 </SubscriptionProvider>

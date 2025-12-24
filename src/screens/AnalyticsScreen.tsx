@@ -18,12 +18,17 @@ import { SavingsCalculator } from '../components/SavingsCalculator';
 import { MonthComparison } from '../components/MonthComparison';
 import { SpendingPatterns } from '../components/SpendingPatterns';
 import { LocationInsights } from '../components/LocationInsights';
+import { CategoryBudgets } from '../components/CategoryBudgets';
+import { FinancialHealthScore } from '../components/FinancialHealthScore';
+import { SpendingForecast } from '../components/SpendingForecast';
 import { useExpenses } from '../context/ExpenseContext';
 import { useGoals } from '../context/GoalsContext';
 import { useIncome } from '../context/IncomeContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
 import { useRecurringExpenses } from '../context/RecurringExpenseContext';
+import { useCategoryBudgets } from '../context/CategoryBudgetContext';
+import { useDebts } from '../context/DebtContext';
 import { generateInsights, getMoodSpendingCorrelation, getSpendingTrend } from '../utils/aiInsights';
 import {
   Colors,
@@ -89,8 +94,10 @@ export default function AnalyticsScreen() {
   const { entries: diaryEntries } = useDiary();
   const { settings } = useSettings();
   const { getTotalMonthly } = useRecurringExpenses();
-  const { getTotalSaved } = useGoals();
+  const { getTotalSaved, getOverallProgress } = useGoals();
   const { getTotalIncomeThisMonth } = useIncome();
+  const { budgets, setBudget, removeBudget, getCategorySpending, getCategoryProgress } = useCategoryBudgets();
+  const { getTotalOwed } = useDebts();
 
   const monthlyTotal = getMonthlyTotal();
   const monthlyBudget = settings.monthlyBudget;
@@ -1146,6 +1153,61 @@ export default function AnalyticsScreen() {
               currentSavings={currentSavings}
               monthlyIncome={monthlyIncome}
               monthlyExpenses={monthlyTotal}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Category Budgets */}
+        <Animated.View entering={FadeInDown.delay(540).duration(500)}>
+          <GlassCard
+            gradient={['rgba(236, 72, 153, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(236, 72, 153, 0.3)"
+          >
+            <Text style={styles.chartTitle}>🏷️ 카테고리별 예산</Text>
+            <CategoryBudgets
+              budgets={budgets}
+              expenses={expenses}
+              onSetBudget={setBudget}
+              onRemoveBudget={removeBudget}
+              getCategorySpending={getCategorySpending}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Spending Forecast */}
+        <Animated.View entering={FadeInDown.delay(550).duration(500)}>
+          <GlassCard
+            gradient={['rgba(139, 92, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(139, 92, 246, 0.3)"
+          >
+            <Text style={styles.chartTitle}>🔮 지출 예측</Text>
+            <SpendingForecast
+              expenses={expenses}
+              monthlyBudget={monthlyBudget}
+              monthlyIncome={monthlyIncome}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Financial Health Score */}
+        <Animated.View entering={FadeInDown.delay(560).duration(500)}>
+          <GlassCard
+            gradient={['rgba(16, 185, 129, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(16, 185, 129, 0.3)"
+          >
+            <Text style={styles.chartTitle}>💪 재정 건강 점수</Text>
+            <FinancialHealthScore
+              monthlyIncome={monthlyIncome}
+              monthlyExpenses={monthlyTotal}
+              monthlyBudget={monthlyBudget}
+              totalSavings={currentSavings}
+              totalDebt={getTotalOwed()}
+              savingsGoalProgress={getOverallProgress()}
+              categoryBudgetAdherence={
+                budgets.length > 0
+                  ? budgets.filter((b) => getCategorySpending(b.category, expenses) <= b.limit).length / budgets.length * 100
+                  : 100
+              }
             />
           </GlassCard>
         </Animated.View>
