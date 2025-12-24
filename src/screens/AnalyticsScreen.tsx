@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { Header, GlassCard, AnimatedBackground } from '../components';
 import { SpendingHeatmap } from '../components/SpendingHeatmap';
 import { SavingsCalculator } from '../components/SavingsCalculator';
+import { MonthComparison } from '../components/MonthComparison';
 import { useExpenses } from '../context/ExpenseContext';
 import { useGoals } from '../context/GoalsContext';
 import { useIncome } from '../context/IncomeContext';
@@ -1099,8 +1100,19 @@ export default function AnalyticsScreen() {
           </Animated.View>
         )}
 
-        {/* Savings Calculator */}
+        {/* Month Comparison */}
         <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+          <GlassCard>
+            <Text style={styles.chartTitle}>📊 월별 비교</Text>
+            <MonthComparison
+              expenses={expenses}
+              monthlyBudget={monthlyBudget}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Savings Calculator */}
+        <Animated.View entering={FadeInDown.delay(520).duration(500)}>
           <GlassCard
             gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
             borderColor="rgba(34, 197, 94, 0.3)"

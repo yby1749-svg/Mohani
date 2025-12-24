@@ -31,6 +31,7 @@ import { AddExpenseModal } from '../components/AddExpenseModal';
 import { AddDiaryModal } from '../components/AddDiaryModal';
 import { AddIncomeModal } from '../components/AddIncomeModal';
 import { AddBillModal } from '../components/AddBillModal';
+import { AddSubscriptionModal } from '../components/AddSubscriptionModal';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -39,6 +40,8 @@ import { useExpenseTemplates } from '../context/ExpenseTemplateContext';
 import { useIncome } from '../context/IncomeContext';
 import { useAchievements } from '../context/AchievementContext';
 import { useBills } from '../context/BillContext';
+import { useSubscriptions } from '../context/SubscriptionContext';
+import { useChallenges } from '../context/ChallengeContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import {
   Colors,
@@ -54,6 +57,7 @@ export default function HomeScreen() {
   const [showAddDiary, setShowAddDiary] = useState(false);
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [showAddBill, setShowAddBill] = useState(false);
+  const [showAddSubscription, setShowAddSubscription] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
@@ -64,7 +68,10 @@ export default function HomeScreen() {
   const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes, incomes } = useIncome();
   const { achievements, unlockedCount, totalCount, recentUnlocked, updateProgress } = useAchievements();
   const { bills, addBill, markAsPaid, getUpcomingBills, getOverdueBills, getTotalDue, getDaysUntilDue } = useBills();
+  const { subscriptions, addSubscription, getMonthlyTotal: getSubsMonthlyTotal, getUpcomingRenewals } = useSubscriptions();
+  const { activeChallenges, totalPoints, getLevel, claimReward } = useChallenges();
   const todayDiary = getTodayEntry();
+  const userLevel = getLevel();
   const frequentTemplates = getFrequentTemplates(4);
 
   // Generate AI insights
@@ -854,6 +861,96 @@ export default function HomeScreen() {
           </GlassCard>
         </Animated.View>
 
+        {/* Subscription Tracker Card */}
+        <Animated.View entering={FadeInDown.delay(385).duration(500)}>
+          <GlassCard
+            gradient={['rgba(124, 58, 237, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(124, 58, 237, 0.3)"
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>📱</Text>
+                <Text style={styles.cardTitleText}>구독 서비스</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.addSubBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowAddSubscription(true);
+                }}
+              >
+                <Ionicons name="add" size={16} color={Colors.purpleLight} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Monthly Total */}
+            {subscriptions.length > 0 && (
+              <View style={styles.subTotalContainer}>
+                <Text style={styles.subTotalLabel}>월 구독료</Text>
+                <View style={styles.subTotalRow}>
+                  <Text style={styles.subTotalCurrency}>₩</Text>
+                  <Text style={styles.subTotalValue}>{Math.round(getSubsMonthlyTotal()).toLocaleString()}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Upcoming Renewals */}
+            {getUpcomingRenewals(7).length > 0 ? (
+              <View style={styles.subsList}>
+                <Text style={styles.subsSubtitle}>다가오는 결제</Text>
+                {getUpcomingRenewals(7).slice(0, 3).map((sub) => {
+                  const daysUntil = Math.ceil((new Date(sub.nextBillingDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  return (
+                    <View key={sub.id} style={styles.subItem}>
+                      <View style={[styles.subIconContainer, sub.color ? { backgroundColor: `${sub.color}20` } : {}]}>
+                        <Text style={styles.subIcon}>{sub.categoryIcon}</Text>
+                      </View>
+                      <View style={styles.subInfo}>
+                        <Text style={styles.subName}>{sub.name}</Text>
+                        <Text style={styles.subDue}>
+                          {daysUntil === 0 ? '오늘' : daysUntil === 1 ? '내일' : `${daysUntil}일 후`}
+                        </Text>
+                      </View>
+                      <Text style={styles.subAmount}>₩{sub.amount.toLocaleString()}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : subscriptions.length > 0 ? (
+              <View style={styles.noSubsUpcoming}>
+                <Text style={styles.noSubsIcon}>✨</Text>
+                <Text style={styles.noSubsText}>이번 주 결제 예정 없음</Text>
+              </View>
+            ) : (
+              <View style={styles.noSubsContainer}>
+                <Text style={styles.noSubsIcon}>📱</Text>
+                <Text style={styles.noSubsText}>구독 서비스를 추가하고 결제일을 관리하세요</Text>
+                <TouchableOpacity
+                  style={styles.addFirstSubBtn}
+                  onPress={() => setShowAddSubscription(true)}
+                >
+                  <Text style={styles.addFirstSubText}>구독 추가</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Active Subscriptions Summary */}
+            {subscriptions.length > 0 && (
+              <View style={styles.subsSummary}>
+                <View style={styles.subsSummaryItem}>
+                  <Text style={styles.subsSummaryValue}>{subscriptions.filter(s => s.isActive).length}</Text>
+                  <Text style={styles.subsSummaryLabel}>활성 구독</Text>
+                </View>
+                <View style={styles.subsSummaryDivider} />
+                <View style={styles.subsSummaryItem}>
+                  <Text style={styles.subsSummaryValue}>₩{Math.round(getSubsMonthlyTotal() * 12).toLocaleString()}</Text>
+                  <Text style={styles.subsSummaryLabel}>연간 비용</Text>
+                </View>
+              </View>
+            )}
+          </GlassCard>
+        </Animated.View>
+
         {/* AI Insight Card */}
         <Animated.View entering={FadeInDown.delay(400).duration(500)}>
           <TouchableOpacity
@@ -1188,6 +1285,88 @@ export default function HomeScreen() {
           </GlassCard>
         </Animated.View>
 
+        {/* Challenges Card */}
+        <Animated.View entering={FadeInDown.delay(720).duration(500)}>
+          <GlassCard
+            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(59, 130, 246, 0.3)"
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>🎯</Text>
+                <Text style={styles.cardTitleText}>챌린지</Text>
+              </View>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelIcon}>⭐</Text>
+                <Text style={styles.levelText}>Lv.{userLevel.level}</Text>
+              </View>
+            </View>
+
+            {/* Level Progress */}
+            <View style={styles.levelContainer}>
+              <View style={styles.levelInfo}>
+                <Text style={styles.levelTitle}>{userLevel.title}</Text>
+                <Text style={styles.levelPoints}>{totalPoints.toLocaleString()} 포인트</Text>
+              </View>
+              <View style={styles.levelProgressBar}>
+                <View style={[styles.levelProgressFill, { width: `${userLevel.progress}%` }]} />
+              </View>
+              {userLevel.pointsToNext > 0 && (
+                <Text style={styles.levelNextText}>다음 레벨까지 {userLevel.pointsToNext.toLocaleString()}P</Text>
+              )}
+            </View>
+
+            {/* Active Challenges */}
+            {activeChallenges.length > 0 ? (
+              <View style={styles.challengesList}>
+                <Text style={styles.challengesSubtitle}>진행 중인 챌린지</Text>
+                {activeChallenges.slice(0, 3).map((challenge) => {
+                  const progressPercent = Math.round((challenge.progress / challenge.target) * 100);
+                  const typeColor = challenge.type === 'daily' ? '#22C55E'
+                    : challenge.type === 'weekly' ? '#3B82F6' : '#8B5CF6';
+                  return (
+                    <View key={challenge.id} style={styles.challengeItem}>
+                      <View style={styles.challengeIconContainer}>
+                        <Text style={styles.challengeIcon}>{challenge.icon}</Text>
+                      </View>
+                      <View style={styles.challengeInfo}>
+                        <View style={styles.challengeHeader}>
+                          <Text style={styles.challengeName}>{challenge.titleKo}</Text>
+                          <View style={[styles.challengeTypeBadge, { backgroundColor: `${typeColor}20` }]}>
+                            <Text style={[styles.challengeTypeText, { color: typeColor }]}>
+                              {challenge.type === 'daily' ? '일간' : challenge.type === 'weekly' ? '주간' : '월간'}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.challengeProgressContainer}>
+                          <View style={styles.challengeProgressBar}>
+                            <View
+                              style={[
+                                styles.challengeProgressFill,
+                                { width: `${progressPercent}%`, backgroundColor: typeColor }
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.challengeProgressText}>{progressPercent}%</Text>
+                        </View>
+                      </View>
+                      <View style={styles.challengeReward}>
+                        <Text style={styles.rewardIcon}>🪙</Text>
+                        <Text style={styles.rewardText}>+{challenge.reward}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.noChallengesContainer}>
+                <Text style={styles.noChallengesIcon}>🎉</Text>
+                <Text style={styles.noChallengesText}>모든 챌린지를 완료했어요!</Text>
+              </View>
+            )}
+          </GlassCard>
+        </Animated.View>
+
         {/* Bottom spacing for tab bar */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -1236,6 +1415,16 @@ export default function HomeScreen() {
         onClose={() => setShowAddBill(false)}
         onAdd={(bill) => {
           addBill(bill);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+      />
+
+      {/* Add Subscription Modal */}
+      <AddSubscriptionModal
+        visible={showAddSubscription}
+        onClose={() => setShowAddSubscription(false)}
+        onAdd={(subscription) => {
+          addSubscription(subscription);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
       />
@@ -2198,5 +2387,288 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  // Subscription Styles
+  addSubBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subTotalContainer: {
+    marginBottom: Spacing.lg,
+  },
+  subTotalLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  subTotalRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  subTotalCurrency: {
+    fontSize: FontSizes.xl,
+    fontWeight: '500',
+    color: Colors.purpleLight,
+    marginRight: Spacing.xs,
+  },
+  subTotalValue: {
+    fontSize: FontSizes.giant,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  subsList: {
+    gap: Spacing.sm,
+  },
+  subsSubtitle: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  subItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+  },
+  subIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subIcon: {
+    fontSize: 18,
+  },
+  subInfo: {
+    flex: 1,
+  },
+  subName: {
+    fontSize: FontSizes.md,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  subDue: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+  },
+  subAmount: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.purpleLight,
+  },
+  noSubsContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  noSubsUpcoming: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  noSubsIcon: {
+    fontSize: 24,
+    marginBottom: Spacing.sm,
+  },
+  noSubsText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  addFirstSubBtn: {
+    backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+  },
+  addFirstSubText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.purpleLight,
+  },
+  subsSummary: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.lg,
+    padding: Spacing.md,
+  },
+  subsSummaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  subsSummaryDivider: {
+    width: 1,
+    backgroundColor: Colors.border,
+  },
+  subsSummaryValue: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  subsSummaryLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  // Challenge Styles
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  levelIcon: {
+    fontSize: 12,
+  },
+  levelText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  levelContainer: {
+    marginBottom: Spacing.lg,
+  },
+  levelInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  levelTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  levelPoints: {
+    fontSize: FontSizes.sm,
+    color: '#3B82F6',
+    fontWeight: '500',
+  },
+  levelProgressBar: {
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  levelProgressFill: {
+    height: '100%',
+    backgroundColor: '#3B82F6',
+    borderRadius: 4,
+  },
+  levelNextText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    textAlign: 'right',
+  },
+  challengesList: {
+    gap: Spacing.sm,
+  },
+  challengesSubtitle: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  challengeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
+  },
+  challengeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  challengeIcon: {
+    fontSize: 18,
+  },
+  challengeInfo: {
+    flex: 1,
+  },
+  challengeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  challengeName: {
+    fontSize: FontSizes.sm,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+  },
+  challengeTypeBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  challengeTypeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  challengeProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  challengeProgressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  challengeProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  challengeProgressText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    minWidth: 30,
+    textAlign: 'right',
+  },
+  challengeReward: {
+    alignItems: 'center',
+  },
+  rewardIcon: {
+    fontSize: 14,
+  },
+  rewardText: {
+    fontSize: FontSizes.xs,
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  noChallengesContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  noChallengesIcon: {
+    fontSize: 32,
+    marginBottom: Spacing.sm,
+  },
+  noChallengesText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
   },
 });
