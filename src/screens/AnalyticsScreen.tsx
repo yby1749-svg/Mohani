@@ -202,6 +202,34 @@ export default function AnalyticsScreen() {
     };
   }, [expenses]);
 
+  // Calculate time-of-day spending
+  const timeOfDaySpending = useMemo(() => {
+    const timeSlots = [
+      { id: 'morning', label: '아침', range: '6-12시', icon: '🌅', hours: [6, 7, 8, 9, 10, 11] },
+      { id: 'afternoon', label: '오후', range: '12-18시', icon: '☀️', hours: [12, 13, 14, 15, 16, 17] },
+      { id: 'evening', label: '저녁', range: '18-24시', icon: '🌙', hours: [18, 19, 20, 21, 22, 23] },
+      { id: 'night', label: '심야', range: '0-6시', icon: '🌃', hours: [0, 1, 2, 3, 4, 5] },
+    ];
+
+    return timeSlots.map((slot) => {
+      const slotExpenses = expenses.filter((e) => {
+        const hour = new Date(e.date).getHours();
+        return slot.hours.includes(hour);
+      });
+      const total = slotExpenses.reduce((sum, e) => sum + e.amount, 0);
+      const count = slotExpenses.length;
+      return {
+        ...slot,
+        total,
+        count,
+        avg: count > 0 ? Math.round(total / count) : 0,
+      };
+    });
+  }, [expenses]);
+
+  const maxTimeSpending = Math.max(...timeOfDaySpending.map((t) => t.total), 1);
+  const peakTime = timeOfDaySpending.reduce((max, t) => t.total > max.total ? t : max, timeOfDaySpending[0]);
+
   const handlePeriodChange = (period: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActivePeriod(period);
@@ -494,6 +522,44 @@ export default function AnalyticsScreen() {
                 ))}
               </View>
             )}
+          </GlassCard>
+        </Animated.View>
+
+        {/* Time of Day Spending */}
+        <Animated.View entering={FadeInDown.delay(450).duration(500)}>
+          <GlassCard>
+            <View style={styles.timeHeader}>
+              <Text style={styles.chartTitle}>⏰ 시간대별 지출</Text>
+              {peakTime && peakTime.total > 0 && (
+                <View style={styles.peakBadge}>
+                  <Text style={styles.peakIcon}>{peakTime.icon}</Text>
+                  <Text style={styles.peakText}>{peakTime.label} 최다</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.timeGrid}>
+              {timeOfDaySpending.map((slot) => {
+                const percent = (slot.total / maxTimeSpending) * 100;
+                const isPeak = slot.id === peakTime?.id && slot.total > 0;
+                return (
+                  <View key={slot.id} style={styles.timeSlot}>
+                    <Text style={styles.timeIcon}>{slot.icon}</Text>
+                    <Text style={styles.timeLabel}>{slot.label}</Text>
+                    <Text style={styles.timeRange}>{slot.range}</Text>
+                    <View style={styles.timeBarContainer}>
+                      <LinearGradient
+                        colors={isPeak ? Gradients.gold as [string, string] : Gradients.purple as [string, string]}
+                        style={[styles.timeBar, { height: `${Math.max(percent, 5)}%` }]}
+                      />
+                    </View>
+                    <Text style={[styles.timeAmount, isPeak && styles.timeAmountPeak]}>
+                      ₩{(slot.total / 1000).toFixed(0)}k
+                    </Text>
+                    <Text style={styles.timeCount}>{slot.count}건</Text>
+                  </View>
+                );
+              })}
+            </View>
           </GlassCard>
         </Animated.View>
 
@@ -1037,5 +1103,77 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textPrimary,
     fontWeight: '500',
+  },
+  timeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  peakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  peakIcon: {
+    fontSize: 12,
+  },
+  peakText: {
+    fontSize: FontSizes.xs,
+    color: Colors.goldPrimary,
+    fontWeight: '600',
+  },
+  timeGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timeSlot: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xs,
+  },
+  timeIcon: {
+    fontSize: 24,
+    marginBottom: Spacing.xs,
+  },
+  timeLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+  },
+  timeRange: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginBottom: Spacing.sm,
+  },
+  timeBarContainer: {
+    width: 24,
+    height: 60,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    marginBottom: Spacing.sm,
+  },
+  timeBar: {
+    width: '100%',
+    borderRadius: 12,
+    minHeight: 4,
+  },
+  timeAmount: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  timeAmountPeak: {
+    color: Colors.goldPrimary,
+  },
+  timeCount: {
+    fontSize: 10,
+    color: Colors.textMuted,
   },
 });

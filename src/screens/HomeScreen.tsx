@@ -33,6 +33,7 @@ import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
 import { useGoals } from '../context/GoalsContext';
+import { useExpenseTemplates } from '../context/ExpenseTemplateContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import {
   Colors,
@@ -52,7 +53,9 @@ export default function HomeScreen() {
   const { entries: diaryEntries, addEntry, getTodayEntry } = useDiary();
   const { settings } = useSettings();
   const { getTotalSaved, getOverallProgress } = useGoals();
+  const { templates, useTemplate, getFrequentTemplates, addTemplate } = useExpenseTemplates();
   const todayDiary = getTodayEntry();
+  const frequentTemplates = getFrequentTemplates(4);
 
   // Generate AI insights
   const aiInsights = generateInsights(expenses, diaryEntries, settings.monthlyBudget);
@@ -148,6 +151,22 @@ export default function HomeScreen() {
       case 'analytics':
         navigation.getParent()?.navigate('Analytics');
         break;
+    }
+  };
+
+  const handleUseTemplate = (templateId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const template = useTemplate(templateId);
+    if (template) {
+      addExpense({
+        amount: template.amount,
+        category: template.category,
+        categoryLabel: template.categoryLabel,
+        categoryIcon: template.categoryIcon,
+        note: template.name,
+        date: new Date(),
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
@@ -375,6 +394,35 @@ export default function HomeScreen() {
           ))}
         </Animated.View>
 
+        {/* Quick Templates */}
+        {frequentTemplates.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(550).duration(500)}>
+            <GlassCard>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitle}>
+                  <Text style={styles.cardIcon}>⚡</Text>
+                  <Text style={styles.cardTitleText}>빠른 지출</Text>
+                </View>
+                <Text style={styles.templateHint}>탭하여 추가</Text>
+              </View>
+              <View style={styles.templateGrid}>
+                {frequentTemplates.map((template) => (
+                  <TouchableOpacity
+                    key={template.id}
+                    style={styles.templateItem}
+                    onPress={() => handleUseTemplate(template.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.templateIcon}>{template.categoryIcon}</Text>
+                    <Text style={styles.templateName} numberOfLines={1}>{template.name}</Text>
+                    <Text style={styles.templateAmount}>₩{template.amount.toLocaleString()}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </GlassCard>
+          </Animated.View>
+        )}
+
         {/* Statistics Summary Card */}
         <Animated.View entering={FadeInDown.delay(600).duration(500)}>
           <GlassCard borderColor={Colors.borderPurple}>
@@ -439,6 +487,9 @@ export default function HomeScreen() {
         onAdd={(expense) => {
           addExpense(expense);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+        onSaveTemplate={(template) => {
+          addTemplate(template);
         }}
       />
 
@@ -862,5 +913,37 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.lg,
     fontWeight: '700',
     color: Colors.purpleLight,
+  },
+  templateHint: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  templateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  templateItem: {
+    width: '48%',
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.borderPurple,
+  },
+  templateIcon: {
+    fontSize: 24,
+    marginBottom: Spacing.xs,
+  },
+  templateName: {
+    fontSize: FontSizes.sm,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  templateAmount: {
+    fontSize: FontSizes.sm,
+    color: Colors.purpleLight,
+    fontWeight: '600',
   },
 });

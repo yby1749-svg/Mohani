@@ -45,16 +45,25 @@ interface AddExpenseModalProps {
     note: string;
     date: Date;
   }) => void;
+  onSaveTemplate?: (template: {
+    name: string;
+    amount: number;
+    category: string;
+    categoryLabel: string;
+    categoryIcon: string;
+  }) => void;
 }
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   visible,
   onClose,
   onAdd,
+  onSaveTemplate,
 }) => {
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
 
   const handleAdd = () => {
     if (!amount || !selectedCategory) return;
@@ -62,8 +71,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const category = CATEGORIES.find((c) => c.id === selectedCategory);
     if (!category) return;
 
+    const parsedAmount = parseInt(amount.replace(/,/g, ''), 10);
+
     onAdd({
-      amount: parseInt(amount.replace(/,/g, ''), 10),
+      amount: parsedAmount,
       category: category.id,
       categoryLabel: category.label,
       categoryIcon: category.icon,
@@ -71,10 +82,22 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       date: new Date(),
     });
 
+    // Save as template if checked
+    if (saveAsTemplate && onSaveTemplate && note.trim()) {
+      onSaveTemplate({
+        name: note.trim(),
+        amount: parsedAmount,
+        category: category.id,
+        categoryLabel: category.label,
+        categoryIcon: category.icon,
+      });
+    }
+
     // Reset form
     setAmount('');
     setSelectedCategory(null);
     setNote('');
+    setSaveAsTemplate(false);
     onClose();
   };
 
@@ -169,6 +192,23 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     maxLength={100}
                   />
                 </View>
+
+                {/* Save as Template */}
+                {onSaveTemplate && note.trim() && (
+                  <TouchableOpacity
+                    style={styles.templateOption}
+                    onPress={() => setSaveAsTemplate(!saveAsTemplate)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      styles.templateCheckbox,
+                      saveAsTemplate && styles.templateCheckboxChecked
+                    ]}>
+                      {saveAsTemplate && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                    <Text style={styles.templateOptionText}>빠른 지출로 저장</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Buttons */}
                 <View style={styles.buttonContainer}>
@@ -354,5 +394,34 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     fontWeight: '700',
     color: Colors.text,
+  },
+  templateOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  templateCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+    marginRight: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  templateCheckboxChecked: {
+    backgroundColor: Colors.purplePrimary,
+    borderColor: Colors.purplePrimary,
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  templateOptionText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
   },
 });

@@ -28,6 +28,13 @@ import {
 const GOAL_ICONS = ['🎯', '✈️', '🏠', '🚗', '💻', '📱', '👗', '💍', '🎓', '💰', '🎁', '🏖️'];
 const GOAL_COLORS = ['#7c3aed', '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
+const MILESTONES = [
+  { percent: 25, icon: '🌱', label: '시작' },
+  { percent: 50, icon: '🌿', label: '중간' },
+  { percent: 75, icon: '🌳', label: '거의 완료' },
+  { percent: 100, icon: '🎉', label: '달성!' },
+];
+
 export default function GoalsScreen() {
   const {
     goals,
@@ -223,6 +230,35 @@ export default function GoalsScreen() {
                             ]}
                           />
                         </View>
+                      </View>
+
+                      {/* Milestones */}
+                      <View style={styles.milestonesRow}>
+                        {MILESTONES.map((milestone) => {
+                          const achieved = progress >= milestone.percent;
+                          return (
+                            <View key={milestone.percent} style={styles.milestone}>
+                              <View style={[
+                                styles.milestoneCircle,
+                                achieved && styles.milestoneCircleAchieved,
+                                achieved && { backgroundColor: goal.color + '30', borderColor: goal.color }
+                              ]}>
+                                <Text style={[
+                                  styles.milestoneIcon,
+                                  !achieved && styles.milestoneIconInactive
+                                ]}>
+                                  {achieved ? milestone.icon : '○'}
+                                </Text>
+                              </View>
+                              <Text style={[
+                                styles.milestoneLabel,
+                                achieved && { color: goal.color }
+                              ]}>
+                                {milestone.percent}%
+                              </Text>
+                            </View>
+                          );
+                        })}
                       </View>
 
                       <View style={styles.goalAmounts}>
@@ -589,6 +625,42 @@ const styles = StyleSheet.create({
   goalTarget: {
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
+  },
+  milestonesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+  },
+  milestone: {
+    alignItems: 'center',
+  },
+  milestoneCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  milestoneCircleAchieved: {
+    borderWidth: 2,
+  },
+  milestoneIcon: {
+    fontSize: 14,
+  },
+  milestoneIconInactive: {
+    color: Colors.textMuted,
+    fontSize: 12,
+  },
+  milestoneLabel: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
