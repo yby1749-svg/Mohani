@@ -230,6 +230,171 @@ export default function AnalyticsScreen() {
   const maxTimeSpending = Math.max(...timeOfDaySpending.map((t) => t.total), 1);
   const peakTime = timeOfDaySpending.reduce((max, t) => t.total > max.total ? t : max, timeOfDaySpending[0]);
 
+  // Weekly report data
+  const weeklyReport = useMemo(() => {
+    const weeklyTotal = weeklyData.reduce((sum, d) => sum + d.amount, 0);
+    const dailyAverage = Math.round(weeklyTotal / 7);
+    const dailyBudget = Math.round(monthlyBudget / 30);
+
+    // Find best and worst days
+    const sortedDays = [...weeklyData].sort((a, b) => a.amount - b.amount);
+    const bestDay = sortedDays.find(d => d.amount > 0) || sortedDays[0];
+    const worstDay = sortedDays[sortedDays.length - 1];
+
+    // Count days under budget
+    const daysUnderBudget = weeklyData.filter(d => d.amount <= dailyBudget).length;
+    const noSpendDays = weeklyData.filter(d => d.amount === 0).length;
+
+    // Calculate comparison to last week
+    const lastWeekData: number[] = [];
+    for (let i = 7; i < 14; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const dayExpenses = expenses.filter((e) => {
+        const expenseDate = new Date(e.date);
+        expenseDate.setHours(0, 0, 0, 0);
+        return expenseDate.getTime() === date.getTime();
+      });
+      const total = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+      lastWeekData.push(total);
+    }
+    const lastWeekTotal = lastWeekData.reduce((sum, d) => sum + d, 0);
+    const weeklyChange = lastWeekTotal > 0
+      ? Math.round(((weeklyTotal - lastWeekTotal) / lastWeekTotal) * 100)
+      : 0;
+
+    // Generate tip
+    let tip = '';
+    let tipIcon = '💡';
+    if (noSpendDays >= 3) {
+      tip = '무지출 날이 많네요! 좋은 습관을 유지하세요.';
+      tipIcon = '🌟';
+    } else if (daysUnderBudget >= 5) {
+      tip = '대부분의 날을 예산 내에서 보냈어요!';
+      tipIcon = '👍';
+    } else if (worstDay.amount > dailyBudget * 2) {
+      tip = `${worstDay.day}요일에 지출이 많았어요. 큰 지출은 미리 계획해보세요.`;
+      tipIcon = '📋';
+    } else if (weeklyChange > 20) {
+      tip = '지난주보다 지출이 늘었어요. 다음 주는 절약해보세요!';
+      tipIcon = '⚠️';
+    } else if (weeklyChange < -10) {
+      tip = '지난주보다 지출이 줄었어요! 잘하고 있어요.';
+      tipIcon = '🎉';
+    } else {
+      tip = '균형 잡힌 소비를 유지하고 있어요.';
+      tipIcon = '⚖️';
+    }
+
+    return {
+      weeklyTotal,
+      dailyAverage,
+      dailyBudget,
+      bestDay,
+      worstDay,
+      daysUnderBudget,
+      noSpendDays,
+      lastWeekTotal,
+      weeklyChange,
+      tip,
+      tipIcon,
+    };
+  }, [weeklyData, expenses, monthlyBudget]);
+
+  // Budget recommendations
+  const budgetRecommendations = useMemo(() => {
+    const recommendations: { id: string; icon: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[] = [];
+    const categoryTotals = getCategoryTotals();
+    const totalSpent = categoryTotals.reduce((sum, c) => sum + c.total, 0);
+
+    // Check if over budget
+    if (monthlyTotal > monthlyBudget) {
+      recommendations.push({
+        id: 'over_budget',
+        icon: '🚨',
+        title: '예산 초과 경고',
+        description: `예산을 ₩${(monthlyTotal - monthlyBudget).toLocaleString()} 초과했어요. 남은 기간 지출을 줄여보세요.`,
+        priority: 'high',
+      });
+    }
+
+    // Find highest spending category
+    if (categoryTotals.length > 0) {
+      const sortedCategories = [...categoryTotals].sort((a, b) => b.total - a.total);
+      const topCategory = sortedCategories[0];
+      const topPercent = Math.round((topCategory.total / totalSpent) * 100);
+
+      if (topPercent > 40) {
+        recommendations.push({
+          id: 'category_balance',
+          icon: '⚖️',
+          title: `${CATEGORY_NAMES[topCategory.category]} 지출 집중`,
+          description: `${CATEGORY_NAMES[topCategory.category]}이(가) 전체 지출의 ${topPercent}%를 차지해요. 다른 영역과 균형을 맞춰보세요.`,
+          priority: 'medium',
+        });
+      }
+
+      // Check for potential savings in discretionary categories
+      const discretionary = ['cafe', 'entertainment', 'shopping'];
+      const discretionaryTotal = categoryTotals
+        .filter(c => discretionary.includes(c.category))
+        .reduce((sum, c) => sum + c.total, 0);
+      const discretionaryPercent = Math.round((discretionaryTotal / totalSpent) * 100);
+
+      if (discretionaryPercent > 30) {
+        recommendations.push({
+          id: 'discretionary',
+          icon: '💡',
+          title: '절약 가능 영역',
+          description: `카페, 여가, 쇼핑 지출이 ${discretionaryPercent}%예요. 10% 줄이면 월 ₩${Math.round(discretionaryTotal * 0.1).toLocaleString()} 절약 가능해요.`,
+          priority: 'medium',
+        });
+      }
+    }
+
+    // Check spending consistency
+    const dailyBudget = monthlyBudget / 30;
+    const overBudgetDays = weeklyData.filter(d => d.amount > dailyBudget * 1.5).length;
+    if (overBudgetDays >= 3) {
+      recommendations.push({
+        id: 'consistency',
+        icon: '📊',
+        title: '지출 불규칙',
+        description: `이번 주 ${overBudgetDays}일이 일일 예산을 크게 초과했어요. 매일 비슷하게 지출해보세요.`,
+        priority: 'low',
+      });
+    }
+
+    // Suggest savings if under budget
+    if (monthlyTotal < monthlyBudget * 0.7) {
+      const savingsAmount = monthlyBudget - monthlyTotal;
+      recommendations.push({
+        id: 'savings',
+        icon: '🎯',
+        title: '저축 기회',
+        description: `예산의 30% 이상이 남았어요. ₩${savingsAmount.toLocaleString()}을 저축 목표에 추가해보세요!`,
+        priority: 'low',
+      });
+    }
+
+    // Fixed expenses tip
+    if (fixedExpensesTotal > monthlyBudget * 0.5) {
+      recommendations.push({
+        id: 'fixed',
+        icon: '📋',
+        title: '고정 지출 점검',
+        description: `고정 지출이 예산의 ${Math.round((fixedExpensesTotal / monthlyBudget) * 100)}%예요. 구독 서비스나 정기 결제를 점검해보세요.`,
+        priority: 'medium',
+      });
+    }
+
+    return recommendations.sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    }).slice(0, 4);
+  }, [monthlyTotal, monthlyBudget, weeklyData, fixedExpensesTotal]);
+
   const handlePeriodChange = (period: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActivePeriod(period);
@@ -445,6 +610,87 @@ export default function AnalyticsScreen() {
           </GlassCard>
         </Animated.View>
 
+        {/* Weekly Report Card */}
+        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
+          <GlassCard
+            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(59, 130, 246, 0.3)"
+          >
+            <View style={styles.reportHeader}>
+              <Text style={styles.chartTitle}>📋 주간 리포트</Text>
+              <View style={[
+                styles.weeklyChangeBadge,
+                weeklyReport.weeklyChange > 0 ? styles.changeUpBadge : styles.changeDownBadge
+              ]}>
+                <Text style={[
+                  styles.weeklyChangeText,
+                  weeklyReport.weeklyChange > 0 ? styles.changeUp : styles.changeDown
+                ]}>
+                  {weeklyReport.weeklyChange > 0 ? '+' : ''}{weeklyReport.weeklyChange}%
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.reportGrid}>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportItemIcon}>📊</Text>
+                <Text style={styles.reportItemLabel}>일 평균</Text>
+                <Text style={styles.reportItemValue}>
+                  ₩{weeklyReport.dailyAverage.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportItemIcon}>🎯</Text>
+                <Text style={styles.reportItemLabel}>일 예산</Text>
+                <Text style={styles.reportItemValue}>
+                  ₩{weeklyReport.dailyBudget.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportItemIcon}>✅</Text>
+                <Text style={styles.reportItemLabel}>예산 내</Text>
+                <Text style={styles.reportItemValue}>
+                  {weeklyReport.daysUnderBudget}/7일
+                </Text>
+              </View>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportItemIcon}>🚫</Text>
+                <Text style={styles.reportItemLabel}>무지출</Text>
+                <Text style={styles.reportItemValue}>
+                  {weeklyReport.noSpendDays}일
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.reportHighlights}>
+              <View style={styles.reportHighlight}>
+                <Text style={styles.highlightLabel}>최소 지출</Text>
+                <View style={styles.highlightRow}>
+                  <Text style={styles.highlightDay}>{weeklyReport.bestDay.day}요일</Text>
+                  <Text style={[styles.highlightAmount, { color: Colors.success }]}>
+                    ₩{weeklyReport.bestDay.amount.toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.reportDivider} />
+              <View style={styles.reportHighlight}>
+                <Text style={styles.highlightLabel}>최대 지출</Text>
+                <View style={styles.highlightRow}>
+                  <Text style={styles.highlightDay}>{weeklyReport.worstDay.day}요일</Text>
+                  <Text style={[styles.highlightAmount, { color: Colors.error }]}>
+                    ₩{weeklyReport.worstDay.amount.toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.reportTip}>
+              <Text style={styles.reportTipIcon}>{weeklyReport.tipIcon}</Text>
+              <Text style={styles.reportTipText}>{weeklyReport.tip}</Text>
+            </View>
+          </GlassCard>
+        </Animated.View>
+
         {/* Monthly Comparison */}
         <Animated.View entering={FadeInDown.delay(350).duration(500)}>
           <GlassCard gradient={Gradients.cardGold} borderColor={Colors.borderGold}>
@@ -637,6 +883,36 @@ export default function AnalyticsScreen() {
             </View>
           </GlassCard>
         </Animated.View>
+
+        {/* Budget Recommendations */}
+        {budgetRecommendations.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(700).duration(500)}>
+            <GlassCard
+              gradient={['rgba(16, 185, 129, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+              borderColor="rgba(16, 185, 129, 0.3)"
+            >
+              <Text style={styles.chartTitle}>💰 예산 추천</Text>
+              <View style={styles.recommendationsList}>
+                {budgetRecommendations.map((rec) => (
+                  <View
+                    key={rec.id}
+                    style={[
+                      styles.recommendationItem,
+                      rec.priority === 'high' && styles.recommendationHigh,
+                      rec.priority === 'medium' && styles.recommendationMedium,
+                    ]}
+                  >
+                    <Text style={styles.recommendationIcon}>{rec.icon}</Text>
+                    <View style={styles.recommendationContent}>
+                      <Text style={styles.recommendationTitle}>{rec.title}</Text>
+                      <Text style={styles.recommendationDescription}>{rec.description}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </GlassCard>
+          </Animated.View>
+        )}
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -1175,5 +1451,138 @@ const styles = StyleSheet.create({
   timeCount: {
     fontSize: 10,
     color: Colors.textMuted,
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  weeklyChangeBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  changeUpBadge: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  changeDownBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  weeklyChangeText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+  },
+  reportGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: Spacing.lg,
+  },
+  reportItem: {
+    width: '25%',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  reportItemIcon: {
+    fontSize: 20,
+    marginBottom: Spacing.xs,
+  },
+  reportItemLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: 2,
+  },
+  reportItemValue: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  reportHighlights: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  reportHighlight: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  reportDivider: {
+    width: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: Spacing.md,
+  },
+  highlightLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  highlightDay: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+  },
+  highlightAmount: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+  },
+  reportTip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  reportTipIcon: {
+    fontSize: 16,
+  },
+  reportTipText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    flex: 1,
+  },
+  recommendationsList: {
+    gap: Spacing.md,
+  },
+  recommendationItem: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: 'rgba(16, 185, 129, 0.5)',
+  },
+  recommendationHigh: {
+    borderLeftColor: Colors.error,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  recommendationMedium: {
+    borderLeftColor: Colors.goldPrimary,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+  },
+  recommendationIcon: {
+    fontSize: 24,
+  },
+  recommendationContent: {
+    flex: 1,
+  },
+  recommendationTitle: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  recommendationDescription: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    lineHeight: 18,
   },
 });

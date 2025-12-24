@@ -36,6 +36,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useGoals } from '../context/GoalsContext';
 import { useExpenseTemplates } from '../context/ExpenseTemplateContext';
 import { useIncome } from '../context/IncomeContext';
+import { useAchievements } from '../context/AchievementContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import {
   Colors,
@@ -57,7 +58,8 @@ export default function HomeScreen() {
   const { settings } = useSettings();
   const { getTotalSaved, getOverallProgress } = useGoals();
   const { templates, useTemplate, getFrequentTemplates, addTemplate } = useExpenseTemplates();
-  const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes } = useIncome();
+  const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes, incomes } = useIncome();
+  const { achievements, unlockedCount, totalCount, recentUnlocked, updateProgress } = useAchievements();
   const todayDiary = getTodayEntry();
   const frequentTemplates = getFrequentTemplates(4);
 
@@ -359,6 +361,41 @@ export default function HomeScreen() {
       false
     );
   }, []);
+
+  // Check achievements
+  useEffect(() => {
+    // Check expense count achievements
+    updateProgress('expenses_10', expenses.length);
+    updateProgress('expenses_100', expenses.length);
+    updateProgress('expenses_500', expenses.length);
+
+    // Check savings achievements
+    const totalSaved = getTotalSaved();
+    updateProgress('savings_100k', totalSaved);
+    updateProgress('savings_500k', totalSaved);
+    updateProgress('savings_1m', totalSaved);
+    updateProgress('savings_5m', totalSaved);
+
+    // Check streak achievements
+    updateProgress('no_spend_3', streaks.noSpendStreak);
+    updateProgress('no_spend_7', streaks.noSpendStreak);
+    updateProgress('no_spend_14', streaks.noSpendStreak);
+    updateProgress('under_budget_week', streaks.underBudgetStreak);
+    updateProgress('under_budget_month', streaks.underBudgetStreak);
+
+    // Check health score achievement
+    updateProgress('health_90', healthScore.score);
+
+    // Check income achievement
+    if (incomes.length > 0) {
+      updateProgress('income_tracked', 1);
+    }
+
+    // Check positive balance
+    if (getTotalIncomeThisMonth() > monthlyTotal) {
+      updateProgress('positive_balance', 1);
+    }
+  }, [expenses.length, streaks, healthScore.score, incomes.length, monthlyTotal]);
 
   const waveStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${waveRotation.value}deg` }],
@@ -936,6 +973,76 @@ export default function HomeScreen() {
               <Text style={styles.savingsLabel}>총 저축액</Text>
               <Text style={styles.savingsValue}>₩{getTotalSaved().toLocaleString()}</Text>
             </View>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Achievements Card */}
+        <Animated.View entering={FadeInDown.delay(700).duration(500)}>
+          <GlassCard
+            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(245, 158, 11, 0.3)"
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>🏆</Text>
+                <Text style={styles.cardTitleText}>업적</Text>
+              </View>
+              <View style={styles.achievementProgress}>
+                <Text style={styles.achievementCount}>{unlockedCount}/{totalCount}</Text>
+              </View>
+            </View>
+
+            {/* Progress Bar */}
+            <View style={styles.achievementProgressBar}>
+              <View
+                style={[
+                  styles.achievementProgressFill,
+                  { width: `${(unlockedCount / totalCount) * 100}%` },
+                ]}
+              />
+            </View>
+
+            {/* Recent Unlocked or Next to Unlock */}
+            {recentUnlocked.length > 0 ? (
+              <View style={styles.achievementsList}>
+                <Text style={styles.achievementsSubtitle}>최근 달성</Text>
+                <View style={styles.achievementBadges}>
+                  {recentUnlocked.map((achievement) => (
+                    <View
+                      key={achievement.id}
+                      style={[
+                        styles.achievementBadge,
+                        achievement.tier === 'gold' && styles.achievementGold,
+                        achievement.tier === 'silver' && styles.achievementSilver,
+                        achievement.tier === 'platinum' && styles.achievementPlatinum,
+                      ]}
+                    >
+                      <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                      <Text style={styles.achievementName}>{achievement.titleKo}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <View style={styles.achievementsList}>
+                <Text style={styles.achievementsSubtitle}>다음 목표</Text>
+                <View style={styles.achievementBadges}>
+                  {achievements
+                    .filter((a) => !a.isUnlocked)
+                    .sort((a, b) => (b.progress / b.requirement) - (a.progress / a.requirement))
+                    .slice(0, 3)
+                    .map((achievement) => (
+                      <View key={achievement.id} style={styles.achievementBadgeLocked}>
+                        <Text style={styles.achievementIconLocked}>{achievement.icon}</Text>
+                        <Text style={styles.achievementNameLocked}>{achievement.titleKo}</Text>
+                        <Text style={styles.achievementProgressText}>
+                          {Math.round((achievement.progress / achievement.requirement) * 100)}%
+                        </Text>
+                      </View>
+                    ))}
+                </View>
+              </View>
+            )}
           </GlassCard>
         </Animated.View>
 
@@ -1683,5 +1790,96 @@ const styles = StyleSheet.create({
   balanceDivider: {
     width: 1,
     backgroundColor: Colors.border,
+  },
+  achievementProgress: {
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  achievementCount: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: '#F59E0B',
+  },
+  achievementProgressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 3,
+    marginBottom: Spacing.lg,
+    overflow: 'hidden',
+  },
+  achievementProgressFill: {
+    height: '100%',
+    backgroundColor: '#F59E0B',
+    borderRadius: 3,
+  },
+  achievementsList: {
+    gap: Spacing.sm,
+  },
+  achievementsSubtitle: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  achievementBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  achievementBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(205, 127, 50, 0.2)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(205, 127, 50, 0.4)',
+    gap: Spacing.xs,
+  },
+  achievementSilver: {
+    backgroundColor: 'rgba(192, 192, 192, 0.2)',
+    borderColor: 'rgba(192, 192, 192, 0.4)',
+  },
+  achievementGold: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: 'rgba(255, 215, 0, 0.4)',
+  },
+  achievementPlatinum: {
+    backgroundColor: 'rgba(229, 228, 226, 0.2)',
+    borderColor: 'rgba(229, 228, 226, 0.4)',
+  },
+  achievementIcon: {
+    fontSize: 16,
+  },
+  achievementName: {
+    fontSize: FontSizes.sm,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+  },
+  achievementBadgeLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    gap: Spacing.xs,
+  },
+  achievementIconLocked: {
+    fontSize: 16,
+    opacity: 0.5,
+  },
+  achievementNameLocked: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+  },
+  achievementProgressText: {
+    fontSize: FontSizes.xs,
+    color: '#F59E0B',
+    fontWeight: '600',
   },
 });

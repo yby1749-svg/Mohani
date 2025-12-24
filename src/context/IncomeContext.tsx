@@ -35,6 +35,8 @@ interface IncomeContextType {
   getRecentIncomes: (limit?: number) => Income[];
 }
 
+// Context already exposes incomes array in the provider value
+
 const IncomeContext = createContext<IncomeContextType | undefined>(undefined);
 
 const STORAGE_KEY = '@mohani_incomes';

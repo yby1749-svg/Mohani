@@ -4,12 +4,14 @@ import { Expense } from '../context/ExpenseContext';
 import { DiaryEntry } from '../context/DiaryContext';
 import { ShoppingItem } from '../context/ShoppingContext';
 import { RecurringExpense } from '../context/RecurringExpenseContext';
+import { Income } from '../context/IncomeContext';
 
 export interface ExportData {
   expenses: Expense[];
   diaryEntries: DiaryEntry[];
   shoppingItems: ShoppingItem[];
   recurringExpenses: RecurringExpense[];
+  incomes?: Income[];
   exportDate: string;
 }
 
@@ -109,6 +111,82 @@ export const exportDiaryAsCSV = async (entries: DiaryEntry[]): Promise<void> => 
     }
   } catch (error) {
     console.error('Failed to export diary:', error);
+    throw error;
+  }
+};
+
+// Convert incomes to CSV format
+export const incomesToCSV = (incomes: Income[]): string => {
+  const headers = ['날짜', '유형', '금액', '메모', '반복여부'];
+  const rows = incomes.map((i) => {
+    const date = new Date(i.date);
+    return [
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+      i.source,
+      i.amount.toString(),
+      `"${(i.note || '').replace(/"/g, '""')}"`,
+      i.isRecurring ? '예' : '아니오',
+    ].join(',');
+  });
+  return [headers.join(','), ...rows].join('\n');
+};
+
+// Export incomes as CSV
+export const exportIncomesAsCSV = async (incomes: Income[]): Promise<void> => {
+  try {
+    const csvString = incomesToCSV(incomes);
+    const fileName = `mohani_incomes_${new Date().toISOString().split('T')[0]}.csv`;
+    const filePath = `${FileSystem.documentDirectory}${fileName}`;
+
+    await FileSystem.writeAsStringAsync(filePath, csvString);
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'text/csv',
+        dialogTitle: '수입 내역 내보내기',
+      });
+    }
+  } catch (error) {
+    console.error('Failed to export incomes:', error);
+    throw error;
+  }
+};
+
+// Export complete financial report
+export const exportFinancialReportAsCSV = async (
+  expenses: Expense[],
+  incomes: Income[]
+): Promise<void> => {
+  try {
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalIncomes = incomes.reduce((sum, i) => sum + i.amount, 0);
+
+    let csvContent = '=== MOHANI 재정 리포트 ===\n\n';
+    csvContent += '=== 요약 ===\n';
+    csvContent += `총 수입,₩${totalIncomes.toLocaleString()}\n`;
+    csvContent += `총 지출,₩${totalExpenses.toLocaleString()}\n`;
+    csvContent += `순 잔액,₩${(totalIncomes - totalExpenses).toLocaleString()}\n\n`;
+
+    csvContent += '=== 수입 내역 ===\n';
+    csvContent += incomesToCSV(incomes);
+    csvContent += '\n\n';
+
+    csvContent += '=== 지출 내역 ===\n';
+    csvContent += expensesToCSV(expenses);
+
+    const fileName = `mohani_financial_report_${new Date().toISOString().split('T')[0]}.csv`;
+    const filePath = `${FileSystem.documentDirectory}${fileName}`;
+
+    await FileSystem.writeAsStringAsync(filePath, csvContent);
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'text/csv',
+        dialogTitle: '재정 리포트 내보내기',
+      });
+    }
+  } catch (error) {
+    console.error('Failed to export financial report:', error);
     throw error;
   }
 };

@@ -23,7 +23,8 @@ import { useRecurringExpenses } from '../context/RecurringExpenseContext';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useShopping } from '../context/ShoppingContext';
-import { exportAllDataAsJSON, exportExpensesAsCSV } from '../utils/dataExport';
+import { useIncome } from '../context/IncomeContext';
+import { exportAllDataAsJSON, exportExpensesAsCSV, exportIncomesAsCSV, exportFinancialReportAsCSV } from '../utils/dataExport';
 import {
   Colors,
   FontSizes,
@@ -86,6 +87,7 @@ export default function SettingsScreen() {
   const { expenses } = useExpenses();
   const { entries: diaryEntries } = useDiary();
   const { items: shoppingItems } = useShopping();
+  const { incomes } = useIncome();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -115,18 +117,27 @@ export default function SettingsScreen() {
           },
         },
         {
-          text: '전체 백업 (JSON)',
+          text: '수입 내역 (CSV)',
           onPress: async () => {
             try {
               setIsExporting(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              await exportAllDataAsJSON({
-                expenses,
-                diaryEntries,
-                shoppingItems,
-                recurringExpenses,
-                exportDate: new Date().toISOString(),
-              });
+              await exportIncomesAsCSV(incomes);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (error) {
+              Alert.alert('오류', '내보내기에 실패했습니다.');
+            } finally {
+              setIsExporting(false);
+            }
+          },
+        },
+        {
+          text: '재정 리포트 (CSV)',
+          onPress: async () => {
+            try {
+              setIsExporting(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              await exportFinancialReportAsCSV(expenses, incomes);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch (error) {
               Alert.alert('오류', '내보내기에 실패했습니다.');
@@ -136,7 +147,28 @@ export default function SettingsScreen() {
           },
         },
       ]
-    )
+    );
+  };
+
+  const handleExportBackup = async () => {
+    if (isExporting) return;
+    try {
+      setIsExporting(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await exportAllDataAsJSON({
+        expenses,
+        diaryEntries,
+        shoppingItems,
+        recurringExpenses,
+        incomes,
+        exportDate: new Date().toISOString(),
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      Alert.alert('오류', '백업에 실패했습니다.');
+    } finally {
+      setIsExporting(false);
+    }
   };
   const [editName, setEditName] = useState(settings.userName);
   const [editEmoji, setEditEmoji] = useState(settings.profileEmoji);
