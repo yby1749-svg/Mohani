@@ -21,6 +21,9 @@ import { LocationInsights } from '../components/LocationInsights';
 import { CategoryBudgets } from '../components/CategoryBudgets';
 import { FinancialHealthScore } from '../components/FinancialHealthScore';
 import { SpendingForecast } from '../components/SpendingForecast';
+import MonthlySummaryReport from '../components/MonthlySummaryReport';
+import TagManager from '../components/TagManager';
+import CurrencyConverter from '../components/CurrencyConverter';
 import { useExpenses } from '../context/ExpenseContext';
 import { useGoals } from '../context/GoalsContext';
 import { useIncome } from '../context/IncomeContext';
@@ -1209,6 +1212,38 @@ export default function AnalyticsScreen() {
                   : 100
               }
             />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Monthly Summary Report */}
+        <Animated.View entering={FadeInDown.delay(570).duration(500)}>
+          <GlassCard
+            gradient={['rgba(99, 102, 241, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(99, 102, 241, 0.3)"
+          >
+            <Text style={styles.chartTitle}>📑 월간 리포트</Text>
+            <MonthlySummaryReport />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Tags Manager */}
+        <Animated.View entering={FadeInDown.delay(580).duration(500)}>
+          <GlassCard
+            gradient={['rgba(236, 72, 153, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(236, 72, 153, 0.3)"
+          >
+            <Text style={styles.chartTitle}>🏷️ 지출 태그 관리</Text>
+            <TagManager mode="manage" />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Currency Converter */}
+        <Animated.View entering={FadeInDown.delay(590).duration(500)}>
+          <GlassCard
+            gradient={['rgba(14, 165, 233, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(14, 165, 233, 0.3)"
+          >
+            <CurrencyConverter />
           </GlassCard>
         </Animated.View>
 

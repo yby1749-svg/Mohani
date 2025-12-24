@@ -35,6 +35,7 @@ import { AddSubscriptionModal } from '../components/AddSubscriptionModal';
 import { ExpenseSearch } from '../components/ExpenseSearch';
 import { DebtTracker } from '../components/DebtTracker';
 import { AddDebtModal } from '../components/AddDebtModal';
+import QuickExpenseNote from '../components/QuickExpenseNote';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -1031,6 +1032,13 @@ export default function HomeScreen() {
               </LinearGradient>
             </TouchableOpacity>
           ))}
+        </Animated.View>
+
+        {/* Quick Expense Note */}
+        <Animated.View entering={FadeInDown.delay(520).duration(500)}>
+          <GlassCard>
+            <QuickExpenseNote onAddExpense={addExpense} />
+          </GlassCard>
         </Animated.View>
 
         {/* Quick Templates */}
