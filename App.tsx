@@ -13,17 +13,19 @@ import { SettingsProvider } from './src/context/SettingsContext';
 import { RecurringExpenseProvider } from './src/context/RecurringExpenseContext';
 import { GoalsProvider } from './src/context/GoalsContext';
 import { ExpenseTemplateProvider } from './src/context/ExpenseTemplateContext';
+import { IncomeProvider } from './src/context/IncomeContext';
 
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SettingsProvider>
         <ExpenseProvider>
-          <ExpenseTemplateProvider>
-            <RecurringExpenseProvider>
-              <GoalsProvider>
-                <DiaryProvider>
-                  <ShoppingProvider>
+          <IncomeProvider>
+            <ExpenseTemplateProvider>
+              <RecurringExpenseProvider>
+                <GoalsProvider>
+                  <DiaryProvider>
+                    <ShoppingProvider>
                 <View style={styles.container}>
           <StatusBar style="light" />
           <NavigationContainer
@@ -42,11 +44,12 @@ export default function App() {
           <TabNavigator />
                 </NavigationContainer>
               </View>
-                  </ShoppingProvider>
-                </DiaryProvider>
-              </GoalsProvider>
-            </RecurringExpenseProvider>
-          </ExpenseTemplateProvider>
+                    </ShoppingProvider>
+                  </DiaryProvider>
+                </GoalsProvider>
+              </RecurringExpenseProvider>
+            </ExpenseTemplateProvider>
+          </IncomeProvider>
         </ExpenseProvider>
       </SettingsProvider>
     </GestureHandlerRootView>

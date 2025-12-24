@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface CategoryLimit {
+  category: string;
+  limit: number;
+  enabled: boolean;
+}
+
 export interface UserSettings {
   // User Profile
   userName: string;
@@ -10,6 +16,7 @@ export interface UserSettings {
   monthlyBudget: number;
   dailyBudgetAlert: boolean;
   budgetAlertThreshold: number; // percentage
+  categoryLimits: CategoryLimit[];
 
   // Notification Settings
   dailyReminder: boolean;
@@ -26,12 +33,24 @@ export interface UserSettings {
   useBiometrics: boolean;
 }
 
+const DEFAULT_CATEGORY_LIMITS: CategoryLimit[] = [
+  { category: 'food', limit: 500000, enabled: true },
+  { category: 'transport', limit: 200000, enabled: false },
+  { category: 'shopping', limit: 300000, enabled: true },
+  { category: 'entertainment', limit: 200000, enabled: false },
+  { category: 'cafe', limit: 100000, enabled: true },
+  { category: 'health', limit: 100000, enabled: false },
+  { category: 'bills', limit: 500000, enabled: false },
+  { category: 'other', limit: 200000, enabled: false },
+];
+
 const DEFAULT_SETTINGS: UserSettings = {
   userName: 'User',
   profileEmoji: '😊',
   monthlyBudget: 2500000,
   dailyBudgetAlert: true,
   budgetAlertThreshold: 80,
+  categoryLimits: DEFAULT_CATEGORY_LIMITS,
   dailyReminder: true,
   reminderTime: '21:00',
   weeklyReport: true,
@@ -46,6 +65,8 @@ interface SettingsContextType {
   settings: UserSettings;
   updateSettings: (updates: Partial<UserSettings>) => void;
   resetSettings: () => void;
+  updateCategoryLimit: (category: string, limit: number, enabled: boolean) => void;
+  getCategoryLimit: (category: string) => CategoryLimit | undefined;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -91,12 +112,27 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSettings(DEFAULT_SETTINGS);
   };
 
+  const updateCategoryLimit = (category: string, limit: number, enabled: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      categoryLimits: prev.categoryLimits.map((cl) =>
+        cl.category === category ? { ...cl, limit, enabled } : cl
+      ),
+    }));
+  };
+
+  const getCategoryLimit = (category: string) => {
+    return settings.categoryLimits.find((cl) => cl.category === category);
+  };
+
   return (
     <SettingsContext.Provider
       value={{
         settings,
         updateSettings,
         resetSettings,
+        updateCategoryLimit,
+        getCategoryLimit,
       }}
     >
       {children}

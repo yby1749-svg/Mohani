@@ -29,11 +29,13 @@ import {
 } from '../components';
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { AddDiaryModal } from '../components/AddDiaryModal';
+import { AddIncomeModal } from '../components/AddIncomeModal';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
 import { useGoals } from '../context/GoalsContext';
 import { useExpenseTemplates } from '../context/ExpenseTemplateContext';
+import { useIncome } from '../context/IncomeContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import {
   Colors,
@@ -47,6 +49,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddDiary, setShowAddDiary] = useState(false);
+  const [showAddIncome, setShowAddIncome] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
@@ -54,6 +57,7 @@ export default function HomeScreen() {
   const { settings } = useSettings();
   const { getTotalSaved, getOverallProgress } = useGoals();
   const { templates, useTemplate, getFrequentTemplates, addTemplate } = useExpenseTemplates();
+  const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes } = useIncome();
   const todayDiary = getTodayEntry();
   const frequentTemplates = getFrequentTemplates(4);
 
@@ -104,6 +108,244 @@ export default function HomeScreen() {
   };
 
   const budgetWarning = getBudgetWarning();
+
+  // Calculate spending streaks
+  const getSpendingStreaks = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // No-spend streak (consecutive days without spending)
+    let noSpendStreak = 0;
+    let checkDate = new Date(today);
+
+    // Check if today has expenses, if so start from yesterday
+    const todayHasExpenses = expenses.some((e) => {
+      const d = new Date(e.date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    });
+
+    if (todayHasExpenses) {
+      noSpendStreak = 0;
+    } else {
+      noSpendStreak = 1; // Today counts
+      checkDate.setDate(checkDate.getDate() - 1);
+
+      while (true) {
+        const dayHasExpenses = expenses.some((e) => {
+          const d = new Date(e.date);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime() === checkDate.getTime();
+        });
+
+        if (dayHasExpenses) break;
+        noSpendStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (noSpendStreak > 30) break; // Cap at 30 days
+      }
+    }
+
+    // Under budget streak (days spending less than daily budget)
+    const dailyBudget = monthlyBudget / 30;
+    let underBudgetStreak = 0;
+    checkDate = new Date(today);
+
+    for (let i = 0; i < 30; i++) {
+      const dayExpenses = expenses.filter((e) => {
+        const d = new Date(e.date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === checkDate.getTime();
+      });
+      const dayTotal = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+      if (dayTotal <= dailyBudget) {
+        underBudgetStreak++;
+      } else {
+        break;
+      }
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    // Savings streak (days where you added to savings)
+    const savingsStreak = 0; // Would need savings history to track
+
+    return { noSpendStreak, underBudgetStreak, savingsStreak };
+  };
+
+  const streaks = getSpendingStreaks();
+
+  // Check category limits
+  const getCategoryAlerts = () => {
+    const categoryTotals = getCategoryTotals();
+    const alerts: { category: string; label: string; icon: string; spent: number; limit: number; percent: number }[] = [];
+
+    const categoryLabels: Record<string, { label: string; icon: string }> = {
+      food: { label: '식비', icon: '🍜' },
+      transport: { label: '교통', icon: '🚇' },
+      shopping: { label: '쇼핑', icon: '🛍️' },
+      entertainment: { label: '여가', icon: '🎮' },
+      cafe: { label: '카페', icon: '☕' },
+      health: { label: '건강', icon: '💊' },
+      bills: { label: '공과금', icon: '📄' },
+      other: { label: '기타', icon: '📦' },
+    };
+
+    settings.categoryLimits?.forEach((cl) => {
+      if (cl.enabled) {
+        const catTotal = categoryTotals.find((ct) => ct.category === cl.category);
+        if (catTotal && catTotal.total >= cl.limit * 0.8) {
+          const percent = Math.round((catTotal.total / cl.limit) * 100);
+          const info = categoryLabels[cl.category] || { label: cl.category, icon: '📦' };
+          alerts.push({
+            category: cl.category,
+            label: info.label,
+            icon: info.icon,
+            spent: catTotal.total,
+            limit: cl.limit,
+            percent,
+          });
+        }
+      }
+    });
+
+    return alerts.sort((a, b) => b.percent - a.percent);
+  };
+
+  const categoryAlerts = getCategoryAlerts();
+
+  // Calculate Financial Health Score
+  const getFinancialHealthScore = () => {
+    let score = 0;
+    const factors: { name: string; label: string; score: number; maxScore: number; icon: string }[] = [];
+
+    // 1. Budget Adherence (0-30 points)
+    // Lower budget usage = higher score
+    const budgetAdherence = Math.max(0, 30 - (rawBudgetPercent * 0.3));
+    factors.push({
+      name: 'budget',
+      label: '예산 관리',
+      score: Math.round(budgetAdherence),
+      maxScore: 30,
+      icon: '💰',
+    });
+    score += budgetAdherence;
+
+    // 2. Spending Consistency (0-20 points)
+    // Consistent daily spending without big spikes
+    const last7Days: number[] = [];
+    for (let i = 0; i < 7; i++) {
+      const checkDate = new Date();
+      checkDate.setDate(checkDate.getDate() - i);
+      checkDate.setHours(0, 0, 0, 0);
+      const dayTotal = expenses.filter((e) => {
+        const d = new Date(e.date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === checkDate.getTime();
+      }).reduce((sum, e) => sum + e.amount, 0);
+      last7Days.push(dayTotal);
+    }
+    const avgDaily = last7Days.reduce((a, b) => a + b, 0) / 7;
+    const maxDaily = Math.max(...last7Days);
+    const consistencyRatio = avgDaily > 0 ? Math.min(1, avgDaily / (maxDaily || 1)) : 1;
+    const consistencyScore = Math.round(consistencyRatio * 20);
+    factors.push({
+      name: 'consistency',
+      label: '지출 안정성',
+      score: consistencyScore,
+      maxScore: 20,
+      icon: '📊',
+    });
+    score += consistencyScore;
+
+    // 3. Savings Progress (0-25 points)
+    const savingsProgress = getOverallProgress();
+    const savingsScore = Math.round((savingsProgress / 100) * 25);
+    factors.push({
+      name: 'savings',
+      label: '저축 달성',
+      score: savingsScore,
+      maxScore: 25,
+      icon: '🎯',
+    });
+    score += savingsScore;
+
+    // 4. Good Habits (0-15 points)
+    // Based on streaks
+    const noSpendBonus = Math.min(5, streaks.noSpendStreak);
+    const underBudgetBonus = Math.min(10, streaks.underBudgetStreak);
+    const habitsScore = noSpendBonus + underBudgetBonus;
+    factors.push({
+      name: 'habits',
+      label: '소비 습관',
+      score: habitsScore,
+      maxScore: 15,
+      icon: '🔥',
+    });
+    score += habitsScore;
+
+    // 5. Category Balance (0-10 points)
+    // Penalize if one category is >50% of total
+    const categoryTotals = getCategoryTotals();
+    const totalSpent = categoryTotals.reduce((sum, c) => sum + c.total, 0);
+    const maxCategoryPercent = totalSpent > 0
+      ? Math.max(...categoryTotals.map((c) => (c.total / totalSpent) * 100))
+      : 0;
+    const balanceScore = maxCategoryPercent > 50 ? Math.round(10 - (maxCategoryPercent - 50) / 5) : 10;
+    factors.push({
+      name: 'balance',
+      label: '지출 균형',
+      score: Math.max(0, balanceScore),
+      maxScore: 10,
+      icon: '⚖️',
+    });
+    score += Math.max(0, balanceScore);
+
+    // Determine grade
+    let grade: { label: string; color: string; emoji: string };
+    if (score >= 90) {
+      grade = { label: '최고', color: '#22C55E', emoji: '🏆' };
+    } else if (score >= 75) {
+      grade = { label: '우수', color: '#3B82F6', emoji: '⭐' };
+    } else if (score >= 60) {
+      grade = { label: '양호', color: '#F59E0B', emoji: '👍' };
+    } else if (score >= 40) {
+      grade = { label: '주의', color: '#F97316', emoji: '💪' };
+    } else {
+      grade = { label: '개선필요', color: '#EF4444', emoji: '📈' };
+    }
+
+    // Generate tip
+    const lowestFactor = factors.reduce((min, f) =>
+      (f.score / f.maxScore) < (min.score / min.maxScore) ? f : min
+    );
+    let tip = '';
+    switch (lowestFactor.name) {
+      case 'budget':
+        tip = '예산 내에서 지출을 줄여보세요';
+        break;
+      case 'consistency':
+        tip = '매일 일정한 금액으로 지출해보세요';
+        break;
+      case 'savings':
+        tip = '저축 목표를 위해 조금씩 모아보세요';
+        break;
+      case 'habits':
+        tip = '무지출 데이를 늘려보세요';
+        break;
+      case 'balance':
+        tip = '다양한 카테고리로 분산 지출하세요';
+        break;
+    }
+
+    return {
+      score: Math.round(Math.min(100, Math.max(0, score))),
+      factors,
+      grade,
+      tip,
+    };
+  };
+
+  const healthScore = getFinancialHealthScore();
 
   useEffect(() => {
     // Wave animation for greeting
@@ -236,6 +478,45 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
+        {/* Category Limit Alerts */}
+        {categoryAlerts.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(175).duration(400)}>
+            <View style={styles.categoryAlertsContainer}>
+              {categoryAlerts.slice(0, 2).map((alert) => (
+                <View
+                  key={alert.category}
+                  style={[
+                    styles.categoryAlert,
+                    { borderColor: alert.percent >= 100 ? '#EF4444' : '#F59E0B' }
+                  ]}
+                >
+                  <Text style={styles.categoryAlertIcon}>{alert.icon}</Text>
+                  <View style={styles.categoryAlertContent}>
+                    <Text style={styles.categoryAlertLabel}>{alert.label}</Text>
+                    <View style={styles.categoryAlertBar}>
+                      <View
+                        style={[
+                          styles.categoryAlertFill,
+                          {
+                            width: `${Math.min(alert.percent, 100)}%`,
+                            backgroundColor: alert.percent >= 100 ? '#EF4444' : '#F59E0B'
+                          }
+                        ]}
+                      />
+                    </View>
+                  </View>
+                  <Text style={[
+                    styles.categoryAlertPercent,
+                    { color: alert.percent >= 100 ? '#EF4444' : '#F59E0B' }
+                  ]}>
+                    {alert.percent}%
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
         {/* Today's Expense Card */}
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
           <GlassCard
@@ -317,6 +598,78 @@ export default function HomeScreen() {
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>DAILY AVAILABLE</Text>
                 <Text style={styles.statValue}>₩{dailyAvailable.toLocaleString()}</Text>
+              </View>
+            </View>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Income Summary Card */}
+        <Animated.View entering={FadeInDown.delay(350).duration(500)}>
+          <GlassCard
+            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(34, 197, 94, 0.3)"
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>💵</Text>
+                <Text style={styles.cardTitleText}>이번 달 수입</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.addIncomeBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowAddIncome(true);
+                }}
+              >
+                <Ionicons name="add" size={16} color="#22C55E" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.incomeAmount}>
+              <Text style={styles.incomeCurrency}>₩</Text>
+              <Text style={styles.incomeValue}>
+                {getTotalIncomeThisMonth().toLocaleString()}
+              </Text>
+            </View>
+
+            {getIncomeByType().length > 0 ? (
+              <View style={styles.incomeTypes}>
+                {getIncomeByType().slice(0, 3).map((type) => (
+                  <View key={type.type} style={styles.incomeTypePill}>
+                    <Text style={styles.incomeTypeIcon}>{type.icon}</Text>
+                    <Text style={styles.incomeTypeAmount}>
+                      ₩{type.total.toLocaleString()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.noIncome}>아직 기록된 수입이 없습니다</Text>
+            )}
+
+            <View style={styles.incomeBalance}>
+              <View style={styles.balanceItem}>
+                <Text style={styles.balanceLabel}>수입</Text>
+                <Text style={[styles.balanceValue, { color: '#22C55E' }]}>
+                  +₩{getTotalIncomeThisMonth().toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.balanceDivider} />
+              <View style={styles.balanceItem}>
+                <Text style={styles.balanceLabel}>지출</Text>
+                <Text style={[styles.balanceValue, { color: '#EF4444' }]}>
+                  -₩{monthlyTotal.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.balanceDivider} />
+              <View style={styles.balanceItem}>
+                <Text style={styles.balanceLabel}>잔액</Text>
+                <Text style={[
+                  styles.balanceValue,
+                  { color: getTotalIncomeThisMonth() - monthlyTotal >= 0 ? '#22C55E' : '#EF4444' }
+                ]}>
+                  ₩{(getTotalIncomeThisMonth() - monthlyTotal).toLocaleString()}
+                </Text>
               </View>
             </View>
           </GlassCard>
@@ -423,8 +776,118 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {/* Statistics Summary Card */}
+        {/* Spending Streaks */}
+        <Animated.View entering={FadeInDown.delay(580).duration(500)}>
+          <GlassCard>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>🔥</Text>
+                <Text style={styles.cardTitleText}>소비 습관</Text>
+              </View>
+            </View>
+            <View style={styles.streaksGrid}>
+              <View style={styles.streakItem}>
+                <View style={[styles.streakIconBg, { backgroundColor: 'rgba(34, 197, 94, 0.2)' }]}>
+                  <Text style={styles.streakEmoji}>🚫</Text>
+                </View>
+                <Text style={styles.streakValue}>{streaks.noSpendStreak}</Text>
+                <Text style={styles.streakLabel}>무지출{'\n'}연속일</Text>
+              </View>
+              <View style={styles.streakDivider} />
+              <View style={styles.streakItem}>
+                <View style={[styles.streakIconBg, { backgroundColor: 'rgba(124, 58, 237, 0.2)' }]}>
+                  <Text style={styles.streakEmoji}>💪</Text>
+                </View>
+                <Text style={styles.streakValue}>{streaks.underBudgetStreak}</Text>
+                <Text style={styles.streakLabel}>예산 내{'\n'}연속일</Text>
+              </View>
+              <View style={styles.streakDivider} />
+              <View style={styles.streakItem}>
+                <View style={[styles.streakIconBg, { backgroundColor: 'rgba(245, 158, 11, 0.2)' }]}>
+                  <Text style={styles.streakEmoji}>📊</Text>
+                </View>
+                <Text style={styles.streakValue}>{todayExpenses.length}</Text>
+                <Text style={styles.streakLabel}>오늘{'\n'}지출 건수</Text>
+              </View>
+            </View>
+            {streaks.noSpendStreak >= 3 && (
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakBadgeText}>🎉 {streaks.noSpendStreak}일 연속 무지출! 대단해요!</Text>
+              </View>
+            )}
+            {streaks.underBudgetStreak >= 7 && (
+              <View style={[styles.streakBadge, { backgroundColor: 'rgba(124, 58, 237, 0.2)' }]}>
+                <Text style={[styles.streakBadgeText, { color: Colors.purpleLight }]}>💜 {streaks.underBudgetStreak}일 연속 예산 내 지출!</Text>
+              </View>
+            )}
+          </GlassCard>
+        </Animated.View>
+
+        {/* Financial Health Score */}
         <Animated.View entering={FadeInDown.delay(600).duration(500)}>
+          <GlassCard
+            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor={healthScore.grade.color}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>💚</Text>
+                <Text style={styles.cardTitleText}>금융 건강 점수</Text>
+              </View>
+              <View style={[styles.healthGradeBadge, { backgroundColor: `${healthScore.grade.color}20` }]}>
+                <Text style={styles.healthGradeEmoji}>{healthScore.grade.emoji}</Text>
+                <Text style={[styles.healthGradeLabel, { color: healthScore.grade.color }]}>
+                  {healthScore.grade.label}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.healthScoreMain}>
+              <View style={styles.healthScoreCircle}>
+                <View style={[styles.healthScoreInner, { borderColor: healthScore.grade.color }]}>
+                  <Text style={[styles.healthScoreValue, { color: healthScore.grade.color }]}>
+                    {healthScore.score}
+                  </Text>
+                  <Text style={styles.healthScoreMax}>/100</Text>
+                </View>
+              </View>
+              <View style={styles.healthFactors}>
+                {healthScore.factors.map((factor) => (
+                  <View key={factor.name} style={styles.healthFactor}>
+                    <View style={styles.healthFactorHeader}>
+                      <Text style={styles.healthFactorIcon}>{factor.icon}</Text>
+                      <Text style={styles.healthFactorLabel}>{factor.label}</Text>
+                      <Text style={styles.healthFactorScore}>
+                        {factor.score}/{factor.maxScore}
+                      </Text>
+                    </View>
+                    <View style={styles.healthFactorBar}>
+                      <View
+                        style={[
+                          styles.healthFactorFill,
+                          {
+                            width: `${(factor.score / factor.maxScore) * 100}%`,
+                            backgroundColor: healthScore.grade.color,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {healthScore.tip && (
+              <View style={styles.healthTip}>
+                <Text style={styles.healthTipIcon}>💡</Text>
+                <Text style={styles.healthTipText}>{healthScore.tip}</Text>
+              </View>
+            )}
+          </GlassCard>
+        </Animated.View>
+
+        {/* Statistics Summary Card */}
+        <Animated.View entering={FadeInDown.delay(650).duration(500)}>
           <GlassCard borderColor={Colors.borderPurple}>
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
@@ -506,6 +969,16 @@ export default function HomeScreen() {
           content: todayDiary.content,
           tags: todayDiary.tags,
         } : undefined}
+      />
+
+      {/* Add Income Modal */}
+      <AddIncomeModal
+        visible={showAddIncome}
+        onClose={() => setShowAddIncome(false)}
+        onAdd={(income) => {
+          addIncome(income);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
       />
     </View>
   );
@@ -945,5 +1418,270 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.purpleLight,
     fontWeight: '600',
+  },
+  streaksGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  streakIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  streakEmoji: {
+    fontSize: 18,
+  },
+  streakValue: {
+    fontSize: FontSizes.xl,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  streakLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  streakDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: Colors.border,
+  },
+  streakBadge: {
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+  },
+  streakBadgeText: {
+    fontSize: FontSizes.sm,
+    color: Colors.success,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  categoryAlertsContainer: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  categoryAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 15, 20, 0.9)',
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  categoryAlertIcon: {
+    fontSize: 20,
+  },
+  categoryAlertContent: {
+    flex: 1,
+  },
+  categoryAlertLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  categoryAlertBar: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  categoryAlertFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  categoryAlertPercent: {
+    fontSize: FontSizes.md,
+    fontWeight: '700',
+  },
+  healthGradeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  healthGradeEmoji: {
+    fontSize: 14,
+  },
+  healthGradeLabel: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+  },
+  healthScoreMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  healthScoreCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  healthScoreInner: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  healthScoreValue: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  healthScoreMax: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: -2,
+  },
+  healthFactors: {
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  healthFactor: {
+    gap: 4,
+  },
+  healthFactorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  healthFactorIcon: {
+    fontSize: 12,
+  },
+  healthFactorLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+    flex: 1,
+  },
+  healthFactorScore: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  healthFactorBar: {
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  healthFactorFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  healthTip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  healthTipIcon: {
+    fontSize: 14,
+  },
+  healthTipText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    flex: 1,
+  },
+  addIncomeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  incomeAmount: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: Spacing.md,
+  },
+  incomeCurrency: {
+    fontSize: FontSizes.xxl,
+    fontWeight: '500',
+    color: '#22C55E',
+    marginRight: Spacing.xs,
+  },
+  incomeValue: {
+    fontSize: FontSizes.giant,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  incomeTypes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  incomeTypePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.2)',
+  },
+  incomeTypeIcon: {
+    fontSize: 14,
+  },
+  incomeTypeAmount: {
+    fontSize: FontSizes.sm,
+    color: '#22C55E',
+    fontWeight: '500',
+  },
+  noIncome: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    marginBottom: Spacing.lg,
+  },
+  incomeBalance: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+  },
+  balanceItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: 4,
+  },
+  balanceValue: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+  },
+  balanceDivider: {
+    width: 1,
+    backgroundColor: Colors.border,
   },
 });
