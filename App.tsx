@@ -21,6 +21,8 @@ import { ChallengeProvider } from './src/context/ChallengeContext';
 import { DebtProvider } from './src/context/DebtContext';
 import { CategoryBudgetProvider } from './src/context/CategoryBudgetContext';
 import { SplitExpenseProvider } from './src/context/SplitExpenseContext';
+import { AlertsProvider } from './src/context/AlertsContext';
+import { WalletProvider } from './src/context/WalletContext';
 
 export default function App() {
   return (
@@ -35,6 +37,8 @@ export default function App() {
                     <DebtProvider>
                       <CategoryBudgetProvider>
                         <SplitExpenseProvider>
+                          <AlertsProvider>
+                            <WalletProvider>
                 <ExpenseTemplateProvider>
                   <RecurringExpenseProvider>
                     <GoalsProvider>
@@ -63,6 +67,8 @@ export default function App() {
                     </GoalsProvider>
                   </RecurringExpenseProvider>
                 </ExpenseTemplateProvider>
+                            </WalletProvider>
+                          </AlertsProvider>
                         </SplitExpenseProvider>
                       </CategoryBudgetProvider>
                     </DebtProvider>
