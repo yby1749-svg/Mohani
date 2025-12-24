@@ -32,6 +32,9 @@ import { AddDiaryModal } from '../components/AddDiaryModal';
 import { AddIncomeModal } from '../components/AddIncomeModal';
 import { AddBillModal } from '../components/AddBillModal';
 import { AddSubscriptionModal } from '../components/AddSubscriptionModal';
+import { ExpenseSearch } from '../components/ExpenseSearch';
+import { DebtTracker } from '../components/DebtTracker';
+import { AddDebtModal } from '../components/AddDebtModal';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -42,6 +45,7 @@ import { useAchievements } from '../context/AchievementContext';
 import { useBills } from '../context/BillContext';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import { useChallenges } from '../context/ChallengeContext';
+import { useDebts } from '../context/DebtContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import {
   Colors,
@@ -58,6 +62,8 @@ export default function HomeScreen() {
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [showAddBill, setShowAddBill] = useState(false);
   const [showAddSubscription, setShowAddSubscription] = useState(false);
+  const [showExpenseSearch, setShowExpenseSearch] = useState(false);
+  const [showAddDebt, setShowAddDebt] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
@@ -70,6 +76,7 @@ export default function HomeScreen() {
   const { bills, addBill, markAsPaid, getUpcomingBills, getOverdueBills, getTotalDue, getDaysUntilDue } = useBills();
   const { subscriptions, addSubscription, getMonthlyTotal: getSubsMonthlyTotal, getUpcomingRenewals } = useSubscriptions();
   const { activeChallenges, totalPoints, getLevel, claimReward } = useChallenges();
+  const { debts, addDebt, getTotalOwed, getTotalOwedToMe, getDebtProgress } = useDebts();
   const todayDiary = getTodayEntry();
   const userLevel = getLevel();
   const frequentTemplates = getFrequentTemplates(4);
@@ -440,6 +447,9 @@ export default function HomeScreen() {
         break;
       case 'analytics':
         navigation.getParent()?.navigate('Analytics');
+        break;
+      case 'search':
+        setShowExpenseSearch(true);
         break;
     }
   };
@@ -1001,9 +1011,9 @@ export default function HomeScreen() {
           style={styles.quickActions}
         >
           {[
+            { icon: '🔍', label: 'Search', action: 'search' },
             { icon: '📋', label: 'History', action: 'history' },
             { icon: '🎯', label: 'Goals', action: 'goals' },
-            { icon: '✨', label: 'AI Diary', action: 'diary' },
             { icon: '📊', label: 'Analytics', action: 'analytics' },
           ].map((item, index) => (
             <TouchableOpacity
@@ -1367,6 +1377,29 @@ export default function HomeScreen() {
           </GlassCard>
         </Animated.View>
 
+        {/* Debt Tracker Card */}
+        <Animated.View entering={FadeInDown.delay(870).duration(500)}>
+          <GlassCard>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitle}>
+                <Text style={styles.cardIcon}>💳</Text>
+                <Text style={styles.cardTitleText}>부채 관리</Text>
+              </View>
+            </View>
+            <DebtTracker
+              debts={debts}
+              totalOwed={getTotalOwed()}
+              totalOwedToMe={getTotalOwedToMe()}
+              onAddDebt={() => setShowAddDebt(true)}
+              onViewDebt={(debt) => {
+                // For now just log, can add detail modal later
+                console.log('View debt:', debt);
+              }}
+              getProgress={getDebtProgress}
+            />
+          </GlassCard>
+        </Animated.View>
+
         {/* Bottom spacing for tab bar */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -1425,6 +1458,23 @@ export default function HomeScreen() {
         onClose={() => setShowAddSubscription(false)}
         onAdd={(subscription) => {
           addSubscription(subscription);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+      />
+
+      {/* Expense Search Modal */}
+      <ExpenseSearch
+        visible={showExpenseSearch}
+        onClose={() => setShowExpenseSearch(false)}
+        expenses={expenses}
+      />
+
+      {/* Add Debt Modal */}
+      <AddDebtModal
+        visible={showAddDebt}
+        onClose={() => setShowAddDebt(false)}
+        onAdd={(debt) => {
+          addDebt(debt);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
       />

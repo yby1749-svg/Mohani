@@ -16,6 +16,8 @@ import { Header, GlassCard, AnimatedBackground } from '../components';
 import { SpendingHeatmap } from '../components/SpendingHeatmap';
 import { SavingsCalculator } from '../components/SavingsCalculator';
 import { MonthComparison } from '../components/MonthComparison';
+import { SpendingPatterns } from '../components/SpendingPatterns';
+import { LocationInsights } from '../components/LocationInsights';
 import { useExpenses } from '../context/ExpenseContext';
 import { useGoals } from '../context/GoalsContext';
 import { useIncome } from '../context/IncomeContext';
@@ -1111,8 +1113,30 @@ export default function AnalyticsScreen() {
           </GlassCard>
         </Animated.View>
 
-        {/* Savings Calculator */}
+        {/* Spending Patterns */}
+        <Animated.View entering={FadeInDown.delay(510).duration(500)}>
+          <GlassCard
+            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(245, 158, 11, 0.3)"
+          >
+            <Text style={styles.chartTitle}>⏰ 지출 패턴 분석</Text>
+            <SpendingPatterns expenses={expenses} />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Location Insights */}
         <Animated.View entering={FadeInDown.delay(520).duration(500)}>
+          <GlassCard
+            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(59, 130, 246, 0.3)"
+          >
+            <Text style={styles.chartTitle}>📍 장소별 지출</Text>
+            <LocationInsights expenses={expenses} />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Savings Calculator */}
+        <Animated.View entering={FadeInDown.delay(530).duration(500)}>
           <GlassCard
             gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
             borderColor="rgba(34, 197, 94, 0.3)"
