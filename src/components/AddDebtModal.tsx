@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
   },
   content: {
     backgroundColor: Colors.bgSecondary,
-    borderTopLeftRadius: BorderRadius.xxl,
-    borderTopRightRadius: BorderRadius.xxl,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
     maxHeight: '90%',
   },
   header: {

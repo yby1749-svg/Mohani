@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Colors, Spacing, BorderRadius, FontSizes, Gradients } from '../constants/theme';
+import { Colors, Spacing, BorderRadius, FontSizes } from '../constants/theme';
 import { Debt } from '../context/DebtContext';
 
 interface DebtTrackerProps {
@@ -21,14 +21,14 @@ interface DebtTrackerProps {
 }
 
 export const DebtTracker: React.FC<DebtTrackerProps> = ({
-  debts,
+  debts = [],
   totalOwed,
   totalOwedToMe,
   onAddDebt,
   onViewDebt,
   getProgress,
 }) => {
-  const activeDebts = debts.filter((d) => d.isActive);
+  const activeDebts = (debts || []).filter((d) => d.isActive);
   const priorityDebts = activeDebts
     .sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
@@ -185,7 +185,7 @@ export const DebtTracker: React.FC<DebtTrackerProps> = ({
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={Gradients.purpleSubtle as [string, string]}
+          colors={['rgba(124, 58, 237, 0.2)', 'rgba(124, 58, 237, 0.1)']}
           style={styles.addBtnGradient}
         >
           <Text style={styles.addBtnIcon}>+</Text>
