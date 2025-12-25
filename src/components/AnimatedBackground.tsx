@@ -34,9 +34,9 @@ const GlowOrb = ({
     const startAnimation = () => {
       translateX.value = withRepeat(
         withSequence(
-          withTiming(30, { duration: 5000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(-20, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.ease) })
+          withTiming(30, { duration: 10000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(-20, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 6000, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
         true
@@ -44,9 +44,9 @@ const GlowOrb = ({
 
       translateY.value = withRepeat(
         withSequence(
-          withTiming(-30, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(20, { duration: 5000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.ease) })
+          withTiming(-30, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(20, { duration: 10000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 6000, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
         true
@@ -54,9 +54,9 @@ const GlowOrb = ({
 
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.1, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0.9, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.ease) })
+          withTiming(1.1, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.9, { duration: 6000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 6000, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
         true
@@ -97,8 +97,8 @@ const Particle = ({ index }: { index: number }) => {
   const opacity = useSharedValue(0);
   const left = Math.random() * width;
   const size = Math.random() * 4 + 2;
-  const duration = Math.random() * 10000 + 15000;
-  const delay = Math.random() * 10000;
+  const duration = Math.random() * 20000 + 30000;
+  const delay = Math.random() * 20000;
   const isPurple = Math.random() > 0.5;
 
   useEffect(() => {
@@ -184,14 +184,14 @@ export default function AnimatedBackground() {
         size={250}
         initialX={-80}
         initialY={height * 0.4}
-        delay={2000}
+        delay={4000}
       />
       <GlowOrb
         color={Colors.purpleSecondary}
         size={200}
         initialX={width * 0.3}
         initialY={height - 100}
-        delay={4000}
+        delay={8000}
       />
 
       {/* Floating particles */}
