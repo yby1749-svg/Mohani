@@ -381,27 +381,25 @@ export default function HomeScreen() {
     );
   }, []);
 
-  // Check achievements
-  // Achievement progress check - disabled temporarily to fix infinite loop
-  // TODO: Fix updateProgress to not trigger re-renders when progress hasn't changed
-  // useEffect(() => {
-  //   updateProgress('expenses_10', expenses.length);
-  //   updateProgress('expenses_100', expenses.length);
-  //   updateProgress('expenses_500', expenses.length);
-  //   const totalSaved = getTotalSaved();
-  //   updateProgress('savings_100k', totalSaved);
-  //   updateProgress('savings_500k', totalSaved);
-  //   updateProgress('savings_1m', totalSaved);
-  //   updateProgress('savings_5m', totalSaved);
-  //   updateProgress('no_spend_3', streaks.noSpendStreak);
-  //   updateProgress('no_spend_7', streaks.noSpendStreak);
-  //   updateProgress('no_spend_14', streaks.noSpendStreak);
-  //   updateProgress('under_budget_week', streaks.underBudgetStreak);
-  //   updateProgress('under_budget_month', streaks.underBudgetStreak);
-  //   updateProgress('health_90', healthScore.score);
-  //   if (incomes.length > 0) updateProgress('income_tracked', 1);
-  //   if (getTotalIncomeThisMonth() > monthlyTotal) updateProgress('positive_balance', 1);
-  // }, [expenses.length, streaks.noSpendStreak, streaks.underBudgetStreak, healthScore.score, incomes.length, monthlyTotal]);
+  // Check achievements progress
+  useEffect(() => {
+    updateProgress('expenses_10', expenses.length);
+    updateProgress('expenses_100', expenses.length);
+    updateProgress('expenses_500', expenses.length);
+    const totalSaved = getTotalSaved();
+    updateProgress('savings_100k', totalSaved);
+    updateProgress('savings_500k', totalSaved);
+    updateProgress('savings_1m', totalSaved);
+    updateProgress('savings_5m', totalSaved);
+    updateProgress('no_spend_3', streaks.noSpendStreak);
+    updateProgress('no_spend_7', streaks.noSpendStreak);
+    updateProgress('no_spend_14', streaks.noSpendStreak);
+    updateProgress('under_budget_week', streaks.underBudgetStreak);
+    updateProgress('under_budget_month', streaks.underBudgetStreak);
+    updateProgress('health_90', healthScore.score);
+    if (incomes.length > 0) updateProgress('income_tracked', 1);
+    if (getTotalIncomeThisMonth() > monthlyTotal) updateProgress('positive_balance', 1);
+  }, [expenses.length, streaks.noSpendStreak, streaks.underBudgetStreak, healthScore.score, incomes.length, monthlyTotal]);
 
   const waveStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${waveRotation.value}deg` }],

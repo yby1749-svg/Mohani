@@ -319,21 +319,27 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const updateProgress = (id: string, progress: number) => {
-    setAchievements((prev) =>
-      prev.map((a) => {
-        if (a.id === id && !a.isUnlocked) {
-          const newProgress = Math.max(a.progress, progress);
-          const isUnlocked = newProgress >= a.requirement;
-          return {
-            ...a,
-            progress: newProgress,
-            isUnlocked,
-            unlockedAt: isUnlocked ? new Date() : undefined,
-          };
-        }
-        return a;
-      })
-    );
+    setAchievements((prev) => {
+      const achievement = prev.find((a) => a.id === id);
+      // Skip update if achievement doesn't exist, is already unlocked, or progress hasn't increased
+      if (!achievement || achievement.isUnlocked || progress <= achievement.progress) {
+        return prev; // Return same reference to avoid re-render
+      }
+
+      const newProgress = Math.max(achievement.progress, progress);
+      const isUnlocked = newProgress >= achievement.requirement;
+
+      return prev.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              progress: newProgress,
+              isUnlocked,
+              unlockedAt: isUnlocked ? new Date() : undefined,
+            }
+          : a
+      );
+    });
   };
 
   const getAchievementsByCategory = (category: Achievement['category']) => {
