@@ -517,6 +517,9 @@ export default function HomeScreen() {
       case 'compare':
         navigation.navigate('ExpenseComparison' as never);
         break;
+      case 'currency':
+        navigation.navigate('CurrencyConverter' as never);
+        break;
     }
   };
 
@@ -1104,6 +1107,7 @@ export default function HomeScreen() {
             { icon: '🔔', label: 'Budgets', action: 'budgets' },
             { icon: '🔄', label: 'Recurring', action: 'recurring' },
             { icon: '⚖️', label: 'Compare', action: 'compare' },
+            { icon: '💱', label: 'Currency', action: 'currency' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
