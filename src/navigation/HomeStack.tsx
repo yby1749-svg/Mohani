@@ -17,6 +17,7 @@ import BudgetSettingsScreen from '../screens/BudgetSettingsScreen';
 import FixedExpensesScreen from '../screens/FixedExpensesScreen';
 import ExpenseComparisonScreen from '../screens/ExpenseComparisonScreen';
 import CurrencyConverterScreen from '../screens/CurrencyConverterScreen';
+import SpendingStreaksScreen from '../screens/SpendingStreaksScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +45,7 @@ export default function HomeStack() {
       <Stack.Screen name="FixedExpenses" component={FixedExpensesScreen} />
       <Stack.Screen name="ExpenseComparison" component={ExpenseComparisonScreen} />
       <Stack.Screen name="CurrencyConverter" component={CurrencyConverterScreen} />
+      <Stack.Screen name="SpendingStreaks" component={SpendingStreaksScreen} />
     </Stack.Navigator>
   );
 }

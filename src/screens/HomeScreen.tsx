@@ -520,6 +520,9 @@ export default function HomeScreen() {
       case 'currency':
         navigation.navigate('CurrencyConverter' as never);
         break;
+      case 'streaks':
+        navigation.navigate('SpendingStreaks' as never);
+        break;
     }
   };
 
@@ -1108,6 +1111,7 @@ export default function HomeScreen() {
             { icon: '🔄', label: 'Recurring', action: 'recurring' },
             { icon: '⚖️', label: 'Compare', action: 'compare' },
             { icon: '💱', label: 'Currency', action: 'currency' },
+            { icon: '🔥', label: 'Streaks', action: 'streaks' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}

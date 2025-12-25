@@ -26,6 +26,7 @@ import { WalletProvider } from './src/context/WalletContext';
 import { SplitExpenseProvider } from './src/context/SplitExpenseContext';
 import { AlertsProvider } from './src/context/AlertsContext';
 import { BudgetAlertProvider } from './src/context/BudgetAlertContext';
+import { SpendingStreaksProvider } from './src/context/SpendingStreaksContext';
 
 // Log immediately when module loads
 console.log('>>> App.tsx module loaded');
@@ -76,6 +77,7 @@ export default function App() {
                                         <SplitExpenseProvider>
                                           <AlertsProvider>
                                             <BudgetAlertProvider>
+                                              <SpendingStreaksProvider>
                                               <View style={styles.container}>
                                               <StatusBar style="light" />
                                               <NavigationContainer
@@ -94,6 +96,7 @@ export default function App() {
                                                 <TabNavigator />
                                               </NavigationContainer>
                                               </View>
+                                              </SpendingStreaksProvider>
                                             </BudgetAlertProvider>
                                           </AlertsProvider>
                                         </SplitExpenseProvider>
