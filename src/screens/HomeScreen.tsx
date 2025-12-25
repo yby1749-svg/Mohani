@@ -523,6 +523,9 @@ export default function HomeScreen() {
       case 'streaks':
         navigation.navigate('SpendingStreaks' as never);
         break;
+      case 'scan':
+        navigation.navigate('ReceiptScanner' as never);
+        break;
     }
   };
 
@@ -1112,6 +1115,7 @@ export default function HomeScreen() {
             { icon: '⚖️', label: 'Compare', action: 'compare' },
             { icon: '💱', label: 'Currency', action: 'currency' },
             { icon: '🔥', label: 'Streaks', action: 'streaks' },
+            { icon: '📷', label: 'Scan', action: 'scan' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
