@@ -470,6 +470,9 @@ export default function HomeScreen() {
       case 'location':
         navigation.navigate('SpendingByLocation' as never);
         break;
+      case 'backup':
+        navigation.navigate('DataBackup' as never);
+        break;
     }
   };
 
@@ -1053,6 +1056,7 @@ export default function HomeScreen() {
             { icon: '📄', label: 'Report', action: 'report' },
             { icon: '📅', label: 'Calendar', action: 'calendar' },
             { icon: '📍', label: 'Location', action: 'location' },
+            { icon: '💾', label: 'Backup', action: 'backup' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
