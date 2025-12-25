@@ -30,6 +30,7 @@ interface IncomeContextType {
   updateIncome: (id: string, updates: Partial<Income>) => void;
   deleteIncome: (id: string) => void;
   getMonthlyIncome: () => number;
+  getTotalIncome: (month?: number, year?: number) => number;
   getTotalIncomeThisMonth: () => number;
   getIncomeByType: () => { type: IncomeType; total: number; label: string; icon: string }[];
   getRecentIncomes: (limit?: number) => Income[];
@@ -102,6 +103,22 @@ export const IncomeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       .reduce((sum, income) => sum + income.amount, 0);
   };
 
+  const getTotalIncome = (month?: number, year?: number) => {
+    // If month and year are provided, get income for that specific month
+    if (month !== undefined && year !== undefined) {
+      const startOfMonth = new Date(year, month, 1);
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      return incomes
+        .filter((income) => {
+          const incomeDate = new Date(income.date);
+          return incomeDate >= startOfMonth && incomeDate <= endOfMonth;
+        })
+        .reduce((sum, income) => sum + income.amount, 0);
+    }
+    // Otherwise, return total income from all incomes
+    return incomes.reduce((sum, income) => sum + income.amount, 0);
+  };
+
   const getTotalIncomeThisMonth = () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -151,6 +168,7 @@ export const IncomeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateIncome,
         deleteIncome,
         getMonthlyIncome,
+        getTotalIncome,
         getTotalIncomeThisMonth,
         getIncomeByType,
         getRecentIncomes,

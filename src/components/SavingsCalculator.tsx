@@ -52,6 +52,8 @@ export const SavingsCalculator: React.FC<SavingsCalculatorProps> = ({
         years: 0,
         targetDate: new Date(),
         already: true,
+        progressPercent: 100,
+        totalContribution: 0,
       };
     }
 
@@ -84,7 +86,11 @@ export const SavingsCalculator: React.FC<SavingsCalculatorProps> = ({
     if (remaining <= 0) {
       return {
         monthlyRequired: 0,
+        weeklyRequired: 0,
+        dailyRequired: 0,
+        targetDate: new Date(),
         already: true,
+        progressPercent: 100,
       };
     }
 

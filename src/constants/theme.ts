@@ -37,6 +37,10 @@ export const Colors = {
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.7)',
+
+  // Aliases for convenience
+  text: '#ffffff',
+  primary: '#7c3aed',
 };
 
 export const Gradients = {

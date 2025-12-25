@@ -18,6 +18,7 @@ interface QuickExpenseNoteProps {
     categoryLabel: string;
     categoryIcon: string;
     note: string;
+    date: Date;
   }) => void;
 }
 
@@ -72,6 +73,7 @@ const QuickExpenseNote: React.FC<QuickExpenseNoteProps> = ({ onAddExpense }) => 
       categoryLabel: selectedTemplate.categoryLabel,
       categoryIcon: selectedTemplate.categoryIcon,
       note: customNote || selectedTemplate.text,
+      date: new Date(),
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

@@ -119,7 +119,7 @@ export default function ShoppingScreen() {
   };
 
   const handleAddItem = (item: { name: string; category: string; estimatedPrice: number }) => {
-    addItem(item);
+    addItem({ ...item, priority: 'medium' });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
