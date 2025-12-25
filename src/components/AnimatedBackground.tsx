@@ -180,7 +180,7 @@ export default function AnimatedBackground() {
         delay={0}
       />
       <GlowOrb
-        color={Colors.goldPrimary}
+        color="#92400e"
         size={250}
         initialX={-80}
         initialY={height * 0.4}
