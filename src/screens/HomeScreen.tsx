@@ -444,6 +444,9 @@ export default function HomeScreen() {
       case 'achievements':
         navigation.navigate('Achievements');
         break;
+      case 'insights':
+        navigation.navigate('ExpenseInsights' as never);
+        break;
     }
   };
 
@@ -1015,6 +1018,7 @@ export default function HomeScreen() {
             { icon: '📊', label: 'Analytics', action: 'analytics' },
             { icon: '🧾', label: 'Split', action: 'split' },
             { icon: '🏆', label: 'Achieve', action: 'achievements' },
+            { icon: '💡', label: 'Insights', action: 'insights' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
