@@ -26,6 +26,8 @@ import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useShopping } from '../context/ShoppingContext';
 import { useIncome } from '../context/IncomeContext';
+import { useBills } from '../context/BillContext';
+import { useSubscriptions } from '../context/SubscriptionContext';
 import { exportAllDataAsJSON, exportExpensesAsCSV, exportIncomesAsCSV, exportFinancialReportAsCSV } from '../utils/dataExport';
 import {
   Colors,
@@ -91,6 +93,8 @@ export default function SettingsScreen() {
   const { items: shoppingItems } = useShopping();
   const { incomes } = useIncome();
   const { alerts, toggleAlert, updateAlert } = useAlerts();
+  const { getUpcomingBills, getOverdueBills } = useBills();
+  const { getUpcomingRenewals } = useSubscriptions();
   const {
     wallets,
     addWallet,
@@ -344,6 +348,37 @@ export default function SettingsScreen() {
                 <Text style={styles.fixedExpenseAmount}>
                   ₩{Math.round(fixedExpensesTotal).toLocaleString()}/월
                 </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Upcoming Payments */}
+        <Animated.View entering={FadeInDown.delay(420).duration(500)}>
+          <GlassCard>
+            <TouchableOpacity
+              style={styles.fixedExpenseRow}
+              onPress={() => navigation.navigate('UpcomingPayments')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.fixedExpenseInfo}>
+                <Text style={styles.fixedExpenseIcon}>📅</Text>
+                <View>
+                  <Text style={styles.fixedExpenseLabel}>예정된 결제</Text>
+                  <Text style={styles.fixedExpenseCount}>
+                    {getOverdueBills().length > 0
+                      ? `${getOverdueBills().length}개 연체`
+                      : `${getUpcomingBills().length + getUpcomingRenewals(7).length}개 예정`}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.fixedExpenseRight}>
+                {getOverdueBills().length > 0 && (
+                  <View style={styles.alertBadge}>
+                    <Text style={styles.alertBadgeText}>!</Text>
+                  </View>
+                )}
                 <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
               </View>
             </TouchableOpacity>
@@ -751,6 +786,19 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     fontWeight: '600',
     color: Colors.goldPrimary,
+  },
+  alertBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
   versionContainer: {
     alignItems: 'center',

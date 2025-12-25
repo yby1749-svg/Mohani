@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import SettingsScreen from '../screens/SettingsScreen';
 import FixedExpensesScreen from '../screens/FixedExpensesScreen';
+import UpcomingPaymentsScreen from '../screens/UpcomingPaymentsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,7 @@ export default function SettingsStack() {
     >
       <Stack.Screen name="SettingsMain" component={SettingsScreen} />
       <Stack.Screen name="FixedExpenses" component={FixedExpensesScreen} />
+      <Stack.Screen name="UpcomingPayments" component={UpcomingPaymentsScreen} />
     </Stack.Navigator>
   );
 }
