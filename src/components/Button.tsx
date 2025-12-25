@@ -8,7 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
-import { Colors, BorderRadius, FontSizes, Spacing, Gradients } from '../constants/theme';
+import { DarkColors, LightColors, BorderRadius, FontSizes, Spacing, Gradients } from '../constants/theme';
+import { useSettings } from '../context/SettingsContext';
 
 type ButtonVariant = 'primary' | 'secondary' | 'gold' | 'ghost';
 
@@ -35,6 +36,10 @@ export default function Button({
   textStyle,
   fullWidth = true,
 }: ButtonProps) {
+  const { settings } = useSettings();
+  const isDark = settings?.darkMode ?? true;
+  const colors = isDark ? DarkColors : LightColors;
+
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
@@ -61,37 +66,38 @@ export default function Button({
   const getGradient = (): [string, string] => {
     switch (variant) {
       case 'primary':
-        return Gradients.purple as [string, string];
+        return isDark ? (Gradients.purple as [string, string]) : ['#6d28d9', '#8b5cf6'];
       case 'gold':
-        return Gradients.gold as [string, string];
+        return isDark ? (Gradients.gold as [string, string]) : ['#b45309', '#f59e0b'];
       case 'secondary':
       case 'ghost':
         return ['transparent', 'transparent'];
       default:
-        return Gradients.purple as [string, string];
+        return isDark ? (Gradients.purple as [string, string]) : ['#6d28d9', '#8b5cf6'];
     }
   };
 
   const getTextColor = () => {
     switch (variant) {
       case 'primary':
+        return '#ffffff';
       case 'gold':
-        return variant === 'gold' ? Colors.bgPrimary : Colors.textPrimary;
+        return isDark ? colors.bgPrimary : '#ffffff';
       case 'secondary':
-        return Colors.textSecondary;
+        return colors.textSecondary;
       case 'ghost':
-        return Colors.purpleLight;
+        return colors.purpleLight;
       default:
-        return Colors.textPrimary;
+        return '#ffffff';
     }
   };
 
   const getBorderStyle = () => {
     switch (variant) {
       case 'secondary':
-        return { borderWidth: 1, borderColor: Colors.border };
+        return { borderWidth: 1, borderColor: colors.border };
       case 'ghost':
-        return { borderWidth: 1, borderColor: Colors.borderPurple };
+        return { borderWidth: 1, borderColor: colors.borderPurple };
       default:
         return {};
     }

@@ -56,6 +56,8 @@ import { updateWidgetData } from '../utils/widgetData';
 import { useBudgetAlerts } from '../context/BudgetAlertContext';
 import {
   Colors,
+  DarkColors,
+  LightColors,
   FontSizes,
   Spacing,
   BorderRadius,
@@ -77,6 +79,7 @@ export default function HomeScreen() {
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
   const { entries: diaryEntries, addEntry, getTodayEntry } = useDiary();
   const { settings } = useSettings();
+  const colors = settings?.darkMode !== false ? DarkColors : LightColors;
   const { getTotalSaved, getOverallProgress } = useGoals();
   const { templates, useTemplate, getFrequentTemplates, addTemplate } = useExpenseTemplates();
   const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes, incomes } = useIncome();
@@ -555,9 +558,9 @@ export default function HomeScreen() {
           style={styles.greetingSection}
         >
           <View style={styles.greetingText}>
-            <Text style={styles.greetingTime}>{getGreeting()}</Text>
+            <Text style={[styles.greetingTime, { color: colors.textSecondary }]}>{getGreeting()}</Text>
             <View style={styles.greetingNameRow}>
-              <Text style={styles.greetingName}>{settings.userName}</Text>
+              <Text style={[styles.greetingName, { color: colors.textPrimary }]}>{settings.userName}</Text>
               <Animated.Text style={[styles.greetingWave, waveStyle]}>
                 !
               </Animated.Text>
@@ -597,9 +600,9 @@ export default function HomeScreen() {
                   <Text style={[styles.warningTitle, { color: budgetWarning.color }]}>
                     {budgetWarning.title}
                   </Text>
-                  <Text style={styles.warningMessage}>{budgetWarning.message}</Text>
+                  <Text style={[styles.warningMessage, { color: colors.textSecondary }]}>{budgetWarning.message}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -663,7 +666,7 @@ export default function HomeScreen() {
                     ₩{getOverdueBills().reduce((sum, b) => sum + b.amount, 0).toLocaleString()} 미납
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -678,7 +681,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>💰</Text>
-                <Text style={styles.cardTitleText}>TODAY'S SPENDING</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>TODAY'S SPENDING</Text>
               </View>
               <View style={styles.cardBadge}>
                 <Text style={styles.cardBadgeText}>{todayExpenses.length} items</Text>
@@ -704,7 +707,7 @@ export default function HomeScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.noExpenses}>No expenses yet today</Text>
+                <Text style={[styles.noExpenses, { color: colors.textMuted }]}>No expenses yet today</Text>
               )}
             </View>
 
@@ -728,7 +731,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>📊</Text>
-                <Text style={styles.cardTitleText}>MONTHLY BUDGET</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>MONTHLY BUDGET</Text>
               </View>
               <Text style={styles.budgetPercent}>{budgetPercent}%</Text>
             </View>
@@ -736,20 +739,20 @@ export default function HomeScreen() {
             <View style={styles.budgetProgress}>
               <ProgressBar progress={budgetPercent} />
               <View style={styles.budgetLabels}>
-                <Text style={styles.budgetSpent}>₩{monthlyTotal.toLocaleString()}</Text>
-                <Text style={styles.budgetTotal}>₩{monthlyBudget.toLocaleString()}</Text>
+                <Text style={[styles.budgetSpent, { color: colors.textPrimary }]}>₩{monthlyTotal.toLocaleString()}</Text>
+                <Text style={[styles.budgetTotal, { color: colors.textMuted }]}>₩{monthlyBudget.toLocaleString()}</Text>
               </View>
             </View>
 
             <View style={styles.budgetStats}>
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>REMAINING</Text>
-                <Text style={styles.statValue}>₩{remaining.toLocaleString()}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>REMAINING</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>₩{remaining.toLocaleString()}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>DAILY AVAILABLE</Text>
-                <Text style={styles.statValue}>₩{dailyAvailable.toLocaleString()}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>DAILY AVAILABLE</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>₩{dailyAvailable.toLocaleString()}</Text>
               </View>
             </View>
           </GlassCard>
@@ -764,7 +767,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>💵</Text>
-                <Text style={styles.cardTitleText}>이번 달 수입</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>이번 달 수입</Text>
               </View>
               <TouchableOpacity
                 style={styles.addIncomeBtn}
@@ -836,7 +839,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>🔔</Text>
-                <Text style={styles.cardTitleText}>청구서 알림</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>청구서 알림</Text>
               </View>
               <TouchableOpacity
                 style={styles.addBillBtn}
@@ -949,7 +952,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>📱</Text>
-                <Text style={styles.cardTitleText}>구독 서비스</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>구독 서비스</Text>
               </View>
               <TouchableOpacity
                 style={styles.addSubBtn}
@@ -1141,7 +1144,7 @@ export default function HomeScreen() {
               <View style={styles.cardHeader}>
                 <View style={styles.cardTitle}>
                   <Text style={styles.cardIcon}>⚡</Text>
-                  <Text style={styles.cardTitleText}>빠른 지출</Text>
+                  <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>빠른 지출</Text>
                 </View>
                 <Text style={styles.templateHint}>탭하여 추가</Text>
               </View>
@@ -1169,7 +1172,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>🔥</Text>
-                <Text style={styles.cardTitleText}>소비 습관</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>소비 습관</Text>
               </View>
             </View>
             <View style={styles.streaksGrid}>
@@ -1219,7 +1222,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>💚</Text>
-                <Text style={styles.cardTitleText}>금융 건강 점수</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>금융 건강 점수</Text>
               </View>
               <View style={[styles.healthGradeBadge, { backgroundColor: `${healthScore.grade.color}20` }]}>
                 <Text style={styles.healthGradeEmoji}>{healthScore.grade.emoji}</Text>
@@ -1279,7 +1282,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>📈</Text>
-                <Text style={styles.cardTitleText}>이번 달 요약</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>이번 달 요약</Text>
               </View>
             </View>
 
@@ -1335,7 +1338,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>🏆</Text>
-                <Text style={styles.cardTitleText}>업적</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>업적</Text>
               </View>
               <View style={styles.achievementProgress}>
                 <Text style={styles.achievementCount}>{unlockedCount}/{totalCount}</Text>
@@ -1405,7 +1408,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>🎯</Text>
-                <Text style={styles.cardTitleText}>챌린지</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>챌린지</Text>
               </View>
               <View style={styles.levelBadge}>
                 <Text style={styles.levelIcon}>⭐</Text>
@@ -1484,7 +1487,7 @@ export default function HomeScreen() {
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>💳</Text>
-                <Text style={styles.cardTitleText}>부채 관리</Text>
+                <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>부채 관리</Text>
               </View>
             </View>
             <DebtTracker

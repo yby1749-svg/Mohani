@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/theme';
+import { useSettings } from '../context/SettingsContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -145,6 +146,30 @@ const Particle = ({ index }: { index: number }) => {
 };
 
 export default function AnimatedBackground() {
+  const { settings } = useSettings();
+
+  // Light mode: clean, professional gradient (Apple-style)
+  if (!settings.darkMode) {
+    return (
+      <View style={styles.container} pointerEvents="none">
+        <LinearGradient
+          colors={['#f5f5f7', '#eef0f2', '#f5f5f7']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Subtle top accent */}
+        <LinearGradient
+          colors={['rgba(109, 40, 217, 0.03)', 'transparent']}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 0.3 }}
+          style={[StyleSheet.absoluteFill, { height: height * 0.4 }]}
+        />
+      </View>
+    );
+  }
+
+  // Dark mode: animated orbs and particles
   return (
     <View style={styles.container} pointerEvents="none">
       {/* Grid lines effect */}

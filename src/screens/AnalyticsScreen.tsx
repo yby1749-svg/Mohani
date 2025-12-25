@@ -41,6 +41,8 @@ import { useDebts } from '../context/DebtContext';
 import { generateInsights, getMoodSpendingCorrelation, getSpendingTrend } from '../utils/aiInsights';
 import {
   Colors,
+  DarkColors,
+  LightColors,
   FontSizes,
   Spacing,
   BorderRadius,
@@ -102,6 +104,7 @@ export default function AnalyticsScreen() {
   const { expenses, getCategoryTotals, getMonthlyTotal, getTodayTotal } = useExpenses();
   const { entries: diaryEntries } = useDiary();
   const { settings, updateSettings } = useSettings();
+  const colors = settings?.darkMode !== false ? DarkColors : LightColors;
   const { getTotalMonthly } = useRecurringExpenses();
   const { getTotalSaved, getOverallProgress, getTotalTarget } = useGoals();
   const { getTotalIncomeThisMonth } = useIncome();
@@ -587,7 +590,7 @@ export default function AnalyticsScreen() {
           entering={FadeInDown.delay(100).duration(500)}
           style={styles.screenHeader}
         >
-          <Text style={styles.screenTitle}>Analytics</Text>
+          <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>Analytics</Text>
           <View style={styles.periodTabs}>
             {PERIODS.map((period) => (
               <TouchableOpacity
@@ -606,7 +609,7 @@ export default function AnalyticsScreen() {
                     <Text style={styles.periodTabTextActive}>{period}</Text>
                   </LinearGradient>
                 ) : (
-                  <Text style={styles.periodTabText}>{period}</Text>
+                  <Text style={[styles.periodTabText, { color: colors.textSecondary }]}>{period}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -618,19 +621,19 @@ export default function AnalyticsScreen() {
           <GlassCard>
             <View style={styles.overviewGrid}>
               <View style={[styles.overviewItem, styles.overviewBudget]}>
-                <Text style={styles.overviewLabel}>예산</Text>
+                <Text style={[styles.overviewLabel, { color: colors.textMuted }]}>예산</Text>
                 <Text style={[styles.overviewValue, styles.budgetValue]}>
                   ₩{(monthlyBudget / 1000000).toFixed(1)}M
                 </Text>
               </View>
               <View style={[styles.overviewItem, styles.overviewExpense]}>
-                <Text style={styles.overviewLabel}>지출</Text>
+                <Text style={[styles.overviewLabel, { color: colors.textMuted }]}>지출</Text>
                 <Text style={[styles.overviewValue, styles.expenseValue]}>
                   ₩{(monthlyTotal / 1000000).toFixed(2)}M
                 </Text>
               </View>
               <View style={[styles.overviewItem, styles.overviewBalance]}>
-                <Text style={styles.overviewLabel}>남은 예산</Text>
+                <Text style={[styles.overviewLabel, { color: colors.textMuted }]}>남은 예산</Text>
                 <Text style={[styles.overviewValue, styles.balanceValue]}>
                   ₩{((monthlyBudget - monthlyTotal) / 1000000).toFixed(2)}M
                 </Text>

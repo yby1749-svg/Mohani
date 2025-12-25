@@ -18,11 +18,14 @@ import { useDiary } from '../context/DiaryContext';
 import { useExpenses } from '../context/ExpenseContext';
 import {
   Colors,
+  DarkColors,
+  LightColors,
   FontSizes,
   Spacing,
   BorderRadius,
   Gradients,
 } from '../constants/theme';
+import { useSettings } from '../context/SettingsContext';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = [
@@ -55,6 +58,8 @@ export default function CalendarScreen() {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
+  const { settings } = useSettings();
+  const colors = settings?.darkMode !== false ? DarkColors : LightColors;
   const { entries, addEntry, getEntryByDate, getEntriesForMonth } = useDiary();
   const { expenses, addExpense } = useExpenses();
 
@@ -218,7 +223,7 @@ export default function CalendarScreen() {
             style={styles.navButton}
             onPress={() => navigateMonth('prev')}
           >
-            <Ionicons name="chevron-back" size={24} color={Colors.textSecondary} />
+            <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.calendarTitle}>
             {MONTHS[month]} {year}
@@ -227,7 +232,7 @@ export default function CalendarScreen() {
             style={styles.navButton}
             onPress={() => navigateMonth('next')}
           >
-            <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </Animated.View>
 

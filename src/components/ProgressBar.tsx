@@ -10,7 +10,8 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-import { Colors, BorderRadius, Gradients } from '../constants/theme';
+import { DarkColors, LightColors, BorderRadius, Gradients } from '../constants/theme';
+import { useSettings } from '../context/SettingsContext';
 
 type ProgressBarProps = {
   progress: number; // 0-100
@@ -29,6 +30,10 @@ export default function ProgressBar({
   animated = true,
   style,
 }: ProgressBarProps) {
+  const { settings } = useSettings();
+  const isDark = settings?.darkMode ?? true;
+  const colors = isDark ? DarkColors : LightColors;
+
   const animatedProgress = useSharedValue(0);
   const shimmerPosition = useSharedValue(-1);
   const glowOpacity = useSharedValue(0.5);
@@ -73,9 +78,12 @@ export default function ProgressBar({
     opacity: glowOpacity.value,
   }));
 
+  // Use theme-appropriate background
+  const bgColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+
   return (
     <View style={[styles.container, { height }, style]}>
-      <View style={[styles.background, { borderRadius: height / 2 }]}>
+      <View style={[styles.background, { borderRadius: height / 2, backgroundColor: bgColor }]}>
         <Animated.View style={[styles.fillContainer, fillStyle]}>
           <LinearGradient
             colors={gradient as [string, string]}
@@ -94,13 +102,13 @@ export default function ProgressBar({
             </Animated.View>
           </LinearGradient>
 
-          {/* Glow at the end */}
-          {showGlow && (
+          {/* Glow at the end - only in dark mode */}
+          {showGlow && isDark && (
             <Animated.View
               style={[
                 styles.glow,
                 {
-                  backgroundColor: gradient[1] || Colors.goldPrimary,
+                  backgroundColor: gradient[1] || colors.goldPrimary,
                   width: height * 1.5,
                   height: height * 1.5,
                   borderRadius: height,
@@ -121,7 +129,6 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     overflow: 'hidden',
   },
   fillContainer: {

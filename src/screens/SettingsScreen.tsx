@@ -31,12 +31,16 @@ import { useSubscriptions } from '../context/SubscriptionContext';
 import { exportAllDataAsJSON, exportExpensesAsCSV, exportIncomesAsCSV, exportFinancialReportAsCSV } from '../utils/dataExport';
 import {
   Colors,
+  DarkColors,
+  LightColors,
   FontSizes,
   Spacing,
   BorderRadius,
   Gradients,
   Shadows,
 } from '../constants/theme';
+
+type ThemeColors = typeof DarkColors;
 
 type SettingItemProps = {
   icon: string;
@@ -46,6 +50,7 @@ type SettingItemProps = {
   toggleValue?: boolean;
   onToggle?: (value: boolean) => void;
   onPress?: () => void;
+  colors: ThemeColors;
 };
 
 const SettingItem = ({
@@ -56,6 +61,7 @@ const SettingItem = ({
   toggleValue,
   onToggle,
   onPress,
+  colors,
 }: SettingItemProps) => (
   <TouchableOpacity
     style={styles.settingItem}
@@ -63,7 +69,7 @@ const SettingItem = ({
     activeOpacity={isToggle ? 1 : 0.7}
   >
     <Text style={styles.settingIcon}>{icon}</Text>
-    <Text style={styles.settingLabel}>{label}</Text>
+    <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>{label}</Text>
     {isToggle ? (
       <Switch
         value={toggleValue}
@@ -71,13 +77,13 @@ const SettingItem = ({
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onToggle?.(val);
         }}
-        trackColor={{ false: Colors.border, true: Colors.purplePrimary }}
-        thumbColor={Colors.textPrimary}
+        trackColor={{ false: colors.border, true: colors.purplePrimary }}
+        thumbColor="#ffffff"
       />
     ) : value ? (
-      <Text style={styles.settingValue}>{value}</Text>
+      <Text style={[styles.settingValue, { color: colors.textSecondary }]}>{value}</Text>
     ) : (
-      <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
     )}
   </TouchableOpacity>
 );
@@ -87,6 +93,7 @@ const PROFILE_EMOJIS = ['😊', '😎', '🤗', '🥳', '🤓', '😇', '🦊', 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { settings, updateSettings, resetSettings } = useSettings();
+  const colors = settings.darkMode ? DarkColors : LightColors;
   const { getTotalMonthly, recurringExpenses } = useRecurringExpenses();
   const { expenses } = useExpenses();
   const { entries: diaryEntries } = useDiary();
@@ -249,7 +256,7 @@ export default function SettingsScreen() {
           entering={FadeInDown.delay(100).duration(500)}
           style={styles.screenHeader}
         >
-          <Text style={styles.screenTitle}>Settings</Text>
+          <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>Settings</Text>
         </Animated.View>
 
         {/* Profile Card */}
@@ -263,8 +270,8 @@ export default function SettingsScreen() {
                 <Text style={styles.profileAvatarText}>{settings.profileEmoji}</Text>
               </LinearGradient>
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>{settings.userName}</Text>
-                <Text style={styles.profileEmail}>MOHANI 사용자</Text>
+                <Text style={[styles.profileName, { color: colors.textPrimary }]}>{settings.userName}</Text>
+                <Text style={[styles.profileEmail, { color: colors.textMuted }]}>MOHANI 사용자</Text>
               </View>
               <TouchableOpacity
                 style={styles.editBtn}
@@ -274,7 +281,7 @@ export default function SettingsScreen() {
                   setShowProfileModal(true);
                 }}
               >
-                <Text style={styles.editBtnText}>Edit</Text>
+                <Text style={[styles.editBtnText, { color: colors.textSecondary }]}>Edit</Text>
               </TouchableOpacity>
             </View>
           </GlassCard>
@@ -282,7 +289,7 @@ export default function SettingsScreen() {
 
         {/* Budget Settings */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-          <Text style={styles.sectionTitle}>Budget</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Budget</Text>
           <GlassCard style={styles.settingsGroup}>
             <SettingItem
               icon="💰"
@@ -292,16 +299,17 @@ export default function SettingsScreen() {
                 setEditBudget(settings.monthlyBudget.toLocaleString());
                 setShowBudgetModal(true);
               }}
+              colors={colors}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="⚠️"
               label="예산 알림 기준"
               value={`${settings.budgetAlertThreshold}%`}
               onPress={() => {}}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="🔔"
               label="일일 예산 알림"
               isToggle
@@ -313,7 +321,7 @@ export default function SettingsScreen() {
 
         {/* Wallets */}
         <Animated.View entering={FadeInDown.delay(350).duration(500)}>
-          <Text style={styles.sectionTitle}>Wallets</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Wallets</Text>
           <GlassCard>
             <WalletManager
               wallets={wallets}
@@ -338,8 +346,8 @@ export default function SettingsScreen() {
               <View style={styles.fixedExpenseInfo}>
                 <Text style={styles.fixedExpenseIcon}>💳</Text>
                 <View>
-                  <Text style={styles.fixedExpenseLabel}>고정 지출</Text>
-                  <Text style={styles.fixedExpenseCount}>
+                  <Text style={[styles.fixedExpenseLabel, { color: colors.textPrimary }]}>고정 지출</Text>
+                  <Text style={[styles.fixedExpenseCount, { color: colors.textMuted }]}>
                     {recurringExpenses.length}개 항목
                   </Text>
                 </View>
@@ -348,7 +356,7 @@ export default function SettingsScreen() {
                 <Text style={styles.fixedExpenseAmount}>
                   ₩{Math.round(fixedExpensesTotal).toLocaleString()}/월
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
               </View>
             </TouchableOpacity>
           </GlassCard>
@@ -365,8 +373,8 @@ export default function SettingsScreen() {
               <View style={styles.fixedExpenseInfo}>
                 <Text style={styles.fixedExpenseIcon}>📅</Text>
                 <View>
-                  <Text style={styles.fixedExpenseLabel}>예정된 결제</Text>
-                  <Text style={styles.fixedExpenseCount}>
+                  <Text style={[styles.fixedExpenseLabel, { color: colors.textPrimary }]}>예정된 결제</Text>
+                  <Text style={[styles.fixedExpenseCount, { color: colors.textMuted }]}>
                     {getOverdueBills().length > 0
                       ? `${getOverdueBills().length}개 연체`
                       : `${getUpcomingBills().length + getUpcomingRenewals(7).length}개 예정`}
@@ -379,7 +387,7 @@ export default function SettingsScreen() {
                     <Text style={styles.alertBadgeText}>!</Text>
                   </View>
                 )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
               </View>
             </TouchableOpacity>
           </GlassCard>
@@ -387,9 +395,9 @@ export default function SettingsScreen() {
 
         {/* Notifications Settings */}
         <Animated.View entering={FadeInDown.delay(450).duration(500)}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Notifications</Text>
           <GlassCard style={styles.settingsGroup}>
-            <SettingItem
+            <SettingItem colors={colors}
               icon="📖"
               label={`일기 알림 (${settings.reminderTime})`}
               isToggle
@@ -397,7 +405,7 @@ export default function SettingsScreen() {
               onToggle={(val) => updateSettings({ dailyReminder: val })}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="📊"
               label="주간 리포트"
               isToggle
@@ -409,7 +417,7 @@ export default function SettingsScreen() {
 
         {/* Spending Alerts */}
         <Animated.View entering={FadeInDown.delay(500).duration(500)}>
-          <Text style={styles.sectionTitle}>Spending Alerts</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Spending Alerts</Text>
           <GlassCard>
             <AlertSettings
               alerts={alerts}
@@ -421,9 +429,9 @@ export default function SettingsScreen() {
 
         {/* App Settings */}
         <Animated.View entering={FadeInDown.delay(550).duration(500)}>
-          <Text style={styles.sectionTitle}>App</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>App</Text>
           <GlassCard style={styles.settingsGroup}>
-            <SettingItem
+            <SettingItem colors={colors}
               icon="📳"
               label="햅틱 피드백"
               isToggle
@@ -431,7 +439,7 @@ export default function SettingsScreen() {
               onToggle={(val) => updateSettings({ hapticFeedback: val })}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="🌙"
               label="다크 모드"
               isToggle
@@ -439,7 +447,7 @@ export default function SettingsScreen() {
               onToggle={(val) => updateSettings({ darkMode: val })}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="🔐"
               label="생체 인증"
               isToggle
@@ -447,7 +455,7 @@ export default function SettingsScreen() {
               onToggle={(val) => updateSettings({ useBiometrics: val })}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="💱"
               label="통화"
               value={settings.currency}
@@ -458,21 +466,21 @@ export default function SettingsScreen() {
 
         {/* Data Settings */}
         <Animated.View entering={FadeInDown.delay(650).duration(500)}>
-          <Text style={styles.sectionTitle}>Data</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Data</Text>
           <GlassCard style={styles.settingsGroup}>
-            <SettingItem
+            <SettingItem colors={colors}
               icon="☁️"
               label="백업 & 동기화"
               onPress={() => {}}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="📤"
               label="데이터 내보내기"
               onPress={handleExportData}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="🔄"
               label="설정 초기화"
               onPress={handleResetSettings}
@@ -482,27 +490,27 @@ export default function SettingsScreen() {
 
         {/* About */}
         <Animated.View entering={FadeInDown.delay(750).duration(500)}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>About</Text>
           <GlassCard style={styles.settingsGroup}>
-            <SettingItem
+            <SettingItem colors={colors}
               icon="📄"
               label="이용약관"
               onPress={() => {}}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="🔒"
               label="개인정보처리방침"
               onPress={() => {}}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="💬"
               label="문의하기"
               onPress={() => {}}
             />
             <View style={styles.settingDivider} />
-            <SettingItem
+            <SettingItem colors={colors}
               icon="⭐"
               label="앱 평가하기"
               onPress={() => {}}
@@ -515,8 +523,8 @@ export default function SettingsScreen() {
           entering={FadeInDown.delay(850).duration(500)}
           style={styles.versionContainer}
         >
-          <Text style={styles.versionText}>MOHANI v1.0.0</Text>
-          <Text style={styles.versionSubtext}>Made with 💜 for your finances</Text>
+          <Text style={[styles.versionText, { color: colors.textMuted }]}>MOHANI v1.0.0</Text>
+          <Text style={[styles.versionSubtext, { color: colors.textMuted }]}>Made with 💜 for your finances</Text>
         </Animated.View>
 
         <View style={styles.bottomSpacing} />

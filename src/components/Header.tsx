@@ -13,7 +13,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useNavigation } from '@react-navigation/native';
-import { Colors, FontSizes, Spacing, Gradients } from '../constants/theme';
+import { Colors, FontSizes, Spacing, Gradients, DarkColors, LightColors } from '../constants/theme';
+import { useSettings } from '../context/SettingsContext';
 
 type HeaderProps = {
   showMenu?: boolean;
@@ -35,6 +36,8 @@ export default function Header({
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const badgeScale = useSharedValue(1);
+  const { settings } = useSettings();
+  const colors = settings.darkMode ? DarkColors : LightColors;
 
   React.useEffect(() => {
     badgeScale.value = withRepeat(
@@ -51,18 +54,28 @@ export default function Header({
     transform: [{ scale: badgeScale.value }],
   }));
 
+  const isDark = settings?.darkMode ?? true;
+  const containerStyle = [
+    styles.container,
+    {
+      paddingTop: insets.top,
+      backgroundColor: isDark ? 'rgba(10, 10, 15, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+      borderBottomColor: isDark ? colors.borderPurple : 'rgba(0, 0, 0, 0.06)',
+    }
+  ];
+
   return (
-    <BlurView intensity={60} tint="dark" style={[styles.container, { paddingTop: insets.top }]}>
+    <BlurView intensity={isDark ? 60 : 80} tint={isDark ? 'dark' : 'light'} style={containerStyle}>
       <View style={styles.content}>
         {showBack ? (
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={Colors.textSecondary} />
+            <Ionicons name="chevron-back" size={28} color={colors.textSecondary} />
           </TouchableOpacity>
         ) : showMenu ? (
           <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
-            <View style={styles.menuLine} />
-            <View style={[styles.menuLine, styles.menuLineShort]} />
-            <View style={styles.menuLine} />
+            <View style={[styles.menuLine, { backgroundColor: colors.textSecondary }]} />
+            <View style={[styles.menuLine, styles.menuLineShort, { backgroundColor: colors.textSecondary }]} />
+            <View style={[styles.menuLine, { backgroundColor: colors.textSecondary }]} />
           </TouchableOpacity>
         ) : (
           <View style={styles.placeholder} />
@@ -95,7 +108,7 @@ export default function Header({
 
         {showNotification ? (
           <TouchableOpacity onPress={onNotificationPress} style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color={Colors.textSecondary} />
+            <Ionicons name="notifications-outline" size={24} color={colors.textSecondary} />
             {notificationCount > 0 && (
               <Animated.View style={[styles.badge, badgeStyle]}>
                 <LinearGradient colors={Gradients.gold} style={styles.badgeGradient}>
@@ -115,8 +128,6 @@ export default function Header({
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderPurple,
-    backgroundColor: 'rgba(10, 10, 15, 0.8)',
   },
   content: {
     flexDirection: 'row',
@@ -135,7 +146,6 @@ const styles = StyleSheet.create({
   menuLine: {
     width: 22,
     height: 2,
-    backgroundColor: Colors.textSecondary,
     borderRadius: 1,
   },
   menuLineShort: {

@@ -6,7 +6,8 @@ import { StyleSheet, View, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 import TabNavigator from './src/navigation/TabNavigator';
-import { Colors } from './src/constants/theme';
+import { Colors, DarkColors, LightColors } from './src/constants/theme';
+import { useSettings } from './src/context/SettingsContext';
 import { ExpenseProvider } from './src/context/ExpenseContext';
 import { DiaryProvider } from './src/context/DiaryContext';
 import { ShoppingProvider } from './src/context/ShoppingContext';
@@ -55,6 +56,33 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
+// Inner component that can use settings for theming
+function AppContent() {
+  const { settings } = useSettings();
+  const colors = settings.darkMode ? DarkColors : LightColors;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
+      <StatusBar style={settings.darkMode ? 'light' : 'dark'} />
+      <NavigationContainer
+        theme={{
+          dark: settings.darkMode,
+          colors: {
+            primary: colors.purplePrimary,
+            background: colors.bgPrimary,
+            card: colors.bgSecondary,
+            text: colors.textPrimary,
+            border: colors.border,
+            notification: colors.goldPrimary,
+          },
+        }}
+      >
+        <TabNavigator />
+      </NavigationContainer>
+    </View>
+  );
+}
+
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -81,24 +109,7 @@ export default function App() {
                                               <CategoryBudgetProvider>
                                                 <TagsProvider>
                                                   <SpendingStreaksProvider>
-                                                    <View style={styles.container}>
-                                                      <StatusBar style="light" />
-                                                      <NavigationContainer
-                                                        theme={{
-                                                          dark: true,
-                                                          colors: {
-                                                            primary: Colors.purplePrimary,
-                                                            background: Colors.bgPrimary,
-                                                            card: Colors.bgSecondary,
-                                                            text: Colors.textPrimary,
-                                                            border: Colors.border,
-                                                            notification: Colors.goldPrimary,
-                                                          },
-                                                        }}
-                                                      >
-                                                        <TabNavigator />
-                                                      </NavigationContainer>
-                                                    </View>
+                                                    <AppContent />
                                                   </SpendingStreaksProvider>
                                                 </TagsProvider>
                                               </CategoryBudgetProvider>

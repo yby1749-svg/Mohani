@@ -1,5 +1,4 @@
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,11 +7,16 @@ import CalendarScreen from '../screens/CalendarScreen';
 import ShoppingScreen from '../screens/ShoppingScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { Colors, FontSizes } from '../constants/theme';
+import { DarkColors, LightColors, FontSizes } from '../constants/theme';
+import { useSettings } from '../context/SettingsContext';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { settings } = useSettings();
+  const isDark = settings?.darkMode ?? true;
+  const colors = isDark ? DarkColors : LightColors;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -38,18 +42,25 @@ export default function TabNavigator() {
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: Colors.purplePrimary,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarActiveTintColor: colors.purplePrimary,
+        tabBarInactiveTintColor: colors.textMuted,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.bgSecondary,
-          borderTopColor: Colors.border,
+          backgroundColor: isDark ? colors.bgSecondary : '#ffffff',
+          borderTopColor: isDark ? colors.border : 'rgba(0,0,0,0.08)',
+          borderTopWidth: 1,
           paddingBottom: 8,
           paddingTop: 8,
           height: 60,
+          elevation: isDark ? 0 : 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: isDark ? 0 : 0.05,
+          shadowRadius: 8,
         },
         tabBarLabelStyle: {
           fontSize: FontSizes.xs,
+          fontWeight: '500',
         },
       })}
     >
