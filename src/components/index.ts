@@ -7,3 +7,4 @@ export { WalletManager } from './WalletManager';
 export { BudgetRecommendations } from './BudgetRecommendations';
 export { AlertSettings } from './AlertSettings';
 export { InvestmentDashboard } from './InvestmentDashboard';
+export { RecurringQuickAdd } from './RecurringQuickAdd';

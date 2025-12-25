@@ -36,6 +36,7 @@ import { ExpenseSearch } from '../components/ExpenseSearch';
 import { DebtTracker } from '../components/DebtTracker';
 import { AddDebtModal } from '../components/AddDebtModal';
 import QuickExpenseNote from '../components/QuickExpenseNote';
+import { RecurringQuickAdd } from '../components/RecurringQuickAdd';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -995,6 +996,11 @@ export default function HomeScreen() {
               )}
             </GlassCard>
           </TouchableOpacity>
+        </Animated.View>
+
+        {/* Recurring Quick Add */}
+        <Animated.View entering={FadeInDown.delay(480).duration(500)}>
+          <RecurringQuickAdd />
         </Animated.View>
 
         {/* Quick Actions */}
