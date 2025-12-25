@@ -17,8 +17,9 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useNavigation } from '@react-navigation/native';
-import { Header, GlassCard, AnimatedBackground } from '../components';
+import { Header, GlassCard, AnimatedBackground, WalletManager } from '../components';
 import { useSettings } from '../context/SettingsContext';
+import { useWallets } from '../context/WalletContext';
 import { useRecurringExpenses } from '../context/RecurringExpenseContext';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
@@ -88,6 +89,15 @@ export default function SettingsScreen() {
   const { entries: diaryEntries } = useDiary();
   const { items: shoppingItems } = useShopping();
   const { incomes } = useIncome();
+  const {
+    wallets,
+    addWallet,
+    updateWallet,
+    deleteWallet,
+    setDefaultWallet,
+    transfer,
+    getTotalBalance,
+  } = useWallets();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -295,8 +305,24 @@ export default function SettingsScreen() {
           </GlassCard>
         </Animated.View>
 
-        {/* Fixed Expenses */}
+        {/* Wallets */}
         <Animated.View entering={FadeInDown.delay(350).duration(500)}>
+          <Text style={styles.sectionTitle}>Wallets</Text>
+          <GlassCard>
+            <WalletManager
+              wallets={wallets}
+              totalBalance={getTotalBalance()}
+              onAddWallet={addWallet}
+              onUpdateWallet={updateWallet}
+              onDeleteWallet={deleteWallet}
+              onSetDefault={setDefaultWallet}
+              onTransfer={transfer}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Fixed Expenses */}
+        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
           <GlassCard>
             <TouchableOpacity
               style={styles.fixedExpenseRow}
@@ -323,7 +349,7 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* Notifications Settings */}
-        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(450).duration(500)}>
           <Text style={styles.sectionTitle}>Notifications</Text>
           <GlassCard style={styles.settingsGroup}>
             <SettingItem
@@ -345,7 +371,7 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* App Settings */}
-        <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(550).duration(500)}>
           <Text style={styles.sectionTitle}>App</Text>
           <GlassCard style={styles.settingsGroup}>
             <SettingItem
@@ -382,7 +408,7 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* Data Settings */}
-        <Animated.View entering={FadeInDown.delay(600).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(650).duration(500)}>
           <Text style={styles.sectionTitle}>Data</Text>
           <GlassCard style={styles.settingsGroup}>
             <SettingItem
@@ -406,7 +432,7 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* About */}
-        <Animated.View entering={FadeInDown.delay(700).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(750).duration(500)}>
           <Text style={styles.sectionTitle}>About</Text>
           <GlassCard style={styles.settingsGroup}>
             <SettingItem
@@ -437,7 +463,7 @@ export default function SettingsScreen() {
 
         {/* Version */}
         <Animated.View
-          entering={FadeInDown.delay(800).duration(500)}
+          entering={FadeInDown.delay(850).duration(500)}
           style={styles.versionContainer}
         >
           <Text style={styles.versionText}>MOHANI v1.0.0</Text>

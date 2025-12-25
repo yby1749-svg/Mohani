@@ -22,6 +22,7 @@ import { DebtProvider } from './src/context/DebtContext';
 import { StreaksProvider } from './src/context/StreaksContext';
 import { NetWorthProvider } from './src/context/NetWorthContext';
 import { CustomCategoriesProvider } from './src/context/CustomCategoriesContext';
+import { WalletProvider } from './src/context/WalletContext';
 
 // Log immediately when module loads
 console.log('>>> App.tsx module loaded');
@@ -68,24 +69,26 @@ export default function App() {
                                 <StreaksProvider>
                                   <NetWorthProvider>
                                     <CustomCategoriesProvider>
-                                      <View style={styles.container}>
-                                        <StatusBar style="light" />
-                                        <NavigationContainer
-                                          theme={{
-                                            dark: true,
-                                            colors: {
-                                              primary: Colors.purplePrimary,
-                                              background: Colors.bgPrimary,
-                                              card: Colors.bgSecondary,
-                                              text: Colors.textPrimary,
-                                              border: Colors.border,
-                                              notification: Colors.goldPrimary,
-                                            },
-                                          }}
-                                        >
-                                          <TabNavigator />
-                                        </NavigationContainer>
-                                      </View>
+                                      <WalletProvider>
+                                        <View style={styles.container}>
+                                          <StatusBar style="light" />
+                                          <NavigationContainer
+                                            theme={{
+                                              dark: true,
+                                              colors: {
+                                                primary: Colors.purplePrimary,
+                                                background: Colors.bgPrimary,
+                                                card: Colors.bgSecondary,
+                                                text: Colors.textPrimary,
+                                                border: Colors.border,
+                                                notification: Colors.goldPrimary,
+                                              },
+                                            }}
+                                          >
+                                            <TabNavigator />
+                                          </NavigationContainer>
+                                        </View>
+                                      </WalletProvider>
                                     </CustomCategoriesProvider>
                                   </NetWorthProvider>
                                 </StreaksProvider>
