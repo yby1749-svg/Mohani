@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Image,
+  Alert,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +21,9 @@ import Animated, {
   SlideInDown,
   SlideOutDown,
 } from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -44,6 +49,7 @@ interface AddExpenseModalProps {
     categoryIcon: string;
     note: string;
     date: Date;
+    receiptImage?: string;
   }) => void;
   onSaveTemplate?: (template: {
     name: string;
@@ -64,6 +70,62 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+
+  const pickImage = async (useCamera: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Request permissions
+    if (useCamera) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '카메라 권한이 필요합니다.');
+        return;
+      }
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+        return;
+      }
+    }
+
+    const result = useCamera
+      ? await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.5,
+        })
+      : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.5,
+        });
+
+    if (!result.canceled && result.assets[0]) {
+      setReceiptImage(result.assets[0].uri);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const showImageOptions = () => {
+    Alert.alert(
+      '영수증 첨부',
+      '영수증을 어떻게 추가할까요?',
+      [
+        { text: '카메라', onPress: () => pickImage(true) },
+        { text: '갤러리', onPress: () => pickImage(false) },
+        { text: '취소', style: 'cancel' },
+      ]
+    );
+  };
+
+  const removeImage = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReceiptImage(null);
+  };
 
   const handleAdd = () => {
     if (!amount || !selectedCategory) return;
@@ -80,6 +142,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       categoryIcon: category.icon,
       note,
       date: new Date(),
+      receiptImage: receiptImage || undefined,
     });
 
     // Save as template if checked
@@ -98,6 +161,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setSelectedCategory(null);
     setNote('');
     setSaveAsTemplate(false);
+    setReceiptImage(null);
     onClose();
   };
 
@@ -192,6 +256,40 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     maxLength={100}
                   />
                 </View>
+
+                {/* Receipt Photo */}
+                <Text style={styles.sectionTitle}>영수증 (선택)</Text>
+                {receiptImage ? (
+                  <View style={styles.receiptPreviewContainer}>
+                    <Image source={{ uri: receiptImage }} style={styles.receiptPreview} />
+                    <View style={styles.receiptActions}>
+                      <TouchableOpacity
+                        style={styles.receiptActionBtn}
+                        onPress={showImageOptions}
+                      >
+                        <Ionicons name="camera" size={18} color={Colors.textSecondary} />
+                        <Text style={styles.receiptActionText}>변경</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.receiptActionBtn, styles.receiptRemoveBtn]}
+                        onPress={removeImage}
+                      >
+                        <Ionicons name="trash" size={18} color={Colors.error} />
+                        <Text style={[styles.receiptActionText, { color: Colors.error }]}>삭제</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.addReceiptBtn}
+                    onPress={showImageOptions}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
+                    <Text style={styles.addReceiptText}>영수증 사진 첨부</Text>
+                    <Text style={styles.addReceiptHint}>카메라 또는 갤러리에서 선택</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Save as Template */}
                 {onSaveTemplate && note.trim() && (
@@ -431,6 +529,57 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   templateOptionText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+  },
+  addReceiptBtn: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderStyle: 'dashed',
+    padding: Spacing.lg,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  addReceiptText: {
+    fontSize: FontSizes.md,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
+  },
+  addReceiptHint: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: 4,
+  },
+  receiptPreviewContainer: {
+    marginBottom: Spacing.lg,
+  },
+  receiptPreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: BorderRadius.md,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  receiptActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.lg,
+    marginTop: Spacing.md,
+  },
+  receiptActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BorderRadius.sm,
+  },
+  receiptRemoveBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  receiptActionText: {
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
   },

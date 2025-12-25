@@ -9,6 +9,7 @@ export interface Expense {
   categoryIcon: string;
   note: string;
   date: Date;
+  receiptImage?: string; // Base64 or file URI for receipt photo
 }
 
 interface ExpenseContextType {

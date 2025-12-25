@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Image,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +35,7 @@ export default function ExpenseHistoryScreen() {
   const { expenses, removeExpense } = useExpenses();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
 
   const filteredExpenses = useMemo(() => {
     let result = [...expenses];
@@ -161,9 +164,19 @@ export default function ExpenseHistoryScreen() {
           <Text style={styles.iconText}>{expense.categoryIcon}</Text>
         </View>
         <View style={styles.expenseInfo}>
-          <Text style={styles.expenseNote} numberOfLines={1}>
-            {expense.note || expense.categoryLabel}
-          </Text>
+          <View style={styles.expenseNoteRow}>
+            <Text style={styles.expenseNote} numberOfLines={1}>
+              {expense.note || expense.categoryLabel}
+            </Text>
+            {expense.receiptImage && (
+              <TouchableOpacity
+                style={styles.receiptBadge}
+                onPress={() => setSelectedReceipt(expense.receiptImage!)}
+              >
+                <Ionicons name="receipt-outline" size={14} color={Colors.purpleLight} />
+              </TouchableOpacity>
+            )}
+          </View>
           <Text style={styles.expenseCategory}>{expense.categoryLabel}</Text>
         </View>
         <Text style={styles.expenseAmount}>
@@ -278,6 +291,39 @@ export default function ExpenseHistoryScreen() {
           <Text style={styles.tipText}>길게 누르면 삭제할 수 있어요</Text>
         </View>
       </View>
+
+      {/* Receipt Image Modal */}
+      <Modal
+        visible={!!selectedReceipt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedReceipt(null)}
+      >
+        <TouchableOpacity
+          style={styles.receiptModalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedReceipt(null)}
+        >
+          <View style={styles.receiptModalContent}>
+            <View style={styles.receiptModalHeader}>
+              <Text style={styles.receiptModalTitle}>영수증</Text>
+              <TouchableOpacity
+                style={styles.receiptModalClose}
+                onPress={() => setSelectedReceipt(null)}
+              >
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            {selectedReceipt && (
+              <Image
+                source={{ uri: selectedReceipt }}
+                style={styles.receiptModalImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -449,5 +495,50 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
+  },
+  expenseNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  receiptBadge: {
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  receiptModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  receiptModalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+  },
+  receiptModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  receiptModalTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  receiptModalClose: {
+    padding: Spacing.xs,
+  },
+  receiptModalImage: {
+    width: '100%',
+    height: 400,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 });
