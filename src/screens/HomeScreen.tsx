@@ -514,6 +514,9 @@ export default function HomeScreen() {
       case 'recurring':
         navigation.navigate('FixedExpenses' as never);
         break;
+      case 'compare':
+        navigation.navigate('ExpenseComparison' as never);
+        break;
     }
   };
 
@@ -1100,6 +1103,7 @@ export default function HomeScreen() {
             { icon: '💾', label: 'Backup', action: 'backup' },
             { icon: '🔔', label: 'Budgets', action: 'budgets' },
             { icon: '🔄', label: 'Recurring', action: 'recurring' },
+            { icon: '⚖️', label: 'Compare', action: 'compare' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
