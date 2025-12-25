@@ -12,6 +12,7 @@ import {
   Dimensions,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,10 +23,11 @@ import Animated, {
   SlideOutDown,
 } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
-import { useExpenses, Expense, ExpenseSplit } from '../context/ExpenseContext';
+import { useExpenses, Expense, ExpenseSplit, ExpenseLocation } from '../context/ExpenseContext';
 import { SplitExpenseModal } from './SplitExpenseModal';
 import { getCategorySuggestions, CategorySuggestion } from '../utils/categorySuggestion';
 
@@ -54,6 +56,7 @@ interface AddExpenseModalProps {
     date: Date;
     receiptImage?: string;
     split?: ExpenseSplit;
+    location?: ExpenseLocation;
   }) => void;
   onSaveTemplate?: (template: {
     name: string;
@@ -78,6 +81,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [duplicateWarningDismissed, setDuplicateWarningDismissed] = useState(false);
   const [splitData, setSplitData] = useState<ExpenseSplit | null>(null);
   const [showSplitModal, setShowSplitModal] = useState(false);
+  const [locationName, setLocationName] = useState('');
+  const [locationData, setLocationData] = useState<ExpenseLocation | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const { expenses } = useExpenses();
 
@@ -184,6 +190,56 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setSelectedCategory(categoryId);
   };
 
+  const getCurrentLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '위치 권한이 필요합니다.');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      // Try to get address from coordinates
+      const [address] = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      let placeName = '';
+      if (address) {
+        const parts = [address.name, address.street, address.district].filter(Boolean);
+        placeName = parts.join(' ') || `${address.city || ''} ${address.region || ''}`.trim();
+      }
+
+      setLocationName(placeName || '현재 위치');
+      setLocationData({
+        name: placeName || '현재 위치',
+        address: address ? `${address.city || ''} ${address.district || ''} ${address.street || ''}`.trim() : undefined,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Location error:', error);
+      Alert.alert('오류', '위치를 가져올 수 없습니다.');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  const clearLocation = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLocationName('');
+    setLocationData(null);
+  };
+
   const pickImage = async (useCamera: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -247,6 +303,13 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
     const parsedAmount = parseInt(amount.replace(/,/g, ''), 10);
 
+    // Build location from either locationData (from GPS) or manual locationName
+    const finalLocation: ExpenseLocation | undefined = locationData
+      ? locationData
+      : locationName.trim()
+        ? { name: locationName.trim() }
+        : undefined;
+
     onAdd({
       amount: parsedAmount,
       category: category.id,
@@ -256,6 +319,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       date: new Date(),
       receiptImage: receiptImage || undefined,
       split: splitData || undefined,
+      location: finalLocation,
     });
 
     // Save as template if checked
@@ -277,6 +341,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setReceiptImage(null);
     setDuplicateWarningDismissed(false);
     setSplitData(null);
+    setLocationName('');
+    setLocationData(null);
     onClose();
   };
 
@@ -454,6 +520,47 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     multiline
                     maxLength={100}
                   />
+                </View>
+
+                {/* Location Input */}
+                <Text style={styles.sectionTitle}>위치 (선택)</Text>
+                <View style={styles.locationContainer}>
+                  <View style={styles.locationInputRow}>
+                    <Ionicons name="location-outline" size={20} color={Colors.textMuted} />
+                    <TextInput
+                      style={styles.locationInput}
+                      value={locationName}
+                      onChangeText={(text) => {
+                        setLocationName(text);
+                        if (locationData) setLocationData(null);
+                      }}
+                      placeholder="예: 스타벅스 강남점"
+                      placeholderTextColor="rgba(255,255,255,0.3)"
+                      maxLength={50}
+                    />
+                    {(locationName || locationData) && (
+                      <TouchableOpacity onPress={clearLocation} style={styles.locationClearBtn}>
+                        <Ionicons name="close-circle" size={20} color={Colors.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.currentLocationBtn}
+                    onPress={getCurrentLocation}
+                    disabled={isGettingLocation}
+                  >
+                    {isGettingLocation ? (
+                      <ActivityIndicator size="small" color={Colors.purpleLight} />
+                    ) : (
+                      <>
+                        <Ionicons name="navigate" size={16} color={Colors.purpleLight} />
+                        <Text style={styles.currentLocationText}>현재 위치</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {locationData?.address && (
+                    <Text style={styles.locationAddress}>{locationData.address}</Text>
+                  )}
                 </View>
 
                 {/* Receipt Photo */}
@@ -1014,5 +1121,48 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.text,
     fontWeight: '700',
+  },
+  locationContainer: {
+    marginBottom: Spacing.lg,
+  },
+  locationInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+  },
+  locationInput: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    fontSize: FontSizes.md,
+    color: Colors.text,
+  },
+  locationClearBtn: {
+    padding: 4,
+  },
+  currentLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    borderRadius: BorderRadius.sm,
+  },
+  currentLocationText: {
+    fontSize: FontSizes.sm,
+    color: Colors.purpleLight,
+    fontWeight: '500',
+  },
+  locationAddress: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
 });

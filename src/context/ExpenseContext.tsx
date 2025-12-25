@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface ExpenseLocation {
+  name: string; // Place name (e.g., "스타벅스 강남점")
+  address?: string; // Optional address
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface Expense {
   id: string;
   amount: number;
@@ -11,6 +18,7 @@ export interface Expense {
   date: Date;
   receiptImage?: string; // Base64 or file URI for receipt photo
   split?: ExpenseSplit; // Split expense data
+  location?: ExpenseLocation; // Location where expense occurred
 }
 
 export interface SplitParticipant {

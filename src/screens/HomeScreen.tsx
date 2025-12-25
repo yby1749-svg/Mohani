@@ -467,6 +467,9 @@ export default function HomeScreen() {
       case 'calendar':
         navigation.navigate('ExpenseCalendar' as never);
         break;
+      case 'location':
+        navigation.navigate('SpendingByLocation' as never);
+        break;
     }
   };
 
@@ -1049,6 +1052,7 @@ export default function HomeScreen() {
             { icon: '📝', label: 'Notes', action: 'notes' },
             { icon: '📄', label: 'Report', action: 'report' },
             { icon: '📅', label: 'Calendar', action: 'calendar' },
+            { icon: '📍', label: 'Location', action: 'location' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
