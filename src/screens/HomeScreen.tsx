@@ -1499,7 +1499,8 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 3,
+    fontWeight: '600',
   },
   greetingNameRow: {
     flexDirection: 'row',
@@ -1507,14 +1508,20 @@ const styles = StyleSheet.create({
   },
   greetingName: {
     fontSize: FontSizes.hero,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginTop: Spacing.xs,
+    textShadowColor: 'rgba(124, 58, 237, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
   },
   greetingWave: {
     fontSize: FontSizes.hero,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.goldPrimary,
+    textShadowColor: 'rgba(234, 179, 8, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   dateWeather: {
     flexDirection: 'row',
@@ -1533,8 +1540,11 @@ const styles = StyleSheet.create({
   },
   dateDay: {
     fontSize: FontSizes.xxl,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.purpleLight,
+    textShadowColor: 'rgba(124, 58, 237, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   dateInfo: {
     gap: 2,
@@ -1578,8 +1588,9 @@ const styles = StyleSheet.create({
   cardTitleText: {
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
-    letterSpacing: 1,
-    fontWeight: '500',
+    letterSpacing: 2,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   cardBadge: {
     backgroundColor: Colors.purpleDark,
@@ -1598,17 +1609,24 @@ const styles = StyleSheet.create({
   },
   currency: {
     fontSize: FontSizes.xxl,
-    fontWeight: '500',
+    fontWeight: '700',
     color: Colors.goldPrimary,
     marginRight: Spacing.xs,
+    textShadowColor: 'rgba(234, 179, 8, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   amountGradient: {
     borderRadius: BorderRadius.sm,
   },
   amount: {
     fontSize: FontSizes.giant,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
+    textShadowColor: 'rgba(255, 255, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
+    letterSpacing: -1,
   },
   expenseCategories: {
     flexDirection: 'row',
@@ -1855,13 +1873,18 @@ const styles = StyleSheet.create({
   },
   statsValue: {
     fontSize: FontSizes.lg,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginBottom: 2,
+    textShadowColor: 'rgba(255, 255, 255, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   statsLabel: {
     fontSize: FontSizes.xs,
     color: Colors.textMuted,
+    letterSpacing: 0.5,
+    fontWeight: '500',
   },
   savingsRow: {
     flexDirection: 'row',
@@ -1874,11 +1897,15 @@ const styles = StyleSheet.create({
   savingsLabel: {
     fontSize: FontSizes.md,
     color: Colors.textSecondary,
+    fontWeight: '500',
   },
   savingsValue: {
     fontSize: FontSizes.lg,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.purpleLight,
+    textShadowColor: 'rgba(124, 58, 237, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   templateHint: {
     fontSize: FontSizes.xs,
