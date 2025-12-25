@@ -50,18 +50,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      [
-        "expo-quick-actions",
-        {
-          "androidIcons": {
-            "add_icon": {
-              "foregroundImage": "./assets/adaptive-icon.png",
-              "backgroundColor": "#6C63FF"
-            }
-          }
-        }
-      ]
-    ]
+    "plugins": []
   }
 }

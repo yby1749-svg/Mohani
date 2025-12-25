@@ -37,7 +37,6 @@ import { DebtTracker } from '../components/DebtTracker';
 import { AddDebtModal } from '../components/AddDebtModal';
 import QuickExpenseNote from '../components/QuickExpenseNote';
 import { RecurringQuickAdd } from '../components/RecurringQuickAdd';
-import { QuickVoiceInput } from '../components/QuickVoiceInput';
 import { SavingsGoalsWidget } from '../components/SavingsGoalsWidget';
 import { ExpenseNotesSearch } from '../components/ExpenseNotesSearch';
 import { useExpenses } from '../context/ExpenseContext';
@@ -72,7 +71,6 @@ export default function HomeScreen() {
   const [showAddSubscription, setShowAddSubscription] = useState(false);
   const [showExpenseSearch, setShowExpenseSearch] = useState(false);
   const [showAddDebt, setShowAddDebt] = useState(false);
-  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [showNotesSearch, setShowNotesSearch] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
@@ -144,7 +142,6 @@ export default function HomeScreen() {
   useQuickActions({
     onAddExpense: () => setShowAddExpense(true),
     onViewToday: () => navigation.navigate('ExpenseHistory'),
-    onVoiceInput: () => setShowVoiceInput(true),
   });
 
   // Update widget data when expenses change
@@ -486,9 +483,6 @@ export default function HomeScreen() {
         break;
       case 'insights':
         navigation.navigate('ExpenseInsights' as never);
-        break;
-      case 'voice':
-        setShowVoiceInput(true);
         break;
       case 'trends':
         navigation.navigate('SpendingTrends' as never);
@@ -1103,7 +1097,6 @@ export default function HomeScreen() {
             { icon: '🧾', label: 'Split', action: 'split' },
             { icon: '🏆', label: 'Achieve', action: 'achievements' },
             { icon: '💡', label: 'Insights', action: 'insights' },
-            { icon: '🎤', label: 'Voice', action: 'voice' },
             { icon: '📈', label: 'Trends', action: 'trends' },
             { icon: '📝', label: 'Notes', action: 'notes' },
             { icon: '📄', label: 'Report', action: 'report' },
@@ -1583,16 +1576,6 @@ export default function HomeScreen() {
         onClose={() => setShowAddDebt(false)}
         onAdd={(debt) => {
           addDebt(debt);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }}
-      />
-
-      {/* Quick Voice Input */}
-      <QuickVoiceInput
-        visible={showVoiceInput}
-        onClose={() => setShowVoiceInput(false)}
-        onAdd={(expense) => {
-          addExpense(expense);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
       />
