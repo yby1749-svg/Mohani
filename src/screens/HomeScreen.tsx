@@ -39,6 +39,7 @@ import QuickExpenseNote from '../components/QuickExpenseNote';
 import { RecurringQuickAdd } from '../components/RecurringQuickAdd';
 import { QuickVoiceInput } from '../components/QuickVoiceInput';
 import { SavingsGoalsWidget } from '../components/SavingsGoalsWidget';
+import { ExpenseNotesSearch } from '../components/ExpenseNotesSearch';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -69,6 +70,7 @@ export default function HomeScreen() {
   const [showExpenseSearch, setShowExpenseSearch] = useState(false);
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [showNotesSearch, setShowNotesSearch] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
@@ -455,6 +457,9 @@ export default function HomeScreen() {
         break;
       case 'trends':
         navigation.navigate('SpendingTrends' as never);
+        break;
+      case 'notes':
+        setShowNotesSearch(true);
         break;
     }
   };
@@ -1035,6 +1040,7 @@ export default function HomeScreen() {
             { icon: '💡', label: 'Insights', action: 'insights' },
             { icon: '🎤', label: 'Voice', action: 'voice' },
             { icon: '📈', label: 'Trends', action: 'trends' },
+            { icon: '📝', label: 'Notes', action: 'notes' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -1514,6 +1520,12 @@ export default function HomeScreen() {
           addExpense(expense);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
+      />
+
+      {/* Expense Notes Search */}
+      <ExpenseNotesSearch
+        visible={showNotesSearch}
+        onClose={() => setShowNotesSearch(false)}
       />
     </View>
   );
