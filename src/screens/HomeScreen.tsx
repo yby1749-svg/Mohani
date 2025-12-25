@@ -452,6 +452,9 @@ export default function HomeScreen() {
       case 'voice':
         setShowVoiceInput(true);
         break;
+      case 'trends':
+        navigation.navigate('SpendingTrends' as never);
+        break;
     }
   };
 
@@ -1025,6 +1028,7 @@ export default function HomeScreen() {
             { icon: '🏆', label: 'Achieve', action: 'achievements' },
             { icon: '💡', label: 'Insights', action: 'insights' },
             { icon: '🎤', label: 'Voice', action: 'voice' },
+            { icon: '📈', label: 'Trends', action: 'trends' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
