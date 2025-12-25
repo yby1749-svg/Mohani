@@ -24,6 +24,10 @@ import { SpendingForecast } from '../components/SpendingForecast';
 import MonthlySummaryReport from '../components/MonthlySummaryReport';
 import TagManager from '../components/TagManager';
 import CurrencyConverter from '../components/CurrencyConverter';
+import SpendingStreaks from '../components/SpendingStreaks';
+import NetWorthTracker from '../components/NetWorthTracker';
+import WeeklyDigest from '../components/WeeklyDigest';
+import CategoryManager from '../components/CategoryManager';
 import { useExpenses } from '../context/ExpenseContext';
 import { useGoals } from '../context/GoalsContext';
 import { useIncome } from '../context/IncomeContext';
@@ -93,7 +97,7 @@ interface CategoryData {
 
 export default function AnalyticsScreen() {
   const [activePeriod, setActivePeriod] = useState('Month');
-  const { expenses, getCategoryTotals, getMonthlyTotal } = useExpenses();
+  const { expenses, getCategoryTotals, getMonthlyTotal, getTodayTotal } = useExpenses();
   const { entries: diaryEntries } = useDiary();
   const { settings } = useSettings();
   const { getTotalMonthly } = useRecurringExpenses();
@@ -1244,6 +1248,49 @@ export default function AnalyticsScreen() {
             borderColor="rgba(14, 165, 233, 0.3)"
           >
             <CurrencyConverter />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Weekly Digest */}
+        <Animated.View entering={FadeInDown.delay(600).duration(500)}>
+          <GlassCard
+            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(34, 197, 94, 0.3)"
+          >
+            <WeeklyDigest />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Spending Streaks */}
+        <Animated.View entering={FadeInDown.delay(650).duration(500)}>
+          <GlassCard
+            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(245, 158, 11, 0.3)"
+          >
+            <SpendingStreaks
+              todaySpending={getTodayTotal()}
+              dailyBudget={Math.round(settings.monthlyBudget / 30)}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Net Worth Tracker */}
+        <Animated.View entering={FadeInDown.delay(700).duration(500)}>
+          <GlassCard
+            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(59, 130, 246, 0.3)"
+          >
+            <NetWorthTracker />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Category Manager */}
+        <Animated.View entering={FadeInDown.delay(750).duration(500)}>
+          <GlassCard
+            gradient={['rgba(168, 85, 247, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(168, 85, 247, 0.3)"
+          >
+            <CategoryManager />
           </GlassCard>
         </Animated.View>
 

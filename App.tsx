@@ -19,6 +19,9 @@ import { BillProvider } from './src/context/BillContext';
 import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import { ChallengeProvider } from './src/context/ChallengeContext';
 import { DebtProvider } from './src/context/DebtContext';
+import { StreaksProvider } from './src/context/StreaksContext';
+import { NetWorthProvider } from './src/context/NetWorthContext';
+import { CustomCategoriesProvider } from './src/context/CustomCategoriesContext';
 
 // Log immediately when module loads
 console.log('>>> App.tsx module loaded');
@@ -62,24 +65,30 @@ export default function App() {
                           <GoalsProvider>
                             <DiaryProvider>
                               <ShoppingProvider>
-                                <View style={styles.container}>
-                                  <StatusBar style="light" />
-                                  <NavigationContainer
-                                    theme={{
-                                      dark: true,
-                                      colors: {
-                                        primary: Colors.purplePrimary,
-                                        background: Colors.bgPrimary,
-                                        card: Colors.bgSecondary,
-                                        text: Colors.textPrimary,
-                                        border: Colors.border,
-                                        notification: Colors.goldPrimary,
-                                      },
-                                    }}
-                                  >
-                                    <TabNavigator />
-                                  </NavigationContainer>
-                                </View>
+                                <StreaksProvider>
+                                  <NetWorthProvider>
+                                    <CustomCategoriesProvider>
+                                      <View style={styles.container}>
+                                        <StatusBar style="light" />
+                                        <NavigationContainer
+                                          theme={{
+                                            dark: true,
+                                            colors: {
+                                              primary: Colors.purplePrimary,
+                                              background: Colors.bgPrimary,
+                                              card: Colors.bgSecondary,
+                                              text: Colors.textPrimary,
+                                              border: Colors.border,
+                                              notification: Colors.goldPrimary,
+                                            },
+                                          }}
+                                        >
+                                          <TabNavigator />
+                                        </NavigationContainer>
+                                      </View>
+                                    </CustomCategoriesProvider>
+                                  </NetWorthProvider>
+                                </StreaksProvider>
                               </ShoppingProvider>
                             </DiaryProvider>
                           </GoalsProvider>
