@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import ExpenseHistoryScreen from '../screens/ExpenseHistoryScreen';
 import GoalsScreen from '../screens/GoalsScreen';
+import SplitExpenseScreen from '../screens/SplitExpenseScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,6 +19,7 @@ export default function HomeStack() {
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="ExpenseHistory" component={ExpenseHistoryScreen} />
       <Stack.Screen name="Goals" component={GoalsScreen} />
+      <Stack.Screen name="SplitExpense" component={SplitExpenseScreen} />
     </Stack.Navigator>
   );
 }

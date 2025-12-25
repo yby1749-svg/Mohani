@@ -437,6 +437,9 @@ export default function HomeScreen() {
       case 'search':
         setShowExpenseSearch(true);
         break;
+      case 'split':
+        navigation.navigate('SplitExpense');
+        break;
     }
   };
 
@@ -1001,6 +1004,7 @@ export default function HomeScreen() {
             { icon: '📋', label: 'History', action: 'history' },
             { icon: '🎯', label: 'Goals', action: 'goals' },
             { icon: '📊', label: 'Analytics', action: 'analytics' },
+            { icon: '🧾', label: 'Split', action: 'split' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
