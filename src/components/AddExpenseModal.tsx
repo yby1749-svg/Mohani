@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
 import { useExpenses, Expense, ExpenseSplit } from '../context/ExpenseContext';
 import { SplitExpenseModal } from './SplitExpenseModal';
+import { getCategorySuggestions, CategorySuggestion } from '../utils/categorySuggestion';
 
 const { width } = Dimensions.get('window');
 
@@ -169,6 +170,18 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const hours = d.getHours();
     const mins = d.getMinutes().toString().padStart(2, '0');
     return `${hours}:${mins}`;
+  };
+
+  // Smart category suggestions
+  const categorySuggestions = useMemo((): CategorySuggestion[] => {
+    if (selectedCategory) return []; // Don't suggest if already selected
+    const parsedAmount = parseInt(amount.replace(/,/g, '') || '0', 10);
+    return getCategorySuggestions(note, parsedAmount, expenses, CATEGORIES);
+  }, [note, amount, expenses, selectedCategory]);
+
+  const handleSuggestionPress = (categoryId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedCategory(categoryId);
   };
 
   const pickImage = async (useCamera: boolean) => {
@@ -324,6 +337,40 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
                 {/* Category Selection */}
                 <Text style={styles.sectionTitle}>카테고리</Text>
+
+                {/* Smart Category Suggestions */}
+                {categorySuggestions.length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    <View style={styles.suggestionsHeader}>
+                      <Ionicons name="sparkles" size={14} color={Colors.purpleLight} />
+                      <Text style={styles.suggestionsLabel}>추천</Text>
+                    </View>
+                    <View style={styles.suggestionsRow}>
+                      {categorySuggestions.map((suggestion) => (
+                        <TouchableOpacity
+                          key={suggestion.category.id}
+                          style={[
+                            styles.suggestionChip,
+                            { borderColor: suggestion.category.color }
+                          ]}
+                          onPress={() => handleSuggestionPress(suggestion.category.id)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.suggestionIcon}>{suggestion.category.icon}</Text>
+                          <Text style={[styles.suggestionLabel, { color: suggestion.category.color }]}>
+                            {suggestion.category.label}
+                          </Text>
+                          {suggestion.confidence >= 70 && (
+                            <View style={[styles.confidenceBadge, { backgroundColor: suggestion.category.color }]}>
+                              <Text style={styles.confidenceText}>✓</Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
                 <View style={styles.categoriesGrid}>
                   {CATEGORIES.map((category) => (
                     <TouchableOpacity
@@ -918,5 +965,54 @@ const styles = StyleSheet.create({
   },
   splitRemoveBtn: {
     padding: 4,
+  },
+  suggestionsContainer: {
+    marginBottom: Spacing.md,
+  },
+  suggestionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: Spacing.sm,
+  },
+  suggestionsLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.purpleLight,
+    fontWeight: '500',
+  },
+  suggestionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
+  },
+  suggestionIcon: {
+    fontSize: 16,
+  },
+  suggestionLabel: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+  },
+  confidenceBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  confidenceText: {
+    fontSize: 10,
+    color: Colors.text,
+    fontWeight: '700',
   },
 });
