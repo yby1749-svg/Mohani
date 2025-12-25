@@ -10,6 +10,7 @@ import ExpenseSearchScreen from '../screens/ExpenseSearchScreen';
 import ExpenseInsightsScreen from '../screens/ExpenseInsightsScreen';
 import SpendingTrendsScreen from '../screens/SpendingTrendsScreen';
 import MonthlyReportScreen from '../screens/MonthlyReportScreen';
+import ExpenseCalendarScreen from '../screens/ExpenseCalendarScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,7 @@ export default function HomeStack() {
       <Stack.Screen name="ExpenseInsights" component={ExpenseInsightsScreen} />
       <Stack.Screen name="SpendingTrends" component={SpendingTrendsScreen} />
       <Stack.Screen name="MonthlyReport" component={MonthlyReportScreen} />
+      <Stack.Screen name="ExpenseCalendar" component={ExpenseCalendarScreen} />
     </Stack.Navigator>
   );
 }
