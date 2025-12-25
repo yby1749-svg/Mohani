@@ -8,3 +8,4 @@ export { BudgetRecommendations } from './BudgetRecommendations';
 export { AlertSettings } from './AlertSettings';
 export { InvestmentDashboard } from './InvestmentDashboard';
 export { RecurringQuickAdd } from './RecurringQuickAdd';
+export { QuickVoiceInput } from './QuickVoiceInput';

@@ -37,6 +37,7 @@ import { DebtTracker } from '../components/DebtTracker';
 import { AddDebtModal } from '../components/AddDebtModal';
 import QuickExpenseNote from '../components/QuickExpenseNote';
 import { RecurringQuickAdd } from '../components/RecurringQuickAdd';
+import { QuickVoiceInput } from '../components/QuickVoiceInput';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -66,6 +67,7 @@ export default function HomeScreen() {
   const [showAddSubscription, setShowAddSubscription] = useState(false);
   const [showExpenseSearch, setShowExpenseSearch] = useState(false);
   const [showAddDebt, setShowAddDebt] = useState(false);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
@@ -446,6 +448,9 @@ export default function HomeScreen() {
         break;
       case 'insights':
         navigation.navigate('ExpenseInsights' as never);
+        break;
+      case 'voice':
+        setShowVoiceInput(true);
         break;
     }
   };
@@ -1019,6 +1024,7 @@ export default function HomeScreen() {
             { icon: '🧾', label: 'Split', action: 'split' },
             { icon: '🏆', label: 'Achieve', action: 'achievements' },
             { icon: '💡', label: 'Insights', action: 'insights' },
+            { icon: '🎤', label: 'Voice', action: 'voice' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -1486,6 +1492,16 @@ export default function HomeScreen() {
         onClose={() => setShowAddDebt(false)}
         onAdd={(debt) => {
           addDebt(debt);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+      />
+
+      {/* Quick Voice Input */}
+      <QuickVoiceInput
+        visible={showVoiceInput}
+        onClose={() => setShowVoiceInput(false)}
+        onAdd={(expense) => {
+          addExpense(expense);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
       />
