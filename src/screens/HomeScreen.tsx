@@ -54,6 +54,7 @@ import { useDebts } from '../context/DebtContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
 import { useQuickActions } from '../hooks/useQuickActions';
 import { updateWidgetData } from '../utils/widgetData';
+import { useBudgetAlerts } from '../context/BudgetAlertContext';
 import {
   Colors,
   FontSizes,
@@ -86,6 +87,7 @@ export default function HomeScreen() {
   const { subscriptions, addSubscription, getMonthlyTotal: getSubsMonthlyTotal, getUpcomingRenewals } = useSubscriptions();
   const { activeChallenges, totalPoints, getLevel, claimReward } = useChallenges();
   const { debts, addDebt, getTotalOwed, getTotalOwedToMe, getDebtProgress } = useDebts();
+  const { checkBudgets, getActiveAlerts } = useBudgetAlerts();
   const todayDiary = getTodayEntry();
   const userLevel = getLevel();
   const frequentTemplates = getFrequentTemplates(4);
@@ -161,6 +163,13 @@ export default function HomeScreen() {
       } : undefined,
     });
   }, [expenses, todayTotal, monthlyTotal]);
+
+  // Check budgets when expenses change
+  useEffect(() => {
+    if (expenses.length > 0 && monthlyBudget > 0) {
+      checkBudgets(expenses, monthlyBudget);
+    }
+  }, [expenses, monthlyBudget]);
 
   // Calculate spending streaks
   const getSpendingStreaks = () => {
@@ -498,6 +507,9 @@ export default function HomeScreen() {
         break;
       case 'backup':
         navigation.navigate('DataBackup' as never);
+        break;
+      case 'budgets':
+        navigation.navigate('BudgetSettings' as never);
         break;
     }
   };
@@ -1083,6 +1095,7 @@ export default function HomeScreen() {
             { icon: '📅', label: 'Calendar', action: 'calendar' },
             { icon: '📍', label: 'Location', action: 'location' },
             { icon: '💾', label: 'Backup', action: 'backup' },
+            { icon: '🔔', label: 'Budgets', action: 'budgets' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}

@@ -25,6 +25,7 @@ import { CustomCategoriesProvider } from './src/context/CustomCategoriesContext'
 import { WalletProvider } from './src/context/WalletContext';
 import { SplitExpenseProvider } from './src/context/SplitExpenseContext';
 import { AlertsProvider } from './src/context/AlertsContext';
+import { BudgetAlertProvider } from './src/context/BudgetAlertContext';
 
 // Log immediately when module loads
 console.log('>>> App.tsx module loaded');
@@ -74,7 +75,8 @@ export default function App() {
                                       <WalletProvider>
                                         <SplitExpenseProvider>
                                           <AlertsProvider>
-                                            <View style={styles.container}>
+                                            <BudgetAlertProvider>
+                                              <View style={styles.container}>
                                               <StatusBar style="light" />
                                               <NavigationContainer
                                                 theme={{
@@ -91,7 +93,8 @@ export default function App() {
                                               >
                                                 <TabNavigator />
                                               </NavigationContainer>
-                                            </View>
+                                              </View>
+                                            </BudgetAlertProvider>
                                           </AlertsProvider>
                                         </SplitExpenseProvider>
                                       </WalletProvider>

@@ -28,6 +28,7 @@
     "expo-image-picker": "~15.1.0",
     "expo-linear-gradient": "~13.0.0",
     "expo-location": "~17.0.1",
+    "expo-notifications": "~0.28.19",
     "expo-print": "~13.0.1",
     "expo-quick-actions": "^6.0.0",
     "expo-sharing": "~12.0.1",
