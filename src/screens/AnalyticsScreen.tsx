@@ -12,7 +12,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Circle, G } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
-import { Header, GlassCard, AnimatedBackground } from '../components';
+import { Header, GlassCard, AnimatedBackground, BudgetRecommendations } from '../components';
 import { SpendingHeatmap } from '../components/SpendingHeatmap';
 import { SavingsCalculator } from '../components/SavingsCalculator';
 import { MonthComparison } from '../components/MonthComparison';
@@ -99,9 +99,9 @@ export default function AnalyticsScreen() {
   const [activePeriod, setActivePeriod] = useState('Month');
   const { expenses, getCategoryTotals, getMonthlyTotal, getTodayTotal } = useExpenses();
   const { entries: diaryEntries } = useDiary();
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const { getTotalMonthly } = useRecurringExpenses();
-  const { getTotalSaved, getOverallProgress } = useGoals();
+  const { getTotalSaved, getOverallProgress, getTotalTarget } = useGoals();
   const { getTotalIncomeThisMonth } = useIncome();
   const { budgets, setBudget, removeBudget, getCategorySpending, getCategoryProgress } = useCategoryBudgets();
   const { getTotalOwed } = useDebts();
@@ -485,6 +485,11 @@ export default function AnalyticsScreen() {
   const handlePeriodChange = (period: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActivePeriod(period);
+  };
+
+  const handleApplyBudget = (newBudget: number) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    updateSettings({ monthlyBudget: newBudget });
   };
 
   // Donut Chart component
@@ -1115,6 +1120,23 @@ export default function AnalyticsScreen() {
             </GlassCard>
           </Animated.View>
         )}
+
+        {/* 50/30/20 Budget Recommendations */}
+        <Animated.View entering={FadeInDown.delay(750).duration(500)}>
+          <GlassCard
+            gradient={['rgba(139, 92, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(139, 92, 246, 0.3)"
+          >
+            <Text style={styles.chartTitle}>📊 스마트 예산 추천</Text>
+            <BudgetRecommendations
+              monthlyIncome={monthlyIncome}
+              currentBudget={monthlyBudget}
+              expenses={expenses}
+              savingsGoal={getTotalTarget()}
+              onApplyRecommendation={handleApplyBudget}
+            />
+          </GlassCard>
+        </Animated.View>
 
         {/* Month Comparison */}
         <Animated.View entering={FadeInDown.delay(500).duration(500)}>

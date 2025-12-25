@@ -4,3 +4,4 @@ export { default as AnimatedBackground } from './AnimatedBackground';
 export { default as Button } from './Button';
 export { default as ProgressBar } from './ProgressBar';
 export { WalletManager } from './WalletManager';
+export { BudgetRecommendations } from './BudgetRecommendations';
