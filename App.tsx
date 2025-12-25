@@ -28,6 +28,8 @@ import { SplitExpenseProvider } from './src/context/SplitExpenseContext';
 import { AlertsProvider } from './src/context/AlertsContext';
 import { BudgetAlertProvider } from './src/context/BudgetAlertContext';
 import { SpendingStreaksProvider } from './src/context/SpendingStreaksContext';
+import { CategoryBudgetProvider } from './src/context/CategoryBudgetContext';
+import { TagsProvider } from './src/context/TagsContext';
 
 // Force hide splash screen immediately
 SplashScreen.hideAsync().catch(() => {});
@@ -76,26 +78,30 @@ export default function App() {
                                         <SplitExpenseProvider>
                                           <AlertsProvider>
                                             <BudgetAlertProvider>
-                                              <SpendingStreaksProvider>
-                                                <View style={styles.container}>
-                                                <StatusBar style="light" />
-                                                <NavigationContainer
-                                                  theme={{
-                                                    dark: true,
-                                                    colors: {
-                                                      primary: Colors.purplePrimary,
-                                                      background: Colors.bgPrimary,
-                                                      card: Colors.bgSecondary,
-                                                      text: Colors.textPrimary,
-                                                      border: Colors.border,
-                                                      notification: Colors.goldPrimary,
-                                                    },
-                                                  }}
-                                                >
-                                                  <TabNavigator />
-                                                </NavigationContainer>
-                                                </View>
-                                              </SpendingStreaksProvider>
+                                              <CategoryBudgetProvider>
+                                                <TagsProvider>
+                                                  <SpendingStreaksProvider>
+                                                    <View style={styles.container}>
+                                                      <StatusBar style="light" />
+                                                      <NavigationContainer
+                                                        theme={{
+                                                          dark: true,
+                                                          colors: {
+                                                            primary: Colors.purplePrimary,
+                                                            background: Colors.bgPrimary,
+                                                            card: Colors.bgSecondary,
+                                                            text: Colors.textPrimary,
+                                                            border: Colors.border,
+                                                            notification: Colors.goldPrimary,
+                                                          },
+                                                        }}
+                                                      >
+                                                        <TabNavigator />
+                                                      </NavigationContainer>
+                                                    </View>
+                                                  </SpendingStreaksProvider>
+                                                </TagsProvider>
+                                              </CategoryBudgetProvider>
                                             </BudgetAlertProvider>
                                           </AlertsProvider>
                                         </SplitExpenseProvider>

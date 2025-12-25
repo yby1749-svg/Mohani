@@ -13,6 +13,8 @@ import Svg, { Circle, G } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
 import { Header, GlassCard, AnimatedBackground, BudgetRecommendations, InvestmentDashboard } from '../components';
+import { SpendingLineChart } from '../components/SpendingLineChart';
+import { SpendingBarChart } from '../components/SpendingBarChart';
 import { SpendingHeatmap } from '../components/SpendingHeatmap';
 import { SavingsCalculator } from '../components/SavingsCalculator';
 import { MonthComparison } from '../components/MonthComparison';
@@ -654,6 +656,24 @@ export default function AnalyticsScreen() {
               </View>
             </View>
           </GlassCard>
+        </Animated.View>
+
+        {/* Spending Charts */}
+        <Animated.View entering={FadeInDown.delay(220).duration(500)}>
+          <SpendingLineChart
+            expenses={expenses}
+            period={activePeriod === 'Month' ? 'month' : activePeriod === '3M' ? '3months' : 'week'}
+            title="📈 지출 추이"
+          />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(240).duration(500)}>
+          <SpendingBarChart
+            expenses={expenses}
+            budget={monthlyBudget}
+            title="📊 일별 지출"
+            showComparison={true}
+          />
         </Animated.View>
 
         {/* Spending Forecast */}
