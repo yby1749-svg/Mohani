@@ -440,6 +440,9 @@ export default function HomeScreen() {
       case 'split':
         navigation.navigate('SplitExpense');
         break;
+      case 'achievements':
+        navigation.navigate('Achievements');
+        break;
     }
   };
 
@@ -1005,6 +1008,7 @@ export default function HomeScreen() {
             { icon: '🎯', label: 'Goals', action: 'goals' },
             { icon: '📊', label: 'Analytics', action: 'analytics' },
             { icon: '🧾', label: 'Split', action: 'split' },
+            { icon: '🏆', label: 'Achieve', action: 'achievements' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}

@@ -5,6 +5,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ExpenseHistoryScreen from '../screens/ExpenseHistoryScreen';
 import GoalsScreen from '../screens/GoalsScreen';
 import SplitExpenseScreen from '../screens/SplitExpenseScreen';
+import AchievementsScreen from '../screens/AchievementsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ export default function HomeStack() {
       <Stack.Screen name="ExpenseHistory" component={ExpenseHistoryScreen} />
       <Stack.Screen name="Goals" component={GoalsScreen} />
       <Stack.Screen name="SplitExpense" component={SplitExpenseScreen} />
+      <Stack.Screen name="Achievements" component={AchievementsScreen} />
     </Stack.Navigator>
   );
 }
