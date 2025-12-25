@@ -9,6 +9,7 @@ import AchievementsScreen from '../screens/AchievementsScreen';
 import ExpenseSearchScreen from '../screens/ExpenseSearchScreen';
 import ExpenseInsightsScreen from '../screens/ExpenseInsightsScreen';
 import SpendingTrendsScreen from '../screens/SpendingTrendsScreen';
+import MonthlyReportScreen from '../screens/MonthlyReportScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +29,7 @@ export default function HomeStack() {
       <Stack.Screen name="ExpenseSearch" component={ExpenseSearchScreen} />
       <Stack.Screen name="ExpenseInsights" component={ExpenseInsightsScreen} />
       <Stack.Screen name="SpendingTrends" component={SpendingTrendsScreen} />
+      <Stack.Screen name="MonthlyReport" component={MonthlyReportScreen} />
     </Stack.Navigator>
   );
 }

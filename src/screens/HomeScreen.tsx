@@ -461,6 +461,9 @@ export default function HomeScreen() {
       case 'notes':
         setShowNotesSearch(true);
         break;
+      case 'report':
+        navigation.navigate('MonthlyReport' as never);
+        break;
     }
   };
 
@@ -1041,6 +1044,7 @@ export default function HomeScreen() {
             { icon: '🎤', label: 'Voice', action: 'voice' },
             { icon: '📈', label: 'Trends', action: 'trends' },
             { icon: '📝', label: 'Notes', action: 'notes' },
+            { icon: '📄', label: 'Report', action: 'report' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
