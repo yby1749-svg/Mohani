@@ -436,7 +436,7 @@ export default function HomeScreen() {
         navigation.getParent()?.navigate('Analytics');
         break;
       case 'search':
-        setShowExpenseSearch(true);
+        navigation.navigate('ExpenseSearch' as never);
         break;
       case 'split':
         navigation.navigate('SplitExpense');
