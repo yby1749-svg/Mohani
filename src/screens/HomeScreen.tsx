@@ -511,6 +511,9 @@ export default function HomeScreen() {
       case 'budgets':
         navigation.navigate('BudgetSettings' as never);
         break;
+      case 'recurring':
+        navigation.navigate('FixedExpenses' as never);
+        break;
     }
   };
 
@@ -1096,6 +1099,7 @@ export default function HomeScreen() {
             { icon: '📍', label: 'Location', action: 'location' },
             { icon: '💾', label: 'Backup', action: 'backup' },
             { icon: '🔔', label: 'Budgets', action: 'budgets' },
+            { icon: '🔄', label: 'Recurring', action: 'recurring' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}

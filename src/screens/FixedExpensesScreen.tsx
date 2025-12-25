@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 import { Header, GlassCard, AnimatedBackground } from '../components';
 import { AddRecurringModal } from '../components/AddRecurringModal';
-import { useRecurringExpenses } from '../context/RecurringExpenseContext';
+import { useRecurringExpenses, UpcomingExpense } from '../context/RecurringExpenseContext';
 import {
   Colors,
   FontSizes,
@@ -30,6 +31,8 @@ const FREQUENCY_LABELS: Record<string, string> = {
   yearly: '매년',
 };
 
+const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+
 export default function FixedExpensesScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const {
@@ -37,11 +40,28 @@ export default function FixedExpensesScreen() {
     addRecurring,
     deleteRecurring,
     toggleActive,
+    toggleReminder,
     getTotalMonthly,
+    getUpcoming,
+    getNextDueDate,
   } = useRecurringExpenses();
 
   const monthlyTotal = getTotalMonthly();
   const activeCount = recurringExpenses.filter((e) => e.isActive).length;
+  const upcomingExpenses = getUpcoming(7);
+
+  const formatDueDate = (date: Date, daysUntil: number): string => {
+    if (daysUntil === 0) return '오늘';
+    if (daysUntil === 1) return '내일';
+    if (daysUntil <= 7) return `${daysUntil}일 후`;
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  };
+
+  const getDueDateColor = (daysUntil: number): string => {
+    if (daysUntil === 0) return Colors.error;
+    if (daysUntil <= 2) return Colors.warning;
+    return Colors.success;
+  };
 
   const handleDelete = (id: string, name: string) => {
     Alert.alert(
@@ -115,6 +135,43 @@ export default function FixedExpensesScreen() {
           </GlassCard>
         </Animated.View>
 
+        {/* Upcoming Payments */}
+        {upcomingExpenses.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(250).duration(500)}>
+            <GlassCard>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>📆 다가오는 결제</Text>
+              </View>
+              <View style={styles.upcomingList}>
+                {upcomingExpenses.map((item, index) => (
+                  <View key={item.expense.id} style={styles.upcomingItem}>
+                    <View style={styles.upcomingLeft}>
+                      <Text style={styles.upcomingIcon}>{item.expense.categoryIcon}</Text>
+                      <View style={styles.upcomingInfo}>
+                        <Text style={styles.upcomingName}>{item.expense.name}</Text>
+                        <Text style={styles.upcomingAmount}>
+                          ₩{item.expense.amount.toLocaleString()}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[
+                      styles.dueBadge,
+                      { backgroundColor: getDueDateColor(item.daysUntilDue) + '20' }
+                    ]}>
+                      <Text style={[
+                        styles.dueText,
+                        { color: getDueDateColor(item.daysUntilDue) }
+                      ]}>
+                        {formatDueDate(item.dueDate, item.daysUntilDue)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </GlassCard>
+          </Animated.View>
+        )}
+
         {/* Expenses List */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <GlassCard>
@@ -167,10 +224,26 @@ export default function FixedExpensesScreen() {
                         ]}>
                           ₩{expense.amount.toLocaleString()}
                         </Text>
-                        <View style={[
-                          styles.statusDot,
-                          expense.isActive ? styles.statusActive : styles.statusInactive,
-                        ]} />
+                        <View style={styles.expenseActions}>
+                          <TouchableOpacity
+                            style={styles.reminderBtn}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              toggleReminder(expense.id);
+                            }}
+                          >
+                            <Ionicons
+                              name={expense.reminderEnabled ? 'notifications' : 'notifications-off'}
+                              size={16}
+                              color={expense.reminderEnabled ? Colors.purpleLight : Colors.textMuted}
+                            />
+                          </TouchableOpacity>
+                          <View style={[
+                            styles.statusDot,
+                            expense.isActive ? styles.statusActive : styles.statusInactive,
+                          ]} />
+                        </View>
                       </View>
                     </TouchableOpacity>
                   </Animated.View>
@@ -345,6 +418,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.goldPrimary,
   },
+  expenseActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  reminderBtn: {
+    padding: 4,
+  },
   textInactive: {
     color: Colors.textMuted,
     textDecorationLine: 'line-through',
@@ -359,6 +440,48 @@ const styles = StyleSheet.create({
   },
   statusInactive: {
     backgroundColor: Colors.textMuted,
+  },
+  upcomingList: {
+    gap: Spacing.sm,
+  },
+  upcomingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BorderRadius.md,
+  },
+  upcomingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  upcomingIcon: {
+    fontSize: 24,
+  },
+  upcomingInfo: {
+    flex: 1,
+  },
+  upcomingName: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  upcomingAmount: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  dueBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  dueText: {
+    fontSize: FontSizes.xs,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
