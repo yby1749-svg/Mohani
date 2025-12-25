@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import TabNavigator from './src/navigation/TabNavigator';
 import { Colors } from './src/constants/theme';
@@ -28,33 +28,7 @@ import { AlertsProvider } from './src/context/AlertsContext';
 import { BudgetAlertProvider } from './src/context/BudgetAlertContext';
 import { SpendingStreaksProvider } from './src/context/SpendingStreaksContext';
 
-// Log immediately when module loads
-console.log('>>> App.tsx module loaded');
-
 export default function App() {
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    console.log('>>> App useEffect running');
-    // Small delay to ensure everything is loaded
-    const timer = setTimeout(() => {
-      console.log('>>> Setting isReady to true');
-      setIsReady(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  console.log('>>> App rendering, isReady:', isReady);
-
-  if (!isReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.purplePrimary} />
-        <Text style={styles.loadingText}>Loading MOHANI...</Text>
-      </View>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={styles.container}>
       <SettingsProvider>
@@ -125,16 +99,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.bgPrimary,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#0a0a0f',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: 'white',
-    marginTop: 20,
-    fontSize: 16,
   },
 });
