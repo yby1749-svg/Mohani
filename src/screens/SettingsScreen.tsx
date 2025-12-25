@@ -17,8 +17,9 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useNavigation } from '@react-navigation/native';
-import { Header, GlassCard, AnimatedBackground, WalletManager } from '../components';
+import { Header, GlassCard, AnimatedBackground, WalletManager, AlertSettings } from '../components';
 import { useSettings } from '../context/SettingsContext';
+import { useAlerts } from '../context/AlertsContext';
 import { useWallets } from '../context/WalletContext';
 import { useRecurringExpenses } from '../context/RecurringExpenseContext';
 import { useExpenses } from '../context/ExpenseContext';
@@ -89,6 +90,7 @@ export default function SettingsScreen() {
   const { entries: diaryEntries } = useDiary();
   const { items: shoppingItems } = useShopping();
   const { incomes } = useIncome();
+  const { alerts, toggleAlert, updateAlert } = useAlerts();
   const {
     wallets,
     addWallet,
@@ -366,6 +368,18 @@ export default function SettingsScreen() {
               isToggle
               toggleValue={settings.weeklyReport}
               onToggle={(val) => updateSettings({ weeklyReport: val })}
+            />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Spending Alerts */}
+        <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+          <Text style={styles.sectionTitle}>Spending Alerts</Text>
+          <GlassCard>
+            <AlertSettings
+              alerts={alerts}
+              onToggle={toggleAlert}
+              onUpdateThreshold={(id, threshold) => updateAlert(id, { threshold })}
             />
           </GlassCard>
         </Animated.View>
