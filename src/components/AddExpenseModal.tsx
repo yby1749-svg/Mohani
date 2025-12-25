@@ -25,7 +25,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
-import { useExpenses, Expense } from '../context/ExpenseContext';
+import { useExpenses, Expense, ExpenseSplit } from '../context/ExpenseContext';
+import { SplitExpenseModal } from './SplitExpenseModal';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +52,7 @@ interface AddExpenseModalProps {
     note: string;
     date: Date;
     receiptImage?: string;
+    split?: ExpenseSplit;
   }) => void;
   onSaveTemplate?: (template: {
     name: string;
@@ -73,6 +75,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [duplicateWarningDismissed, setDuplicateWarningDismissed] = useState(false);
+  const [splitData, setSplitData] = useState<ExpenseSplit | null>(null);
+  const [showSplitModal, setShowSplitModal] = useState(false);
 
   const { expenses } = useExpenses();
 
@@ -238,6 +242,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       note,
       date: new Date(),
       receiptImage: receiptImage || undefined,
+      split: splitData || undefined,
     });
 
     // Save as template if checked
@@ -258,8 +263,11 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setSaveAsTemplate(false);
     setReceiptImage(null);
     setDuplicateWarningDismissed(false);
+    setSplitData(null);
     onClose();
   };
+
+  const parsedAmountForSplit = parseInt(amount.replace(/,/g, '') || '0', 10);
 
   const formatAmount = (text: string) => {
     const numbers = text.replace(/[^0-9]/g, '');
@@ -435,6 +443,53 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   </TouchableOpacity>
                 )}
 
+                {/* Split Expense */}
+                {amount && parsedAmountForSplit > 0 && (
+                  <View style={styles.splitSection}>
+                    <Text style={styles.sectionTitle}>나누기 (선택)</Text>
+                    {splitData ? (
+                      <View style={styles.splitSummary}>
+                        <View style={styles.splitInfo}>
+                          <Ionicons name="people" size={20} color={Colors.success} />
+                          <Text style={styles.splitText}>
+                            {splitData.participants.length}명과 나눔
+                          </Text>
+                          <Text style={styles.splitMyShare}>
+                            내 몫: ₩{splitData.myShare.toLocaleString()}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.splitEditBtn}
+                          onPress={() => setShowSplitModal(true)}
+                        >
+                          <Text style={styles.splitEditText}>수정</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.splitRemoveBtn}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSplitData(null);
+                          }}
+                        >
+                          <Ionicons name="close" size={18} color={Colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.splitBtn}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setShowSplitModal(true);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="people-outline" size={24} color={Colors.textMuted} />
+                        <Text style={styles.splitBtnText}>친구와 나누기</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
                 {/* Save as Template */}
                 {onSaveTemplate && note.trim() && (
                   <TouchableOpacity
@@ -483,6 +538,17 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           </Animated.View>
         </KeyboardAvoidingView>
       </Animated.View>
+
+      {/* Split Modal */}
+      <SplitExpenseModal
+        visible={showSplitModal}
+        onClose={() => setShowSplitModal(false)}
+        onSplit={(split) => {
+          setSplitData(split);
+          setShowSplitModal(false);
+        }}
+        totalAmount={parsedAmountForSplit}
+      />
     </Modal>
   );
 };
@@ -793,5 +859,64 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     fontWeight: '600',
     color: Colors.text,
+  },
+  splitSection: {
+    marginBottom: Spacing.lg,
+  },
+  splitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderStyle: 'dashed',
+    padding: Spacing.lg,
+  },
+  splitBtnText: {
+    fontSize: FontSizes.md,
+    color: Colors.textSecondary,
+  },
+  splitSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    padding: Spacing.md,
+  },
+  splitInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  splitText: {
+    fontSize: FontSizes.sm,
+    color: Colors.success,
+    fontWeight: '500',
+  },
+  splitMyShare: {
+    fontSize: FontSizes.sm,
+    color: Colors.text,
+    fontWeight: '600',
+  },
+  splitEditBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: BorderRadius.sm,
+    marginRight: Spacing.sm,
+  },
+  splitEditText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+  },
+  splitRemoveBtn: {
+    padding: 4,
   },
 });
