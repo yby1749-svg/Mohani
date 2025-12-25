@@ -38,6 +38,7 @@ import { AddDebtModal } from '../components/AddDebtModal';
 import QuickExpenseNote from '../components/QuickExpenseNote';
 import { RecurringQuickAdd } from '../components/RecurringQuickAdd';
 import { QuickVoiceInput } from '../components/QuickVoiceInput';
+import { SavingsGoalsWidget } from '../components/SavingsGoalsWidget';
 import { useExpenses } from '../context/ExpenseContext';
 import { useDiary } from '../context/DiaryContext';
 import { useSettings } from '../context/SettingsContext';
@@ -1012,6 +1013,11 @@ export default function HomeScreen() {
         {/* Recurring Quick Add */}
         <Animated.View entering={FadeInDown.delay(480).duration(500)}>
           <RecurringQuickAdd />
+        </Animated.View>
+
+        {/* Savings Goals Widget */}
+        <Animated.View entering={FadeInDown.delay(520).duration(500)}>
+          <SavingsGoalsWidget />
         </Animated.View>
 
         {/* Quick Actions */}
