@@ -19,11 +19,6 @@ import { BillProvider } from './src/context/BillContext';
 import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import { ChallengeProvider } from './src/context/ChallengeContext';
 import { DebtProvider } from './src/context/DebtContext';
-import { CategoryBudgetProvider } from './src/context/CategoryBudgetContext';
-import { SplitExpenseProvider } from './src/context/SplitExpenseContext';
-import { AlertsProvider } from './src/context/AlertsContext';
-import { WalletProvider } from './src/context/WalletContext';
-import { TagsProvider } from './src/context/TagsContext';
 
 export default function App() {
   return (
@@ -36,44 +31,34 @@ export default function App() {
                 <SubscriptionProvider>
                   <ChallengeProvider>
                     <DebtProvider>
-                      <CategoryBudgetProvider>
-                        <SplitExpenseProvider>
-                          <AlertsProvider>
-                            <WalletProvider>
-                              <TagsProvider>
-                <ExpenseTemplateProvider>
-                  <RecurringExpenseProvider>
-                    <GoalsProvider>
-                      <DiaryProvider>
-                        <ShoppingProvider>
-                <View style={styles.container}>
-          <StatusBar style="light" />
-          <NavigationContainer
-          theme={{
-            dark: true,
-            colors: {
-              primary: Colors.purplePrimary,
-              background: Colors.bgPrimary,
-              card: Colors.bgSecondary,
-              text: Colors.textPrimary,
-              border: Colors.border,
-              notification: Colors.goldPrimary,
-            },
-          }}
-        >
-          <TabNavigator />
-                </NavigationContainer>
-              </View>
-                        </ShoppingProvider>
-                      </DiaryProvider>
-                    </GoalsProvider>
-                  </RecurringExpenseProvider>
-                </ExpenseTemplateProvider>
-                              </TagsProvider>
-                            </WalletProvider>
-                          </AlertsProvider>
-                        </SplitExpenseProvider>
-                      </CategoryBudgetProvider>
+                      <ExpenseTemplateProvider>
+                        <RecurringExpenseProvider>
+                          <GoalsProvider>
+                            <DiaryProvider>
+                              <ShoppingProvider>
+                                <View style={styles.container}>
+                                  <StatusBar style="light" />
+                                  <NavigationContainer
+                                    theme={{
+                                      dark: true,
+                                      colors: {
+                                        primary: Colors.purplePrimary,
+                                        background: Colors.bgPrimary,
+                                        card: Colors.bgSecondary,
+                                        text: Colors.textPrimary,
+                                        border: Colors.border,
+                                        notification: Colors.goldPrimary,
+                                      },
+                                    }}
+                                  >
+                                    <TabNavigator />
+                                  </NavigationContainer>
+                                </View>
+                              </ShoppingProvider>
+                            </DiaryProvider>
+                          </GoalsProvider>
+                        </RecurringExpenseProvider>
+                      </ExpenseTemplateProvider>
                     </DebtProvider>
                   </ChallengeProvider>
                 </SubscriptionProvider>
