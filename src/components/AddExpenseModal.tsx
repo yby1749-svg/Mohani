@@ -210,31 +210,33 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   </TouchableOpacity>
                 )}
 
-                {/* Buttons */}
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                    <Text style={styles.cancelButtonText}>취소</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.addButton,
-                      (!amount || !selectedCategory) && styles.addButtonDisabled,
-                    ]}
-                    onPress={handleAdd}
-                    disabled={!amount || !selectedCategory}
-                  >
-                    <LinearGradient
-                      colors={amount && selectedCategory ? Gradients.primary : ['#333', '#333']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.addButtonGradient}
-                    >
-                      <Text style={styles.addButtonText}>추가하기</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
+                <View style={styles.scrollBottomSpacer} />
               </ScrollView>
+
+              {/* Buttons - Fixed at bottom */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+                  <Text style={styles.cancelButtonText}>취소</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.addButton,
+                    (!amount || !selectedCategory) && styles.addButtonDisabled,
+                  ]}
+                  onPress={handleAdd}
+                  disabled={!amount || !selectedCategory}
+                >
+                  <LinearGradient
+                    colors={amount && selectedCategory ? Gradients.primary : ['#333', '#333']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.addButtonGradient}
+                  >
+                    <Text style={styles.addButtonText}>추가하기</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             </LinearGradient>
           </Animated.View>
         </KeyboardAvoidingView>
@@ -361,10 +363,18 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  scrollBottomSpacer: {
+    height: Spacing.md,
+  },
   buttonContainer: {
     flexDirection: 'row',
     gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.xl + 20,
+    backgroundColor: 'rgba(10, 10, 15, 0.95)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   cancelButton: {
     flex: 1,
