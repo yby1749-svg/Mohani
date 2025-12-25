@@ -16,7 +16,29 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mohani.app"
+      "bundleIdentifier": "com.mohani.app",
+      "infoPlist": {
+        "UIApplicationShortcutItems": [
+          {
+            "UIApplicationShortcutItemType": "add_expense",
+            "UIApplicationShortcutItemTitle": "지출 추가",
+            "UIApplicationShortcutItemSubtitle": "새 지출 기록하기",
+            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeAdd"
+          },
+          {
+            "UIApplicationShortcutItemType": "view_today",
+            "UIApplicationShortcutItemTitle": "오늘 지출",
+            "UIApplicationShortcutItemSubtitle": "오늘 지출 현황 보기",
+            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeDate"
+          },
+          {
+            "UIApplicationShortcutItemType": "voice_input",
+            "UIApplicationShortcutItemTitle": "음성 입력",
+            "UIApplicationShortcutItemSubtitle": "음성으로 지출 기록",
+            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeAudio"
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +49,19 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-quick-actions",
+        {
+          "androidIcons": {
+            "add_icon": {
+              "foregroundImage": "./assets/adaptive-icon.png",
+              "backgroundColor": "#6C63FF"
+            }
+          }
+        }
+      ]
+    ]
   }
 }

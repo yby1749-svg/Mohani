@@ -52,6 +52,8 @@ import { useSubscriptions } from '../context/SubscriptionContext';
 import { useChallenges } from '../context/ChallengeContext';
 import { useDebts } from '../context/DebtContext';
 import { generateInsights, AIInsight } from '../utils/aiInsights';
+import { useQuickActions } from '../hooks/useQuickActions';
+import { updateWidgetData } from '../utils/widgetData';
 import {
   Colors,
   FontSizes,
@@ -135,6 +137,30 @@ export default function HomeScreen() {
   };
 
   const budgetWarning = getBudgetWarning();
+
+  // Set up quick actions (3D Touch / long-press shortcuts)
+  useQuickActions({
+    onAddExpense: () => setShowAddExpense(true),
+    onViewToday: () => navigation.navigate('ExpenseHistory'),
+    onVoiceInput: () => setShowVoiceInput(true),
+  });
+
+  // Update widget data when expenses change
+  useEffect(() => {
+    const lastExpense = expenses[0];
+    updateWidgetData({
+      todayTotal,
+      todayCount: todayExpenses.length,
+      monthlyTotal,
+      monthlyBudget,
+      lastExpense: lastExpense ? {
+        amount: lastExpense.amount,
+        category: lastExpense.category,
+        categoryIcon: lastExpense.categoryIcon,
+        note: lastExpense.note,
+      } : undefined,
+    });
+  }, [expenses, todayTotal, monthlyTotal]);
 
   // Calculate spending streaks
   const getSpendingStreaks = () => {
