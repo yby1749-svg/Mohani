@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
+import { useExpenses, Expense } from '../context/ExpenseContext';
 
 const { width } = Dimensions.get('window');
 
@@ -71,6 +72,100 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [note, setNote] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [duplicateWarningDismissed, setDuplicateWarningDismissed] = useState(false);
+
+  const { expenses } = useExpenses();
+
+  // Duplicate detection
+  interface PotentialDuplicate {
+    expense: Expense;
+    reason: string;
+    confidence: 'high' | 'medium';
+  }
+
+  const potentialDuplicate = useMemo((): PotentialDuplicate | null => {
+    if (duplicateWarningDismissed) return null;
+    if (!amount) return null;
+
+    const parsedAmount = parseInt(amount.replace(/,/g, ''), 10);
+    if (isNaN(parsedAmount) || parsedAmount === 0) return null;
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Check for exact matches (same amount within 1 hour) - High confidence
+    const exactMatch = expenses.find((e) => {
+      const expenseDate = new Date(e.date);
+      return (
+        e.amount === parsedAmount &&
+        expenseDate >= oneHourAgo &&
+        expenseDate <= now
+      );
+    });
+
+    if (exactMatch) {
+      return {
+        expense: exactMatch,
+        reason: '1시간 내 동일 금액',
+        confidence: 'high',
+      };
+    }
+
+    // Check for same category + similar amount today - Medium confidence
+    if (selectedCategory) {
+      const similarMatch = expenses.find((e) => {
+        const expenseDate = new Date(e.date);
+        const amountDiff = Math.abs(e.amount - parsedAmount);
+        const amountSimilar = amountDiff <= parsedAmount * 0.1; // Within 10%
+        return (
+          e.category === selectedCategory &&
+          amountSimilar &&
+          expenseDate >= todayStart &&
+          expenseDate <= now
+        );
+      });
+
+      if (similarMatch) {
+        return {
+          expense: similarMatch,
+          reason: '오늘 비슷한 지출',
+          confidence: 'medium',
+        };
+      }
+    }
+
+    // Check for same note today - Medium confidence
+    if (note.trim().length >= 3) {
+      const noteMatch = expenses.find((e) => {
+        const expenseDate = new Date(e.date);
+        const noteLower = note.toLowerCase().trim();
+        const expenseNoteLower = (e.note || '').toLowerCase().trim();
+        return (
+          expenseNoteLower.includes(noteLower) &&
+          expenseDate >= todayStart &&
+          expenseDate <= now
+        );
+      });
+
+      if (noteMatch) {
+        return {
+          expense: noteMatch,
+          reason: '오늘 유사한 메모',
+          confidence: 'medium',
+        };
+      }
+    }
+
+    return null;
+  }, [amount, selectedCategory, note, expenses, duplicateWarningDismissed]);
+
+  const formatDuplicateTime = (date: Date): string => {
+    const d = new Date(date);
+    const hours = d.getHours();
+    const mins = d.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${mins}`;
+  };
 
   const pickImage = async (useCamera: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -162,6 +257,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setNote('');
     setSaveAsTemplate(false);
     setReceiptImage(null);
+    setDuplicateWarningDismissed(false);
     onClose();
   };
 
@@ -242,6 +338,54 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     </TouchableOpacity>
                   ))}
                 </View>
+
+                {/* Duplicate Warning */}
+                {potentialDuplicate && (
+                  <View style={[
+                    styles.duplicateWarning,
+                    potentialDuplicate.confidence === 'high' && styles.duplicateWarningHigh
+                  ]}>
+                    <View style={styles.duplicateHeader}>
+                      <Ionicons
+                        name="warning"
+                        size={20}
+                        color={potentialDuplicate.confidence === 'high' ? Colors.error : '#f59e0b'}
+                      />
+                      <Text style={[
+                        styles.duplicateTitle,
+                        potentialDuplicate.confidence === 'high' && styles.duplicateTitleHigh
+                      ]}>
+                        중복 의심
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.duplicateDismiss}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setDuplicateWarningDismissed(true);
+                        }}
+                      >
+                        <Ionicons name="close" size={18} color={Colors.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.duplicateContent}>
+                      <Text style={styles.duplicateReason}>{potentialDuplicate.reason}</Text>
+                      <View style={styles.duplicateExpense}>
+                        <Text style={styles.duplicateIcon}>{potentialDuplicate.expense.categoryIcon}</Text>
+                        <View style={styles.duplicateInfo}>
+                          <Text style={styles.duplicateNote}>
+                            {potentialDuplicate.expense.note || potentialDuplicate.expense.categoryLabel}
+                          </Text>
+                          <Text style={styles.duplicateTime}>
+                            {formatDuplicateTime(potentialDuplicate.expense.date)}에 추가됨
+                          </Text>
+                        </View>
+                        <Text style={styles.duplicateAmount}>
+                          ₩{potentialDuplicate.expense.amount.toLocaleString()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
 
                 {/* Note Input */}
                 <Text style={styles.sectionTitle}>메모 (선택)</Text>
@@ -582,5 +726,72 @@ const styles = StyleSheet.create({
   receiptActionText: {
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
+  },
+  duplicateWarning: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  duplicateWarningHigh: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  duplicateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  duplicateTitle: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: '#f59e0b',
+    marginLeft: Spacing.xs,
+    flex: 1,
+  },
+  duplicateTitleHigh: {
+    color: Colors.error,
+  },
+  duplicateDismiss: {
+    padding: 4,
+  },
+  duplicateContent: {
+    marginLeft: Spacing.sm + 20,
+  },
+  duplicateReason: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginBottom: Spacing.sm,
+  },
+  duplicateExpense: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.sm,
+  },
+  duplicateIcon: {
+    fontSize: 20,
+    marginRight: Spacing.sm,
+  },
+  duplicateInfo: {
+    flex: 1,
+  },
+  duplicateNote: {
+    fontSize: FontSizes.sm,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  duplicateTime: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  duplicateAmount: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.text,
   },
 });
