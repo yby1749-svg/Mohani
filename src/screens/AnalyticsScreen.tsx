@@ -12,7 +12,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Circle, G } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
-import { Header, GlassCard, AnimatedBackground, BudgetRecommendations } from '../components';
+import { Header, GlassCard, AnimatedBackground, BudgetRecommendations, InvestmentDashboard } from '../components';
 import { SpendingHeatmap } from '../components/SpendingHeatmap';
 import { SavingsCalculator } from '../components/SavingsCalculator';
 import { MonthComparison } from '../components/MonthComparison';
@@ -1303,6 +1303,17 @@ export default function AnalyticsScreen() {
             borderColor="rgba(59, 130, 246, 0.3)"
           >
             <NetWorthTracker />
+          </GlassCard>
+        </Animated.View>
+
+        {/* Investment Dashboard */}
+        <Animated.View entering={FadeInDown.delay(720).duration(500)}>
+          <GlassCard
+            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            borderColor="rgba(245, 158, 11, 0.3)"
+          >
+            <Text style={styles.chartTitle}>📈 투자 포트폴리오</Text>
+            <InvestmentDashboard />
           </GlassCard>
         </Animated.View>
 
