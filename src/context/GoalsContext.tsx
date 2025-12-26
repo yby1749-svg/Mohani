@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateUniqueId } from '../utils/generateId';
 
 export interface SavingsGoal {
   id: string;
@@ -68,7 +69,7 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addGoal = (goal: Omit<SavingsGoal, 'id' | 'createdAt' | 'currentAmount' | 'isCompleted'>) => {
     const newGoal: SavingsGoal = {
       ...goal,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       currentAmount: 0,
       isCompleted: false,
       createdAt: new Date(),

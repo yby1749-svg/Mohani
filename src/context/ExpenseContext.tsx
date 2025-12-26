@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateUniqueId } from '../utils/generateId';
 
 export interface ExpenseLocation {
   name: string; // Place name (e.g., "스타벅스 강남점")
@@ -128,7 +129,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addFriend = useCallback((name: string, emoji: string) => {
     const newFriend: Friend = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       name,
       emoji,
     };
@@ -193,7 +194,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addExpense = useCallback((expense: Omit<Expense, 'id'>) => {
     const newExpense: Expense = {
       ...expense,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
     };
     setExpenses((prev) => [newExpense, ...prev]);
   }, []);

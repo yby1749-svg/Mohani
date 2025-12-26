@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateUniqueId } from '../utils/generateId';
 
 export interface SplitParticipant {
   id: string;
@@ -71,7 +72,7 @@ export const SplitExpenseProvider: React.FC<{ children: ReactNode }> = ({ childr
   const addSplit = async (splitData: Omit<SplitExpense, 'id' | 'isSettled'>) => {
     const newSplit: SplitExpense = {
       ...splitData,
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       isSettled: false,
     };
     const updated = [...splits, newSplit];

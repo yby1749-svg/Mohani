@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateUniqueId } from '../utils/generateId';
 
 export interface DebtPayment {
   id: string;
@@ -90,53 +91,75 @@ export const DebtProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const addDebt = async (debtData: Omit<Debt, 'id' | 'payments' | 'createdAt'>) => {
-    const newDebt: Debt = {
-      ...debtData,
-      id: Date.now().toString(),
-      payments: [],
-      createdAt: new Date(),
-      categoryIcon: CATEGORY_ICONS[debtData.category],
-    };
-    const updated = [...debts, newDebt];
-    setDebts(updated);
-    await saveDebts(updated);
+    try {
+      const newDebt: Debt = {
+        ...debtData,
+        id: generateUniqueId(),
+        payments: [],
+        createdAt: new Date(),
+        categoryIcon: CATEGORY_ICONS[debtData.category],
+      };
+      const updated = [...debts, newDebt];
+      setDebts(updated);
+      await saveDebts(updated);
+    } catch (error) {
+      console.error('Failed to add debt:', error);
+    }
   };
 
   const updateDebt = async (id: string, updates: Partial<Debt>) => {
-    const updated = debts.map((debt) =>
-      debt.id === id ? { ...debt, ...updates } : debt
-    );
-    setDebts(updated);
-    await saveDebts(updated);
+    try {
+      const updated = debts.map((debt) =>
+        debt.id === id ? { ...debt, ...updates } : debt
+      );
+      setDebts(updated);
+      await saveDebts(updated);
+    } catch (error) {
+      console.error('Failed to update debt:', error);
+    }
   };
 
   const deleteDebt = async (id: string) => {
-    const updated = debts.filter((debt) => debt.id !== id);
-    setDebts(updated);
-    await saveDebts(updated);
+    try {
+      const updated = debts.filter((debt) => debt.id !== id);
+      setDebts(updated);
+      await saveDebts(updated);
+    } catch (error) {
+      console.error('Failed to delete debt:', error);
+    }
   };
 
   const addPayment = async (debtId: string, amount: number, note?: string) => {
-    const updated = debts.map((debt) => {
-      if (debt.id === debtId) {
-        const payment: DebtPayment = {
-          id: Date.now().toString(),
-          amount,
-          date: new Date(),
-          note,
-        };
-        const newBalance = Math.max(0, debt.currentBalance - amount);
-        return {
-          ...debt,
-          currentBalance: newBalance,
-          payments: [...debt.payments, payment],
-          isActive: newBalance > 0,
-        };
-      }
-      return debt;
-    });
-    setDebts(updated);
-    await saveDebts(updated);
+    // Validate payment amount
+    if (amount <= 0) {
+      console.error('Payment amount must be positive');
+      return;
+    }
+
+    try {
+      const updated = debts.map((debt) => {
+        if (debt.id === debtId) {
+          const payment: DebtPayment = {
+            id: generateUniqueId(),
+            amount,
+            date: new Date(),
+            note,
+          };
+          const newBalance = Math.max(0, debt.currentBalance - amount);
+          return {
+            ...debt,
+            currentBalance: newBalance,
+            payments: [...debt.payments, payment],
+            isActive: newBalance > 0,
+          };
+        }
+        return debt;
+      });
+      setDebts(updated);
+      await saveDebts(updated);
+    } catch (error) {
+      console.error('Failed to add payment:', error);
+    }
   };
 
   const getTotalOwed = () => {

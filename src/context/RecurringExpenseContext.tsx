@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { generateUniqueId } from '../utils/generateId';
 
 export interface RecurringExpense {
   id: string;
@@ -84,7 +85,7 @@ export const RecurringExpenseProvider: React.FC<{ children: React.ReactNode }> =
   const addRecurring = (expense: Omit<RecurringExpense, 'id' | 'createdAt' | 'isActive' | 'reminderEnabled' | 'reminderDaysBefore'> & { reminderEnabled?: boolean; reminderDaysBefore?: number }) => {
     const newExpense: RecurringExpense = {
       ...expense,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       isActive: true,
       createdAt: new Date(),
       reminderEnabled: expense.reminderEnabled ?? true,
@@ -117,13 +118,13 @@ export const RecurringExpenseProvider: React.FC<{ children: React.ReactNode }> =
       .reduce((sum, e) => {
         switch (e.frequency) {
           case 'daily':
-            return sum + e.amount * 30;
+            return sum + Math.round(e.amount * 30);
           case 'weekly':
-            return sum + e.amount * 4;
+            return sum + Math.round(e.amount * 4);
           case 'monthly':
             return sum + e.amount;
           case 'yearly':
-            return sum + e.amount / 12;
+            return sum + Math.round(e.amount / 12);
           default:
             return sum;
         }
@@ -178,7 +179,9 @@ export const RecurringExpenseProvider: React.FC<{ children: React.ReactNode }> =
         const targetDay = expense.dayOfWeek ?? 0;
         const currentDay = today.getDay();
         let daysUntil = targetDay - currentDay;
-        if (daysUntil <= 0) daysUntil += 7;
+        // If daysUntil is 0, it means today is the target day - return today
+        // Only add 7 if daysUntil is negative (target day already passed this week)
+        if (daysUntil < 0) daysUntil += 7;
         const nextDate = new Date(today);
         nextDate.setDate(today.getDate() + daysUntil);
         return nextDate;

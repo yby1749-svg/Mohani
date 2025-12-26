@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateUniqueId } from '../utils/generateId';
 
 export interface Asset {
   id: string;
@@ -139,7 +140,7 @@ export const NetWorthProvider: React.FC<{ children: ReactNode }> = ({ children }
     const typeInfo = ASSET_TYPES[assetData.type];
     const newAsset: Asset = {
       ...assetData,
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       icon: assetData.icon || typeInfo.icon,
       color: assetData.color || typeInfo.color,
       lastUpdated: new Date(),
@@ -167,7 +168,7 @@ export const NetWorthProvider: React.FC<{ children: ReactNode }> = ({ children }
     const typeInfo = LIABILITY_TYPES[liabilityData.type];
     const newLiability: Liability = {
       ...liabilityData,
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       icon: liabilityData.icon || typeInfo.icon,
       color: liabilityData.color || typeInfo.color,
       lastUpdated: new Date(),
