@@ -79,7 +79,8 @@ export default function HomeScreen() {
   const { expenses, addExpense, getTodayExpenses, getTodayTotal, getMonthlyTotal, getCategoryTotals } = useExpenses();
   const { entries: diaryEntries, addEntry, getTodayEntry } = useDiary();
   const { settings } = useSettings();
-  const colors = settings?.darkMode !== false ? DarkColors : LightColors;
+  const isDark = settings?.darkMode !== false;
+  const colors = isDark ? DarkColors : LightColors;
   const { getTotalSaved, getOverallProgress } = useGoals();
   const { templates, useTemplate, getFrequentTemplates, addTemplate } = useExpenseTemplates();
   const { addIncome, getTotalIncomeThisMonth, getIncomeByType, getRecentIncomes, incomes } = useIncome();
@@ -543,7 +544,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <AnimatedBackground />
       <Header />
 
@@ -569,18 +570,18 @@ export default function HomeScreen() {
 
           <View style={styles.dateWeather}>
             <LinearGradient
-              colors={[Colors.purpleDark, 'transparent']}
-              style={styles.dateContainer}
+              colors={isDark ? [colors.purpleDark, 'transparent'] : ['rgba(109, 40, 217, 0.1)', 'transparent']}
+              style={[styles.dateContainer, { borderColor: colors.borderPurple }]}
             >
-              <Text style={styles.dateDay}>{dayOfMonth}</Text>
+              <Text style={[styles.dateDay, { color: colors.purpleLight }]}>{dayOfMonth}</Text>
               <View style={styles.dateInfo}>
-                <Text style={styles.dateMonth}>{currentMonth}</Text>
-                <Text style={styles.dateWeekday}>{currentDay}</Text>
+                <Text style={[styles.dateMonth, { color: colors.textMuted }]}>{currentMonth}</Text>
+                <Text style={[styles.dateWeekday, { color: colors.textMuted }]}>{currentDay}</Text>
               </View>
             </LinearGradient>
             <View style={styles.weatherInfo}>
               <Text style={styles.weatherIcon}>🌙</Text>
-              <Text style={styles.weatherTemp}>5°C</Text>
+              <Text style={[styles.weatherTemp, { color: colors.textSecondary }]}>5°C</Text>
             </View>
           </View>
         </Animated.View>
@@ -592,7 +593,7 @@ export default function HomeScreen() {
               activeOpacity={0.8}
               onPress={() => navigation.getParent()?.navigate('Analytics')}
             >
-              <View style={[styles.warningCard, { borderColor: budgetWarning.color }]}>
+              <View style={[styles.warningCard, { borderColor: budgetWarning.color, backgroundColor: isDark ? 'rgba(15, 15, 20, 0.9)' : 'rgba(255, 255, 255, 0.95)' }]}>
                 <View style={[styles.warningIconContainer, { backgroundColor: `${budgetWarning.color}20` }]}>
                   <Text style={styles.warningIcon}>{budgetWarning.icon}</Text>
                 </View>
@@ -617,13 +618,16 @@ export default function HomeScreen() {
                   key={alert.category}
                   style={[
                     styles.categoryAlert,
-                    { borderColor: alert.percent >= 100 ? '#EF4444' : '#F59E0B' }
+                    {
+                      borderColor: alert.percent >= 100 ? '#EF4444' : '#F59E0B',
+                      backgroundColor: isDark ? 'rgba(15, 15, 20, 0.9)' : 'rgba(255, 255, 255, 0.95)'
+                    }
                   ]}
                 >
                   <Text style={styles.categoryAlertIcon}>{alert.icon}</Text>
                   <View style={styles.categoryAlertContent}>
-                    <Text style={styles.categoryAlertLabel}>{alert.label}</Text>
-                    <View style={styles.categoryAlertBar}>
+                    <Text style={[styles.categoryAlertLabel, { color: colors.textPrimary }]}>{alert.label}</Text>
+                    <View style={[styles.categoryAlertBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
                       <View
                         style={[
                           styles.categoryAlertFill,
@@ -654,7 +658,7 @@ export default function HomeScreen() {
               activeOpacity={0.8}
               onPress={() => setShowAddBill(true)}
             >
-              <View style={[styles.warningCard, { borderColor: '#EF4444' }]}>
+              <View style={[styles.warningCard, { borderColor: '#EF4444', backgroundColor: isDark ? 'rgba(15, 15, 20, 0.9)' : 'rgba(255, 255, 255, 0.95)' }]}>
                 <View style={[styles.warningIconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
                   <Text style={styles.warningIcon}>🔔</Text>
                 </View>
@@ -662,7 +666,7 @@ export default function HomeScreen() {
                   <Text style={[styles.warningTitle, { color: '#EF4444' }]}>
                     연체된 청구서 {getOverdueBills().length}건
                   </Text>
-                  <Text style={styles.warningMessage}>
+                  <Text style={[styles.warningMessage, { color: colors.textSecondary }]}>
                     ₩{getOverdueBills().reduce((sum, b) => sum + b.amount, 0).toLocaleString()} 미납
                   </Text>
                 </View>
@@ -675,35 +679,35 @@ export default function HomeScreen() {
         {/* Today's Expense Card */}
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
           <GlassCard
-            gradient={Gradients.cardPurple}
-            borderColor={Colors.borderPurple}
+            gradient={isDark ? Gradients.cardPurple : ['#ffffff', '#fafafa']}
+            borderColor={colors.borderPurple}
           >
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>💰</Text>
                 <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>TODAY'S SPENDING</Text>
               </View>
-              <View style={styles.cardBadge}>
-                <Text style={styles.cardBadgeText}>{todayExpenses.length} items</Text>
+              <View style={[styles.cardBadge, { backgroundColor: isDark ? colors.purpleDark : 'rgba(109, 40, 217, 0.1)' }]}>
+                <Text style={[styles.cardBadgeText, { color: colors.purpleLight }]}>{todayExpenses.length} items</Text>
               </View>
             </View>
 
             <View style={styles.expenseAmount}>
-              <Text style={styles.currency}>₩</Text>
+              <Text style={[styles.currency, { color: colors.goldPrimary }]}>₩</Text>
               <LinearGradient
                 colors={Gradients.gold as [string, string]}
                 style={styles.amountGradient}
               >
-                <Text style={styles.amount}>{todayTotal.toLocaleString()}</Text>
+                <Text style={[styles.amount, { color: colors.textPrimary }]}>{todayTotal.toLocaleString()}</Text>
               </LinearGradient>
             </View>
 
             <View style={styles.expenseCategories}>
               {todayExpenses.length > 0 ? (
                 todayExpenses.slice(0, 3).map((expense, index) => (
-                  <View key={expense.id} style={styles.categoryPill}>
+                  <View key={expense.id} style={[styles.categoryPill, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.05)' }]}>
                     <Text style={styles.catIcon}>{expense.categoryIcon}</Text>
-                    <Text style={styles.catAmount}>₩{expense.amount.toLocaleString()}</Text>
+                    <Text style={[styles.catAmount, { color: colors.textSecondary }]}>₩{expense.amount.toLocaleString()}</Text>
                   </View>
                 ))
               ) : (
@@ -725,15 +729,15 @@ export default function HomeScreen() {
         {/* Budget Progress Card */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <GlassCard
-            gradient={Gradients.cardGold}
-            borderColor={Colors.borderGold}
+            gradient={isDark ? Gradients.cardGold : ['#ffffff', '#fafafa']}
+            borderColor={colors.borderGold}
           >
             <View style={styles.cardHeader}>
               <View style={styles.cardTitle}>
                 <Text style={styles.cardIcon}>📊</Text>
                 <Text style={[styles.cardTitleText, { color: colors.textSecondary }]}>MONTHLY BUDGET</Text>
               </View>
-              <Text style={styles.budgetPercent}>{budgetPercent}%</Text>
+              <Text style={[styles.budgetPercent, { color: colors.goldPrimary }]}>{budgetPercent}%</Text>
             </View>
 
             <View style={styles.budgetProgress}>
@@ -749,7 +753,7 @@ export default function HomeScreen() {
                 <Text style={[styles.statLabel, { color: colors.textMuted }]}>REMAINING</Text>
                 <Text style={[styles.statValue, { color: colors.textPrimary }]}>₩{remaining.toLocaleString()}</Text>
               </View>
-              <View style={styles.statDivider} />
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statItem}>
                 <Text style={[styles.statLabel, { color: colors.textMuted }]}>DAILY AVAILABLE</Text>
                 <Text style={[styles.statValue, { color: colors.textPrimary }]}>₩{dailyAvailable.toLocaleString()}</Text>
@@ -761,7 +765,7 @@ export default function HomeScreen() {
         {/* Income Summary Card */}
         <Animated.View entering={FadeInDown.delay(350).duration(500)}>
           <GlassCard
-            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            gradient={isDark ? ['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['#ffffff', '#fafafa']}
             borderColor="rgba(34, 197, 94, 0.3)"
           >
             <View style={styles.cardHeader}>
@@ -782,7 +786,7 @@ export default function HomeScreen() {
 
             <View style={styles.incomeAmount}>
               <Text style={styles.incomeCurrency}>₩</Text>
-              <Text style={styles.incomeValue}>
+              <Text style={[styles.incomeValue, { color: colors.textPrimary }]}>
                 {getTotalIncomeThisMonth().toLocaleString()}
               </Text>
             </View>
@@ -799,26 +803,26 @@ export default function HomeScreen() {
                 ))}
               </View>
             ) : (
-              <Text style={styles.noIncome}>아직 기록된 수입이 없습니다</Text>
+              <Text style={[styles.noIncome, { color: colors.textMuted }]}>아직 기록된 수입이 없습니다</Text>
             )}
 
-            <View style={styles.incomeBalance}>
+            <View style={[styles.incomeBalance, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.03)' }]}>
               <View style={styles.balanceItem}>
-                <Text style={styles.balanceLabel}>수입</Text>
+                <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>수입</Text>
                 <Text style={[styles.balanceValue, { color: '#22C55E' }]}>
                   +₩{getTotalIncomeThisMonth().toLocaleString()}
                 </Text>
               </View>
-              <View style={styles.balanceDivider} />
+              <View style={[styles.balanceDivider, { backgroundColor: colors.border }]} />
               <View style={styles.balanceItem}>
-                <Text style={styles.balanceLabel}>지출</Text>
+                <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>지출</Text>
                 <Text style={[styles.balanceValue, { color: '#EF4444' }]}>
                   -₩{monthlyTotal.toLocaleString()}
                 </Text>
               </View>
-              <View style={styles.balanceDivider} />
+              <View style={[styles.balanceDivider, { backgroundColor: colors.border }]} />
               <View style={styles.balanceItem}>
-                <Text style={styles.balanceLabel}>잔액</Text>
+                <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>잔액</Text>
                 <Text style={[
                   styles.balanceValue,
                   { color: getTotalIncomeThisMonth() - monthlyTotal >= 0 ? '#22C55E' : '#EF4444' }
@@ -833,7 +837,7 @@ export default function HomeScreen() {
         {/* Bill Reminders Card */}
         <Animated.View entering={FadeInDown.delay(375).duration(500)}>
           <GlassCard
-            gradient={['rgba(239, 68, 68, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            gradient={isDark ? ['rgba(239, 68, 68, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['#ffffff', '#fafafa']}
             borderColor="rgba(239, 68, 68, 0.3)"
           >
             <View style={styles.cardHeader}>
@@ -946,7 +950,7 @@ export default function HomeScreen() {
         {/* Subscription Tracker Card */}
         <Animated.View entering={FadeInDown.delay(385).duration(500)}>
           <GlassCard
-            gradient={['rgba(124, 58, 237, 0.1)', 'rgba(10, 10, 15, 0.95)']}
+            gradient={isDark ? ['rgba(124, 58, 237, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['#ffffff', '#fafafa']}
             borderColor="rgba(124, 58, 237, 0.3)"
           >
             <View style={styles.cardHeader}>
@@ -961,7 +965,7 @@ export default function HomeScreen() {
                   setShowAddSubscription(true);
                 }}
               >
-                <Ionicons name="add" size={16} color={Colors.purpleLight} />
+                <Ionicons name="add" size={16} color={colors.purpleLight} />
               </TouchableOpacity>
             </View>
 
@@ -1042,7 +1046,7 @@ export default function HomeScreen() {
               setCurrentInsightIndex((prev) => (prev + 1) % aiInsights.length);
             }}
           >
-            <GlassCard borderColor={Colors.borderPurple}>
+            <GlassCard borderColor={colors.borderPurple}>
               <View style={styles.aiCard}>
                 <View style={styles.aiAvatar}>
                   <LinearGradient
@@ -1055,23 +1059,23 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.aiContent}>
                   <View style={styles.aiHeader}>
-                    <Text style={styles.aiLabel}>AI INSIGHT</Text>
+                    <Text style={[styles.aiLabel, { color: colors.purpleLight }]}>AI INSIGHT</Text>
                     {aiInsights.length > 1 && (
-                      <Text style={styles.aiCount}>
+                      <Text style={[styles.aiCount, { color: colors.textMuted }]}>
                         {currentInsightIndex + 1}/{aiInsights.length}
                       </Text>
                     )}
                   </View>
-                  <Text style={styles.aiTitle}>
+                  <Text style={[styles.aiTitle, { color: colors.textPrimary }]}>
                     {currentInsight?.title || 'AI 분석 중...'}
                   </Text>
-                  <Text style={styles.aiMessage}>
+                  <Text style={[styles.aiMessage, { color: colors.textSecondary }]}>
                     {currentInsight?.message || '데이터를 기록하면 맞춤 인사이트를 제공해드려요!'}
                   </Text>
                 </View>
               </View>
               {aiInsights.length > 1 && (
-                <Text style={styles.aiTapHint}>탭해서 더 보기</Text>
+                <Text style={[styles.aiTapHint, { color: colors.textMuted }]}>탭해서 더 보기</Text>
               )}
             </GlassCard>
           </TouchableOpacity>
@@ -1120,11 +1124,11 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={Gradients.glass as [string, string]}
-                style={styles.quickBtnGradient}
+                colors={isDark ? (Gradients.glass as [string, string]) : ['#ffffff', '#f5f5f7']}
+                style={[styles.quickBtnGradient, { borderColor: colors.border }]}
               >
                 <Text style={styles.quickIcon}>{item.icon}</Text>
-                <Text style={styles.quickLabel}>{item.label}</Text>
+                <Text style={[styles.quickLabel, { color: colors.textSecondary }]}>{item.label}</Text>
               </LinearGradient>
             </TouchableOpacity>
           ))}

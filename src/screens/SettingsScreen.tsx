@@ -93,7 +93,8 @@ const PROFILE_EMOJIS = ['😊', '😎', '🤗', '🥳', '🤓', '😇', '🦊', 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { settings, updateSettings, resetSettings } = useSettings();
-  const colors = settings.darkMode ? DarkColors : LightColors;
+  const isDark = settings.darkMode;
+  const colors = isDark ? DarkColors : LightColors;
   const { getTotalMonthly, recurringExpenses } = useRecurringExpenses();
   const { expenses } = useExpenses();
   const { entries: diaryEntries } = useDiary();
@@ -242,7 +243,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <AnimatedBackground />
       <Header showMenu={false} showNotification={false} />
 
@@ -533,7 +534,7 @@ export default function SettingsScreen() {
       {/* Profile Edit Modal */}
       <Modal visible={showProfileModal} transparent animationType="none" onRequestClose={() => setShowProfileModal(false)}>
         <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={styles.modalOverlay}>
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowProfileModal(false)} activeOpacity={1} />
 
           <Animated.View
@@ -542,23 +543,24 @@ export default function SettingsScreen() {
             style={styles.modalContainer}
           >
             <LinearGradient
-              colors={['rgba(124, 58, 237, 0.15)', 'rgba(10, 10, 15, 0.98)']}
+              colors={isDark ? ['rgba(124, 58, 237, 0.15)', 'rgba(10, 10, 15, 0.98)'] : ['rgba(109, 40, 217, 0.08)', 'rgba(255, 255, 255, 0.98)']}
               style={styles.modalGradient}
             >
               <View style={styles.modalHeader}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>프로필 편집</Text>
+                <View style={[styles.modalHandle, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }]} />
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>프로필 편집</Text>
               </View>
 
               <View style={styles.modalContent}>
                 {/* Emoji Picker */}
-                <Text style={styles.inputLabel}>프로필 이모지</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>프로필 이모지</Text>
                 <View style={styles.emojiGrid}>
                   {PROFILE_EMOJIS.map((emoji) => (
                     <TouchableOpacity
                       key={emoji}
                       style={[
                         styles.emojiItem,
+                        { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' },
                         editEmoji === emoji && styles.emojiItemSelected,
                       ]}
                       onPress={() => setEditEmoji(emoji)}
@@ -569,22 +571,22 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* Name Input */}
-                <Text style={styles.inputLabel}>이름</Text>
-                <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>이름</Text>
+                <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
                   <TextInput
-                    style={styles.textInput}
+                    style={[styles.textInput, { color: colors.textPrimary }]}
                     value={editName}
                     onChangeText={setEditName}
                     placeholder="이름을 입력하세요"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    placeholderTextColor={colors.textMuted}
                     maxLength={20}
                   />
                 </View>
 
                 {/* Buttons */}
                 <View style={styles.buttonRow}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setShowProfileModal(false)}>
-                    <Text style={styles.cancelButtonText}>취소</Text>
+                  <TouchableOpacity style={[styles.cancelButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]} onPress={() => setShowProfileModal(false)}>
+                    <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>취소</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
                     <LinearGradient colors={Gradients.primary} style={styles.saveButtonGradient}>
@@ -601,7 +603,7 @@ export default function SettingsScreen() {
       {/* Budget Edit Modal */}
       <Modal visible={showBudgetModal} transparent animationType="none" onRequestClose={() => setShowBudgetModal(false)}>
         <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={styles.modalOverlay}>
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowBudgetModal(false)} activeOpacity={1} />
 
           <Animated.View
@@ -610,24 +612,24 @@ export default function SettingsScreen() {
             style={styles.modalContainer}
           >
             <LinearGradient
-              colors={['rgba(124, 58, 237, 0.15)', 'rgba(10, 10, 15, 0.98)']}
+              colors={isDark ? ['rgba(124, 58, 237, 0.15)', 'rgba(10, 10, 15, 0.98)'] : ['rgba(109, 40, 217, 0.08)', 'rgba(255, 255, 255, 0.98)']}
               style={styles.modalGradient}
             >
               <View style={styles.modalHeader}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>월간 예산 설정</Text>
+                <View style={[styles.modalHandle, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }]} />
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>월간 예산 설정</Text>
               </View>
 
               <View style={styles.modalContent}>
-                <Text style={styles.inputLabel}>월간 예산</Text>
-                <View style={styles.budgetInputContainer}>
-                  <Text style={styles.currencySymbol}>₩</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>월간 예산</Text>
+                <View style={[styles.budgetInputContainer, { borderColor: colors.border }]}>
+                  <Text style={[styles.currencySymbol, { color: colors.purpleLight }]}>₩</Text>
                   <TextInput
-                    style={styles.budgetInput}
+                    style={[styles.budgetInput, { color: colors.textPrimary }]}
                     value={editBudget}
                     onChangeText={(text) => setEditBudget(formatBudget(text))}
                     placeholder="0"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="numeric"
                     maxLength={15}
                   />
@@ -638,18 +640,18 @@ export default function SettingsScreen() {
                   {[1000000, 2000000, 3000000, 5000000].map((amount) => (
                     <TouchableOpacity
                       key={amount}
-                      style={styles.quickAmountBtn}
+                      style={[styles.quickAmountBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}
                       onPress={() => setEditBudget(amount.toLocaleString())}
                     >
-                      <Text style={styles.quickAmountText}>₩{(amount / 10000).toFixed(0)}만</Text>
+                      <Text style={[styles.quickAmountText, { color: colors.textSecondary }]}>₩{(amount / 10000).toFixed(0)}만</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
                 {/* Buttons */}
                 <View style={styles.buttonRow}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setShowBudgetModal(false)}>
-                    <Text style={styles.cancelButtonText}>취소</Text>
+                  <TouchableOpacity style={[styles.cancelButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]} onPress={() => setShowBudgetModal(false)}>
+                    <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>취소</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.saveButton} onPress={handleSaveBudget}>
                     <LinearGradient colors={Gradients.primary} style={styles.saveButtonGradient}>

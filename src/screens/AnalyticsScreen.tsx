@@ -104,7 +104,8 @@ export default function AnalyticsScreen() {
   const { expenses, getCategoryTotals, getMonthlyTotal, getTodayTotal } = useExpenses();
   const { entries: diaryEntries } = useDiary();
   const { settings, updateSettings } = useSettings();
-  const colors = settings?.darkMode !== false ? DarkColors : LightColors;
+  const isDark = settings?.darkMode !== false;
+  const colors = isDark ? DarkColors : LightColors;
   const { getTotalMonthly } = useRecurringExpenses();
   const { getTotalSaved, getOverallProgress, getTotalTarget } = useGoals();
   const { getTotalIncomeThisMonth } = useIncome();
@@ -576,7 +577,7 @@ export default function AnalyticsScreen() {
   const moodInsight = getMoodInsight();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <AnimatedBackground />
       <Header />
 
@@ -768,7 +769,7 @@ export default function AnalyticsScreen() {
                 <Text style={styles.forecastGridLabel}>권장 일예산</Text>
                 <Text style={[
                   styles.forecastGridValue,
-                  { color: spendingForecast.recommendedDaily < spendingForecast.dailyAverage ? Colors.success : Colors.textPrimary }
+                  { color: spendingForecast.recommendedDaily < spendingForecast.dailyAverage ? colors.success : colors.textPrimary }
                 ]}>
                   ₩{spendingForecast.recommendedDaily.toLocaleString()}
                 </Text>
@@ -923,7 +924,7 @@ export default function AnalyticsScreen() {
 
         {/* Monthly Comparison */}
         <Animated.View entering={FadeInDown.delay(350).duration(500)}>
-          <GlassCard gradient={Gradients.cardGold} borderColor={Colors.borderGold}>
+          <GlassCard gradient={isDark ? Gradients.cardGold : ['#ffffff', '#fafafa']} borderColor={colors.borderGold}>
             <Text style={styles.chartTitle}>📊 지난 달 비교</Text>
             <View style={styles.comparisonHeader}>
               <View style={styles.comparisonMonth}>
@@ -1096,7 +1097,7 @@ export default function AnalyticsScreen() {
 
         {/* AI Insights Summary */}
         <Animated.View entering={FadeInDown.delay(600).duration(500)}>
-          <GlassCard gradient={Gradients.cardPurple} borderColor={Colors.borderPurple}>
+          <GlassCard gradient={isDark ? Gradients.cardPurple : ['#ffffff', '#fafafa']} borderColor={colors.borderPurple}>
             <View style={styles.aiInsightsHeader}>
               <Text style={styles.aiInsightsTitle}>🤖 AI 분석 요약</Text>
             </View>

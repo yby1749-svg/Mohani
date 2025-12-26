@@ -16,8 +16,10 @@ import { Header, GlassCard, AnimatedBackground, ProgressBar } from '../component
 import { AddShoppingItemModal } from '../components/AddShoppingItemModal';
 import { useShopping } from '../context/ShoppingContext';
 import { useExpenses } from '../context/ExpenseContext';
+import { useSettings } from '../context/SettingsContext';
 import {
-  Colors,
+  DarkColors,
+  LightColors,
   FontSizes,
   Spacing,
   BorderRadius,
@@ -48,14 +50,12 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: '#22C55E',
 };
 
-const PRIORITY_LABELS: Record<string, string> = {
-  high: '높음',
-  medium: '보통',
-  low: '낮음',
-};
-
 export default function ShoppingScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const { settings } = useSettings();
+  const isDark = settings?.darkMode !== false;
+  const colors = isDark ? DarkColors : LightColors;
+
   const {
     items,
     addItem,
@@ -79,7 +79,6 @@ export default function ShoppingScreen() {
 
     const item = items.find((i) => i.id === id);
     if (item && !item.isCompleted) {
-      // Add to expenses when completing
       addExpense({
         amount: estimatedPrice,
         category: 'shopping',
@@ -123,8 +122,12 @@ export default function ShoppingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  // Dynamic styles
+  const itemBgColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
+  const tipBgColor = isDark ? 'rgba(124, 58, 237, 0.1)' : 'rgba(109, 40, 217, 0.08)';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <AnimatedBackground />
       <Header />
 
@@ -138,7 +141,7 @@ export default function ShoppingScreen() {
           entering={FadeInDown.delay(100).duration(500)}
           style={styles.screenHeader}
         >
-          <Text style={styles.screenTitle}>Shopping</Text>
+          <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>Shopping</Text>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => {
@@ -147,7 +150,7 @@ export default function ShoppingScreen() {
             }}
           >
             <LinearGradient
-              colors={Gradients.primary}
+              colors={isDark ? Gradients.primary : ['#6d28d9', '#8b5cf6']}
               style={styles.addBtnGradient}
             >
               <Ionicons name="add" size={24} color="white" />
@@ -157,26 +160,26 @@ export default function ShoppingScreen() {
 
         {/* Progress Card */}
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-          <GlassCard gradient={Gradients.cardPurple} borderColor={Colors.borderPurple}>
+          <GlassCard>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>쇼핑 진행률</Text>
-              <Text style={styles.progressPercent}>{progress}%</Text>
+              <Text style={[styles.progressTitle, { color: colors.textPrimary }]}>쇼핑 진행률</Text>
+              <Text style={[styles.progressPercent, { color: colors.goldPrimary }]}>{progress}%</Text>
             </View>
             <ProgressBar progress={progress} />
             <View style={styles.progressStats}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{activeItems.length}</Text>
-                <Text style={styles.statLabel}>남은 항목</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>{activeItems.length}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>남은 항목</Text>
               </View>
-              <View style={styles.statDivider} />
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{completedItems.length}</Text>
-                <Text style={styles.statLabel}>완료</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>{completedItems.length}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>완료</Text>
               </View>
-              <View style={styles.statDivider} />
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>₩{(totalEstimated / 1000).toFixed(0)}k</Text>
-                <Text style={styles.statLabel}>예상 금액</Text>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>₩{(totalEstimated / 1000).toFixed(0)}k</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>예상 금액</Text>
               </View>
             </View>
           </GlassCard>
@@ -186,8 +189,8 @@ export default function ShoppingScreen() {
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <GlassCard>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>📝 쇼핑 리스트</Text>
-              <Text style={styles.sectionCount}>{activeItems.length}개</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>📝 쇼핑 리스트</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{activeItems.length}개</Text>
             </View>
 
             {activeItems.length > 0 ? (
@@ -202,7 +205,11 @@ export default function ShoppingScreen() {
                     <TouchableOpacity
                       style={[
                         styles.shoppingItem,
-                        { borderLeftWidth: 3, borderLeftColor: PRIORITY_COLORS[item.priority || 'medium'] }
+                        {
+                          backgroundColor: itemBgColor,
+                          borderLeftWidth: 3,
+                          borderLeftColor: PRIORITY_COLORS[item.priority || 'medium']
+                        }
                       ]}
                       onPress={() => handleToggleItem(item.id, item.estimatedPrice)}
                       onLongPress={() => handleDeleteItem(item.id)}
@@ -216,19 +223,19 @@ export default function ShoppingScreen() {
                           <Text style={styles.itemIcon}>
                             {CATEGORY_ICONS[item.category] || '📦'}
                           </Text>
-                          <Text style={styles.itemName}>{item.name}</Text>
+                          <Text style={[styles.itemName, { color: colors.textPrimary }]}>{item.name}</Text>
                           {item.priority === 'high' && (
                             <View style={styles.priorityBadge}>
                               <Text style={styles.priorityBadgeText}>긴급</Text>
                             </View>
                           )}
                         </View>
-                        <Text style={styles.itemCategory}>
+                        <Text style={[styles.itemCategory, { color: colors.textMuted }]}>
                           {CATEGORY_NAMES[item.category] || item.category}
                         </Text>
                       </View>
                       {item.estimatedPrice > 0 && (
-                        <Text style={styles.itemPrice}>
+                        <Text style={[styles.itemPrice, { color: colors.goldPrimary }]}>
                           ₩{item.estimatedPrice.toLocaleString()}
                         </Text>
                       )}
@@ -239,8 +246,8 @@ export default function ShoppingScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyIcon}>🛒</Text>
-                <Text style={styles.emptyText}>쇼핑 리스트가 비어있어요</Text>
-                <Text style={styles.emptySubtext}>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>쇼핑 리스트가 비어있어요</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
                   + 버튼을 눌러 아이템을 추가해보세요
                 </Text>
               </View>
@@ -253,9 +260,9 @@ export default function ShoppingScreen() {
           <Animated.View entering={FadeInDown.delay(400).duration(500)}>
             <GlassCard>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>✅ 완료</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>✅ 완료</Text>
                 <TouchableOpacity onPress={handleClearCompleted}>
-                  <Text style={styles.clearBtn}>모두 삭제</Text>
+                  <Text style={[styles.clearBtn, { color: colors.error }]}>모두 삭제</Text>
                 </TouchableOpacity>
               </View>
 
@@ -267,14 +274,14 @@ export default function ShoppingScreen() {
                     layout={Layout.springify()}
                   >
                     <TouchableOpacity
-                      style={[styles.shoppingItem, styles.completedItem]}
+                      style={[styles.shoppingItem, styles.completedItem, { backgroundColor: itemBgColor }]}
                       onPress={() => handleToggleItem(item.id, item.estimatedPrice)}
                       onLongPress={() => handleDeleteItem(item.id)}
                       activeOpacity={0.7}
                     >
                       <View style={styles.itemCheck}>
                         <LinearGradient
-                          colors={Gradients.primary}
+                          colors={isDark ? Gradients.primary : ['#6d28d9', '#8b5cf6']}
                           style={styles.checkCircleFilled}
                         >
                           <Ionicons name="checkmark" size={14} color="white" />
@@ -285,13 +292,13 @@ export default function ShoppingScreen() {
                           <Text style={styles.itemIcon}>
                             {CATEGORY_ICONS[item.category] || '📦'}
                           </Text>
-                          <Text style={[styles.itemName, styles.completedText]}>
+                          <Text style={[styles.itemName, styles.completedText, { color: colors.textMuted }]}>
                             {item.name}
                           </Text>
                         </View>
                       </View>
                       {item.actualPrice !== undefined && item.actualPrice > 0 && (
-                        <Text style={[styles.itemPrice, styles.completedText]}>
+                        <Text style={[styles.itemPrice, styles.completedText, { color: colors.textMuted }]}>
                           ₩{item.actualPrice.toLocaleString()}
                         </Text>
                       )}
@@ -305,9 +312,9 @@ export default function ShoppingScreen() {
 
         {/* Tips */}
         <Animated.View entering={FadeInDown.delay(500).duration(500)}>
-          <View style={styles.tipCard}>
+          <View style={[styles.tipCard, { backgroundColor: tipBgColor, borderLeftColor: colors.purplePrimary }]}>
             <Text style={styles.tipIcon}>💡</Text>
-            <Text style={styles.tipText}>
+            <Text style={[styles.tipText, { color: colors.textSecondary }]}>
               아이템을 탭하면 완료 처리되고 지출로 자동 기록돼요!{'\n'}
               길게 누르면 삭제할 수 있어요.
             </Text>
@@ -330,7 +337,6 @@ export default function ShoppingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
   },
   scrollView: {
     flex: 1,
@@ -347,15 +353,14 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: FontSizes.xxl,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   addBtn: {
     borderRadius: BorderRadius.full,
     overflow: 'hidden',
   },
   addBtnGradient: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -368,12 +373,10 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: FontSizes.lg,
     fontWeight: '600',
-    color: Colors.textPrimary,
   },
   progressPercent: {
     fontSize: FontSizes.xl,
     fontWeight: '700',
-    color: Colors.goldPrimary,
   },
   progressStats: {
     flexDirection: 'row',
@@ -386,17 +389,14 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: FontSizes.lg,
     fontWeight: '600',
-    color: Colors.textPrimary,
   },
   statLabel: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: Colors.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -407,15 +407,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSizes.lg,
     fontWeight: '600',
-    color: Colors.textPrimary,
   },
   sectionCount: {
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
   },
   clearBtn: {
     fontSize: FontSizes.sm,
-    color: Colors.error,
+    fontWeight: '500',
   },
   itemsList: {
     gap: Spacing.sm,
@@ -424,7 +422,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: BorderRadius.md,
     gap: Spacing.md,
   },
@@ -437,7 +434,6 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.border,
   },
   checkCircleFilled: {
     width: 24,
@@ -459,22 +455,19 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: FontSizes.md,
-    color: Colors.textPrimary,
+    fontWeight: '500',
   },
   itemCategory: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
     marginTop: 2,
     marginLeft: 24,
   },
   itemPrice: {
     fontSize: FontSizes.md,
     fontWeight: '600',
-    color: Colors.goldPrimary,
   },
   completedText: {
     textDecorationLine: 'line-through',
-    color: Colors.textMuted,
   },
   emptyState: {
     alignItems: 'center',
@@ -486,22 +479,18 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FontSizes.md,
-    color: Colors.textSecondary,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
   },
   tipCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
     padding: Spacing.md,
-    backgroundColor: 'rgba(124, 58, 237, 0.1)',
     borderRadius: BorderRadius.md,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.purplePrimary,
   },
   tipIcon: {
     fontSize: 20,
@@ -509,7 +498,6 @@ const styles = StyleSheet.create({
   tipText: {
     flex: 1,
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     lineHeight: 20,
   },
   bottomSpacing: {

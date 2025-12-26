@@ -59,7 +59,8 @@ export default function CalendarScreen() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
   const { settings } = useSettings();
-  const colors = settings?.darkMode !== false ? DarkColors : LightColors;
+  const isDark = settings?.darkMode !== false;
+  const colors = isDark ? DarkColors : LightColors;
   const { entries, addEntry, getEntryByDate, getEntriesForMonth } = useDiary();
   const { expenses, addExpense } = useExpenses();
 
@@ -169,8 +170,8 @@ export default function CalendarScreen() {
             </LinearGradient>
           ) : (
             <View style={styles.dayContent}>
-              <Text style={styles.dayNumber}>{day}</Text>
-              {expense && <Text style={styles.dayExpense}>{expense}</Text>}
+              <Text style={[styles.dayNumber, { color: colors.textPrimary }]}>{day}</Text>
+              {expense && <Text style={[styles.dayExpense, { color: colors.textMuted }]}>{expense}</Text>}
             </View>
           )}
           {diary && (
@@ -205,7 +206,7 @@ export default function CalendarScreen() {
   const dailyAvg = daysWithExpenses > 0 ? Math.round(monthlyExpenseTotal / daysWithExpenses) : 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <AnimatedBackground />
       <Header />
 
@@ -220,16 +221,16 @@ export default function CalendarScreen() {
           style={styles.calendarHeader}
         >
           <TouchableOpacity
-            style={styles.navButton}
+            style={[styles.navButton, { backgroundColor: isDark ? colors.bgCard : '#ffffff', borderColor: colors.border }]}
             onPress={() => navigateMonth('prev')}
           >
             <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
-          <Text style={styles.calendarTitle}>
+          <Text style={[styles.calendarTitle, { color: colors.textPrimary }]}>
             {MONTHS[month]} {year}
           </Text>
           <TouchableOpacity
-            style={styles.navButton}
+            style={[styles.navButton, { backgroundColor: isDark ? colors.bgCard : '#ffffff', borderColor: colors.border }]}
             onPress={() => navigateMonth('next')}
           >
             <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
@@ -242,7 +243,7 @@ export default function CalendarScreen() {
             <View style={styles.weekdaysRow}>
               {WEEKDAYS.map((day, index) => (
                 <View key={index} style={styles.weekdayCell}>
-                  <Text style={styles.weekdayText}>{day}</Text>
+                  <Text style={[styles.weekdayText, { color: colors.textMuted }]}>{day}</Text>
                 </View>
               ))}
             </View>
@@ -253,13 +254,13 @@ export default function CalendarScreen() {
         {/* Selected Day Diary */}
         {selectedDay && (
           <Animated.View entering={FadeInDown.delay(250).duration(400)}>
-            <GlassCard gradient={Gradients.cardPurple} borderColor={Colors.borderPurple}>
+            <GlassCard gradient={isDark ? Gradients.cardPurple : ['#ffffff', '#fafafa']} borderColor={colors.borderPurple}>
               <View style={styles.diaryHeader}>
                 <View>
-                  <Text style={styles.diaryDate}>
+                  <Text style={[styles.diaryDate, { color: colors.textPrimary }]}>
                     {month + 1}월 {selectedDay}일
                   </Text>
-                  <Text style={styles.diarySubtitle}>
+                  <Text style={[styles.diarySubtitle, { color: colors.textSecondary }]}>
                     {selectedDiary ? '오늘의 일기' : '일기가 없습니다'}
                   </Text>
                 </View>
@@ -284,16 +285,16 @@ export default function CalendarScreen() {
                 <View style={styles.diaryContent}>
                   <View style={styles.diaryMood}>
                     <Text style={styles.diaryMoodEmoji}>{MOOD_EMOJIS[selectedDiary.mood]}</Text>
-                    <Text style={styles.diaryMoodLabel}>{selectedDiary.moodLabel}</Text>
+                    <Text style={[styles.diaryMoodLabel, { color: colors.textSecondary }]}>{selectedDiary.moodLabel}</Text>
                   </View>
-                  <Text style={styles.diaryText} numberOfLines={4}>
+                  <Text style={[styles.diaryText, { color: colors.textPrimary }]} numberOfLines={4}>
                     {selectedDiary.content}
                   </Text>
                   {selectedDiary.tags.length > 0 && (
                     <View style={styles.diaryTags}>
                       {selectedDiary.tags.map((tag) => (
-                        <View key={tag} style={styles.diaryTag}>
-                          <Text style={styles.diaryTagText}>#{tag}</Text>
+                        <View key={tag} style={[styles.diaryTag, { backgroundColor: isDark ? 'rgba(124, 58, 237, 0.2)' : 'rgba(109, 40, 217, 0.1)' }]}>
+                          <Text style={[styles.diaryTagText, { color: colors.purpleLight }]}>#{tag}</Text>
                         </View>
                       ))}
                     </View>
@@ -302,7 +303,7 @@ export default function CalendarScreen() {
               ) : (
                 <View style={styles.noDiary}>
                   <Text style={styles.noDiaryIcon}>✨</Text>
-                  <Text style={styles.noDiaryText}>
+                  <Text style={[styles.noDiaryText, { color: colors.textMuted }]}>
                     오늘 하루를 기록해보세요
                   </Text>
                 </View>
@@ -316,7 +317,7 @@ export default function CalendarScreen() {
           <Animated.View entering={FadeInDown.delay(300).duration(400)}>
             <GlassCard>
               <View style={styles.expenseHeader}>
-                <Text style={styles.expenseTitle}>💸 지출 내역</Text>
+                <Text style={[styles.expenseTitle, { color: colors.textPrimary }]}>💸 지출 내역</Text>
                 <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense}>
                   <LinearGradient
                     colors={Gradients.gold as [string, string]}
@@ -329,29 +330,29 @@ export default function CalendarScreen() {
               </View>
               {selectedDayExpenses.length > 0 ? (
                 <>
-                  <Text style={styles.expenseDayTotal}>
+                  <Text style={[styles.expenseDayTotal, { color: colors.goldPrimary }]}>
                     총 ₩{selectedDayTotal.toLocaleString()}
                   </Text>
                   <View style={styles.expenseList}>
                     {selectedDayExpenses.map((expense, index) => (
                       <View key={expense.id} style={[
                         styles.expenseItem,
-                        index < selectedDayExpenses.length - 1 && styles.expenseItemBorder
+                        index < selectedDayExpenses.length - 1 && [styles.expenseItemBorder, { borderBottomColor: colors.border }]
                       ]}>
-                        <View style={styles.expenseIcon}>
+                        <View style={[styles.expenseIcon, { backgroundColor: isDark ? 'rgba(234, 179, 8, 0.2)' : 'rgba(180, 83, 9, 0.1)' }]}>
                           <Text style={styles.expenseIconText}>
                             {CATEGORY_ICONS[expense.category] || '💰'}
                           </Text>
                         </View>
                         <View style={styles.expenseInfo}>
-                          <Text style={styles.expenseNote} numberOfLines={1}>
+                          <Text style={[styles.expenseNote, { color: colors.textPrimary }]} numberOfLines={1}>
                             {expense.note || expense.category}
                           </Text>
-                          <Text style={styles.expenseCategory}>
+                          <Text style={[styles.expenseCategory, { color: colors.textMuted }]}>
                             {expense.category}
                           </Text>
                         </View>
-                        <Text style={styles.expenseAmount}>
+                        <Text style={[styles.expenseAmount, { color: colors.goldPrimary }]}>
                           ₩{expense.amount.toLocaleString()}
                         </Text>
                       </View>
@@ -361,7 +362,7 @@ export default function CalendarScreen() {
               ) : (
                 <View style={styles.noExpenses}>
                   <Text style={styles.noExpensesIcon}>💳</Text>
-                  <Text style={styles.noExpensesText}>이 날 지출 내역이 없습니다</Text>
+                  <Text style={[styles.noExpensesText, { color: colors.textMuted }]}>이 날 지출 내역이 없습니다</Text>
                 </View>
               )}
             </GlassCard>
@@ -371,23 +372,23 @@ export default function CalendarScreen() {
         {/* Monthly Summary */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <GlassCard>
-            <Text style={styles.summaryTitle}>{MONTHS[month]} Summary</Text>
+            <Text style={[styles.summaryTitle, { color: colors.textPrimary }]}>{MONTHS[month]} Summary</Text>
             <View style={styles.summaryStats}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Total Spent</Text>
-                <Text style={styles.summaryValue}>
+                <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Total Spent</Text>
+                <Text style={[styles.summaryValue, { color: colors.purpleLight }]}>
                   ₩{monthlyExpenseTotal.toLocaleString()}
                 </Text>
               </View>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Daily Avg</Text>
-                <Text style={styles.summaryValue}>
+                <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Daily Avg</Text>
+                <Text style={[styles.summaryValue, { color: colors.purpleLight }]}>
                   ₩{dailyAvg.toLocaleString()}
                 </Text>
               </View>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Diary Entries</Text>
-                <Text style={styles.summaryValue}>{monthlyEntries.length} days</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Diary Entries</Text>
+                <Text style={[styles.summaryValue, { color: colors.purpleLight }]}>{monthlyEntries.length} days</Text>
               </View>
             </View>
           </GlassCard>
