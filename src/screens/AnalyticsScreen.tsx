@@ -844,8 +844,8 @@ export default function AnalyticsScreen() {
         {/* Weekly Report Card */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <GlassCard
-            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(59, 130, 246, 0.3)"
+            gradient={isDark ? ['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(59, 130, 246, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}
           >
             <View style={styles.reportHeader}>
               <Text style={styles.chartTitle}>📋 주간 리포트</Text>
@@ -1119,8 +1119,8 @@ export default function AnalyticsScreen() {
         {budgetRecommendations.length > 0 && (
           <Animated.View entering={FadeInDown.delay(700).duration(500)}>
             <GlassCard
-              gradient={['rgba(16, 185, 129, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-              borderColor="rgba(16, 185, 129, 0.3)"
+              gradient={isDark ? ['rgba(16, 185, 129, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(16, 185, 129, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+              borderColor={isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'}
             >
               <Text style={styles.chartTitle}>💰 예산 추천</Text>
               <View style={styles.recommendationsList}>
@@ -1148,8 +1148,8 @@ export default function AnalyticsScreen() {
         {/* 50/30/20 Budget Recommendations */}
         <Animated.View entering={FadeInDown.delay(750).duration(500)}>
           <GlassCard
-            gradient={['rgba(139, 92, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(139, 92, 246, 0.3)"
+            gradient={isDark ? ['rgba(139, 92, 246, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(139, 92, 246, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}
           >
             <Text style={styles.chartTitle}>📊 스마트 예산 추천</Text>
             <BudgetRecommendations
@@ -1176,8 +1176,8 @@ export default function AnalyticsScreen() {
         {/* Spending Patterns */}
         <Animated.View entering={FadeInDown.delay(510).duration(500)}>
           <GlassCard
-            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(245, 158, 11, 0.3)"
+            gradient={isDark ? ['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(245, 158, 11, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)'}
           >
             <Text style={styles.chartTitle}>⏰ 지출 패턴 분석</Text>
             <SpendingPatterns expenses={expenses} />
@@ -1187,8 +1187,8 @@ export default function AnalyticsScreen() {
         {/* Location Insights */}
         <Animated.View entering={FadeInDown.delay(520).duration(500)}>
           <GlassCard
-            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(59, 130, 246, 0.3)"
+            gradient={isDark ? ['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(59, 130, 246, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}
           >
             <Text style={styles.chartTitle}>📍 장소별 지출</Text>
             <LocationInsights expenses={expenses} />
@@ -1198,8 +1198,8 @@ export default function AnalyticsScreen() {
         {/* Savings Calculator */}
         <Animated.View entering={FadeInDown.delay(530).duration(500)}>
           <GlassCard
-            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(34, 197, 94, 0.3)"
+            gradient={isDark ? ['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(34, 197, 94, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)'}
           >
             <Text style={styles.chartTitle}>💰 저축 계산기</Text>
             <SavingsCalculator
@@ -1213,8 +1213,8 @@ export default function AnalyticsScreen() {
         {/* Category Budgets */}
         <Animated.View entering={FadeInDown.delay(540).duration(500)}>
           <GlassCard
-            gradient={['rgba(236, 72, 153, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(236, 72, 153, 0.3)"
+            gradient={isDark ? ['rgba(236, 72, 153, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(236, 72, 153, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(236, 72, 153, 0.3)' : 'rgba(236, 72, 153, 0.2)'}
           >
             <Text style={styles.chartTitle}>🏷️ 카테고리별 예산</Text>
             <CategoryBudgets
@@ -1230,8 +1230,8 @@ export default function AnalyticsScreen() {
         {/* Spending Forecast */}
         <Animated.View entering={FadeInDown.delay(550).duration(500)}>
           <GlassCard
-            gradient={['rgba(139, 92, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(139, 92, 246, 0.3)"
+            gradient={isDark ? ['rgba(139, 92, 246, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(139, 92, 246, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}
           >
             <Text style={styles.chartTitle}>🔮 지출 예측</Text>
             <SpendingForecast
@@ -1245,8 +1245,8 @@ export default function AnalyticsScreen() {
         {/* Financial Health Score */}
         <Animated.View entering={FadeInDown.delay(560).duration(500)}>
           <GlassCard
-            gradient={['rgba(16, 185, 129, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(16, 185, 129, 0.3)"
+            gradient={isDark ? ['rgba(16, 185, 129, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(16, 185, 129, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'}
           >
             <Text style={styles.chartTitle}>💪 재정 건강 점수</Text>
             <FinancialHealthScore
@@ -1268,8 +1268,8 @@ export default function AnalyticsScreen() {
         {/* Monthly Summary Report */}
         <Animated.View entering={FadeInDown.delay(570).duration(500)}>
           <GlassCard
-            gradient={['rgba(99, 102, 241, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(99, 102, 241, 0.3)"
+            gradient={isDark ? ['rgba(99, 102, 241, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(99, 102, 241, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)'}
           >
             <Text style={styles.chartTitle}>📑 월간 리포트</Text>
             <MonthlySummaryReport />
@@ -1279,8 +1279,8 @@ export default function AnalyticsScreen() {
         {/* Tags Manager */}
         <Animated.View entering={FadeInDown.delay(580).duration(500)}>
           <GlassCard
-            gradient={['rgba(236, 72, 153, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(236, 72, 153, 0.3)"
+            gradient={isDark ? ['rgba(236, 72, 153, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(236, 72, 153, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(236, 72, 153, 0.3)' : 'rgba(236, 72, 153, 0.2)'}
           >
             <Text style={styles.chartTitle}>🏷️ 지출 태그 관리</Text>
             <TagManager mode="manage" />
@@ -1290,8 +1290,8 @@ export default function AnalyticsScreen() {
         {/* Currency Converter */}
         <Animated.View entering={FadeInDown.delay(590).duration(500)}>
           <GlassCard
-            gradient={['rgba(14, 165, 233, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(14, 165, 233, 0.3)"
+            gradient={isDark ? ['rgba(14, 165, 233, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(14, 165, 233, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(14, 165, 233, 0.3)' : 'rgba(14, 165, 233, 0.2)'}
           >
             <CurrencyConverter />
           </GlassCard>
@@ -1300,8 +1300,8 @@ export default function AnalyticsScreen() {
         {/* Weekly Digest */}
         <Animated.View entering={FadeInDown.delay(600).duration(500)}>
           <GlassCard
-            gradient={['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(34, 197, 94, 0.3)"
+            gradient={isDark ? ['rgba(34, 197, 94, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(34, 197, 94, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)'}
           >
             <WeeklyDigest />
           </GlassCard>
@@ -1310,8 +1310,8 @@ export default function AnalyticsScreen() {
         {/* Spending Streaks */}
         <Animated.View entering={FadeInDown.delay(650).duration(500)}>
           <GlassCard
-            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(245, 158, 11, 0.3)"
+            gradient={isDark ? ['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(245, 158, 11, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)'}
           >
             <SpendingStreaks
               todaySpending={getTodayTotal()}
@@ -1323,8 +1323,8 @@ export default function AnalyticsScreen() {
         {/* Net Worth Tracker */}
         <Animated.View entering={FadeInDown.delay(700).duration(500)}>
           <GlassCard
-            gradient={['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(59, 130, 246, 0.3)"
+            gradient={isDark ? ['rgba(59, 130, 246, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(59, 130, 246, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}
           >
             <NetWorthTracker />
           </GlassCard>
@@ -1333,8 +1333,8 @@ export default function AnalyticsScreen() {
         {/* Investment Dashboard */}
         <Animated.View entering={FadeInDown.delay(720).duration(500)}>
           <GlassCard
-            gradient={['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(245, 158, 11, 0.3)"
+            gradient={isDark ? ['rgba(245, 158, 11, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(245, 158, 11, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)'}
           >
             <Text style={styles.chartTitle}>📈 투자 포트폴리오</Text>
             <InvestmentDashboard />
@@ -1344,8 +1344,8 @@ export default function AnalyticsScreen() {
         {/* Category Manager */}
         <Animated.View entering={FadeInDown.delay(750).duration(500)}>
           <GlassCard
-            gradient={['rgba(168, 85, 247, 0.1)', 'rgba(10, 10, 15, 0.95)']}
-            borderColor="rgba(168, 85, 247, 0.3)"
+            gradient={isDark ? ['rgba(168, 85, 247, 0.1)', 'rgba(10, 10, 15, 0.95)'] : ['rgba(168, 85, 247, 0.08)', 'rgba(255, 255, 255, 0.95)']}
+            borderColor={isDark ? 'rgba(168, 85, 247, 0.3)' : 'rgba(168, 85, 247, 0.2)'}
           >
             <CategoryManager />
           </GlassCard>

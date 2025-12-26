@@ -7,7 +7,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Colors, Spacing, BorderRadius, FontSizes } from '../constants/theme';
+import { Colors, Spacing, BorderRadius, FontSizes, Gradients, LightGradients } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +27,9 @@ interface SpendingPatternsProps {
 }
 
 export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) => {
+  const { colors, isDark } = useTheme();
+  const gradients = isDark ? Gradients : LightGradients;
+
   // Analyze spending patterns
   const patterns = useMemo(() => {
     if (expenses.length === 0) return null;
@@ -163,8 +167,8 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyIcon}>📊</Text>
-        <Text style={styles.emptyText}>지출 데이터가 더 쌓이면 패턴을 분석해드려요</Text>
-        <Text style={styles.emptySubtext}>최소 5건 이상의 지출이 필요해요</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>지출 데이터가 더 쌓이면 패턴을 분석해드려요</Text>
+        <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>최소 5건 이상의 지출이 필요해요</Text>
       </View>
     );
   }
@@ -173,7 +177,7 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
     <View style={styles.container}>
       {/* Time of Day Analysis */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>시간대별 지출</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>시간대별 지출</Text>
         <View style={styles.timeGrid}>
           {patterns.timeSlots.map((slot, index) => {
             const barHeight = patterns.maxTimeTotal > 0
@@ -188,16 +192,16 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
                 style={styles.timeSlot}
               >
                 <Text style={styles.timeIcon}>{slot.icon}</Text>
-                <View style={styles.timeBarContainer}>
+                <View style={[styles.timeBarContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
                   <LinearGradient
-                    colors={isPeak ? ['#7c3aed', '#6d28d9'] : ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
+                    colors={isPeak ? gradients.purple : (isDark ? ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)'] : ['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.08)'])}
                     style={[styles.timeBar, { height: Math.max(barHeight, 4) }]}
                   />
                 </View>
-                <Text style={[styles.timeLabel, isPeak && styles.timeLabelPeak]}>
+                <Text style={[styles.timeLabel, { color: colors.textMuted }, isPeak && { color: colors.purpleLight, fontWeight: '600' }]}>
                   {slot.label}
                 </Text>
-                <Text style={styles.timeAmount}>
+                <Text style={[styles.timeAmount, { color: colors.textSecondary }]}>
                   {slot.total >= 10000
                     ? `${Math.round(slot.total / 10000)}만`
                     : `${Math.round(slot.total / 1000)}천`}
@@ -210,7 +214,7 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
 
       {/* Day of Week Analysis */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>요일별 지출</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>요일별 지출</Text>
         <View style={styles.dayGrid}>
           {patterns.dayOfWeek.map((day, index) => {
             const barWidth = patterns.maxDayTotal > 0
@@ -223,20 +227,21 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
               <View key={day.day} style={styles.dayRow}>
                 <Text style={[
                   styles.dayLabel,
-                  isWeekend && styles.dayLabelWeekend,
-                  isPeak && styles.dayLabelPeak,
+                  { color: colors.textMuted },
+                  isWeekend && { color: colors.goldPrimary },
+                  isPeak && { color: colors.purpleLight },
                 ]}>
                   {day.label}
                 </Text>
-                <View style={styles.dayBarContainer}>
+                <View style={[styles.dayBarContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
                   <LinearGradient
-                    colors={isPeak ? ['#7c3aed', '#6d28d9'] : isWeekend ? ['#f59e0b', '#d97706'] : ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)']}
+                    colors={isPeak ? gradients.purple : isWeekend ? gradients.gold : (isDark ? ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)'] : ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.08)'])}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.dayBar, { width: `${Math.max(barWidth, 2)}%` }]}
                   />
                 </View>
-                <Text style={styles.dayAmount}>₩{day.total.toLocaleString()}</Text>
+                <Text style={[styles.dayAmount, { color: colors.textSecondary }]}>₩{day.total.toLocaleString()}</Text>
               </View>
             );
           })}
@@ -244,24 +249,24 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
       </View>
 
       {/* Weekend vs Weekday */}
-      <View style={styles.comparisonContainer}>
+      <View style={[styles.comparisonContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }]}>
         <View style={styles.comparisonItem}>
-          <Text style={styles.comparisonLabel}>평일 평균</Text>
-          <Text style={styles.comparisonValue}>
+          <Text style={[styles.comparisonLabel, { color: colors.textMuted }]}>평일 평균</Text>
+          <Text style={[styles.comparisonValue, { color: colors.text }]}>
             ₩{Math.round(patterns.dayOfWeek.filter(d => d.day >= 1 && d.day <= 5).reduce((sum, d) => sum + d.total, 0) / 5).toLocaleString()}
           </Text>
         </View>
         <View style={styles.comparisonVs}>
           <Text style={[
             styles.comparisonChange,
-            { color: patterns.weekendVsWeekday > 0 ? '#EF4444' : '#22C55E' }
+            { color: patterns.weekendVsWeekday > 0 ? colors.error : colors.success }
           ]}>
             {patterns.weekendVsWeekday > 0 ? '▲' : '▼'} {Math.abs(Math.round(patterns.weekendVsWeekday))}%
           </Text>
         </View>
         <View style={styles.comparisonItem}>
-          <Text style={styles.comparisonLabel}>주말 평균</Text>
-          <Text style={styles.comparisonValue}>
+          <Text style={[styles.comparisonLabel, { color: colors.textMuted }]}>주말 평균</Text>
+          <Text style={[styles.comparisonValue, { color: colors.text }]}>
             ₩{Math.round(patterns.dayOfWeek.filter(d => d.day === 0 || d.day === 6).reduce((sum, d) => sum + d.total, 0) / 2).toLocaleString()}
           </Text>
         </View>
@@ -275,12 +280,13 @@ export const SpendingPatterns: React.FC<SpendingPatternsProps> = ({ expenses }) 
               key={index}
               style={[
                 styles.insightItem,
-                insight.type === 'warning' && styles.insightWarning,
-                insight.type === 'tip' && styles.insightTip,
+                { backgroundColor: colors.purpleDark },
+                insight.type === 'warning' && { backgroundColor: colors.goldDark },
+                insight.type === 'tip' && { backgroundColor: colors.successDark },
               ]}
             >
               <Text style={styles.insightIcon}>{insight.icon}</Text>
-              <Text style={styles.insightText}>{insight.text}</Text>
+              <Text style={[styles.insightText, { color: colors.textSecondary }]}>{insight.text}</Text>
             </View>
           ))}
         </View>

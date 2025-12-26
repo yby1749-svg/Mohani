@@ -21,7 +21,9 @@ import {
   BorderRadius,
   FontSizes,
   Gradients,
+  LightGradients,
 } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 interface GoalWithProjection extends SavingsGoal {
   progress: number;
@@ -38,6 +40,8 @@ export const SavingsGoalsWidget: React.FC = () => {
   const { goals } = useGoals();
   const { getTotalIncomeThisMonth } = useIncome();
   const { getMonthlyTotal } = useExpenses();
+  const { colors, isDark } = useTheme();
+  const gradients = isDark ? Gradients : LightGradients;
 
   // Calculate monthly savings rate
   const monthlySavingsRate = useMemo(() => {
@@ -142,11 +146,11 @@ export const SavingsGoalsWidget: React.FC = () => {
 
   const getStatusColor = (status: GoalWithProjection['status']) => {
     switch (status) {
-      case 'completed': return Colors.success;
-      case 'on-track': return Colors.purplePrimary;
+      case 'completed': return colors.success;
+      case 'on-track': return colors.purplePrimary;
       case 'behind': return '#f59e0b';
-      case 'at-risk': return Colors.error;
-      default: return Colors.purplePrimary;
+      case 'at-risk': return colors.error;
+      default: return colors.purplePrimary;
     }
   };
 
@@ -169,9 +173,9 @@ export const SavingsGoalsWidget: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerIcon}>🎯</Text>
-          <Text style={styles.headerTitle}>저축 목표</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{goalsWithProjections.length}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>저축 목표</Text>
+          <View style={[styles.countBadge, { backgroundColor: colors.purplePrimary }]}>
+            <Text style={[styles.countText, { color: colors.text }]}>{goalsWithProjections.length}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -181,8 +185,8 @@ export const SavingsGoalsWidget: React.FC = () => {
             navigation.navigate('Goals' as never);
           }}
         >
-          <Text style={styles.viewAllText}>전체 보기</Text>
-          <Ionicons name="chevron-forward" size={14} color={Colors.purpleLight} />
+          <Text style={[styles.viewAllText, { color: colors.purpleLight }]}>전체 보기</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.purpleLight} />
         </TouchableOpacity>
       </View>
 
@@ -197,7 +201,13 @@ export const SavingsGoalsWidget: React.FC = () => {
             entering={FadeInRight.delay(index * 80).duration(300)}
           >
             <TouchableOpacity
-              style={styles.goalCard}
+              style={[
+                styles.goalCard,
+                {
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                }
+              ]}
               activeOpacity={0.8}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -225,37 +235,37 @@ export const SavingsGoalsWidget: React.FC = () => {
               </View>
 
               {/* Goal Name */}
-              <Text style={styles.goalName} numberOfLines={1}>{goal.name}</Text>
+              <Text style={[styles.goalName, { color: colors.text }]} numberOfLines={1}>{goal.name}</Text>
 
               {/* Progress Bar */}
               <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
+                <View style={[styles.progressBar, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }]}>
                   <LinearGradient
                     colors={goal.status === 'on-track' || goal.status === 'completed'
-                      ? Gradients.purple as [string, string]
+                      ? gradients.purple as [string, string]
                       : ['#f59e0b', '#f97316']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.progressFill, { width: `${goal.progress}%` }]}
                   />
                 </View>
-                <Text style={styles.progressText}>{Math.round(goal.progress)}%</Text>
+                <Text style={[styles.progressText, { color: colors.purpleLight }]}>{Math.round(goal.progress)}%</Text>
               </View>
 
               {/* Amount Info */}
               <View style={styles.amountRow}>
-                <Text style={styles.currentAmount}>
+                <Text style={[styles.currentAmount, { color: colors.goldPrimary }]}>
                   ₩{goal.currentAmount.toLocaleString()}
                 </Text>
-                <Text style={styles.targetAmount}>
+                <Text style={[styles.targetAmount, { color: colors.textMuted }]}>
                   / ₩{goal.targetAmount.toLocaleString()}
                 </Text>
               </View>
 
               {/* Projection Info */}
               <View style={styles.projectionRow}>
-                <Ionicons name="calendar-outline" size={12} color={Colors.textMuted} />
-                <Text style={styles.projectionText}>
+                <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
+                <Text style={[styles.projectionText, { color: colors.textMuted }]}>
                   {goal.projectedCompletionDate
                     ? formatDaysRemaining(goal.daysRemaining)
                     : '저축을 시작하세요'}
@@ -264,9 +274,9 @@ export const SavingsGoalsWidget: React.FC = () => {
 
               {/* Remaining or Monthly Needed */}
               {goal.remaining > 0 && (
-                <View style={styles.remainingRow}>
-                  <Text style={styles.remainingLabel}>남은 금액</Text>
-                  <Text style={styles.remainingValue}>
+                <View style={[styles.remainingRow, { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
+                  <Text style={[styles.remainingLabel, { color: colors.textMuted }]}>남은 금액</Text>
+                  <Text style={[styles.remainingValue, { color: colors.textSecondary }]}>
                     ₩{goal.remaining.toLocaleString()}
                   </Text>
                 </View>
@@ -288,41 +298,53 @@ export const SavingsGoalsWidget: React.FC = () => {
         {/* Add New Goal Card */}
         <Animated.View entering={FadeInRight.delay(goalsWithProjections.length * 80).duration(300)}>
           <TouchableOpacity
-            style={styles.addGoalCard}
+            style={[
+              styles.addGoalCard,
+              {
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.08)',
+                borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.25)',
+              }
+            ]}
             activeOpacity={0.7}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate('Goals' as never);
             }}
           >
-            <View style={styles.addIconCircle}>
-              <Ionicons name="add" size={24} color={Colors.purpleLight} />
+            <View style={[styles.addIconCircle, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)' }]}>
+              <Ionicons name="add" size={24} color={colors.purpleLight} />
             </View>
-            <Text style={styles.addGoalText}>새 목표</Text>
+            <Text style={[styles.addGoalText, { color: colors.purpleLight }]}>새 목표</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
 
       {/* Summary Card */}
       {goalsWithProjections.length > 0 && (
-        <View style={styles.summaryCard}>
+        <View style={[
+          styles.summaryCard,
+          {
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+          }
+        ]}>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>총 저축액</Text>
-            <Text style={styles.summaryValue}>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>총 저축액</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
               ₩{goalsWithProjections.reduce((sum, g) => sum + g.currentAmount, 0).toLocaleString()}
             </Text>
           </View>
-          <View style={styles.summaryDivider} />
+          <View style={[styles.summaryDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' }]} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>목표 금액</Text>
-            <Text style={styles.summaryValue}>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>목표 금액</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
               ₩{goalsWithProjections.reduce((sum, g) => sum + g.targetAmount, 0).toLocaleString()}
             </Text>
           </View>
-          <View style={styles.summaryDivider} />
+          <View style={[styles.summaryDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' }]} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>월 저축</Text>
-            <Text style={[styles.summaryValue, { color: Colors.success }]}>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>월 저축</Text>
+            <Text style={[styles.summaryValue, { color: colors.success }]}>
               ₩{monthlySavingsRate.toLocaleString()}
             </Text>
           </View>

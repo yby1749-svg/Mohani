@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSizes } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 const { width } = Dimensions.get('window');
 const CELL_SIZE = (width - Spacing.lg * 2 - Spacing.sm * 8) / 7;
@@ -35,6 +36,7 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
   selectedMonth = new Date(),
   onDayPress,
 }) => {
+  const { colors, isDark } = useTheme();
   const dailyBudget = monthlyBudget / 30;
 
   // Generate calendar data
@@ -118,20 +120,27 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
 
   // Get color based on spending intensity
   const getHeatColor = (intensity: number, spending: number) => {
-    if (spending === 0) return 'rgba(255, 255, 255, 0.05)';
+    if (spending === 0) {
+      return isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+    }
+
+    const baseAlpha = isDark ? 0.3 : 0.2;
+    const intensityMultiplier = isDark ? 0.7 : 0.6;
 
     if (spending > dailyBudget * 1.5) {
       // Over budget - red
-      return `rgba(239, 68, 68, ${0.3 + intensity * 0.7})`;
+      return `rgba(239, 68, 68, ${baseAlpha + intensity * intensityMultiplier})`;
     } else if (spending > dailyBudget) {
       // At budget - orange
-      return `rgba(245, 158, 11, ${0.3 + intensity * 0.7})`;
+      return `rgba(245, 158, 11, ${baseAlpha + intensity * intensityMultiplier})`;
     } else if (spending > dailyBudget * 0.5) {
       // Under budget - yellow
-      return `rgba(234, 179, 8, ${0.2 + intensity * 0.5})`;
+      const yellowAlpha = isDark ? 0.2 : 0.15;
+      return `rgba(234, 179, 8, ${yellowAlpha + intensity * 0.5})`;
     } else {
       // Low spending - green
-      return `rgba(34, 197, 94, ${0.2 + intensity * 0.5})`;
+      const greenAlpha = isDark ? 0.2 : 0.15;
+      return `rgba(34, 197, 94, ${greenAlpha + intensity * 0.5})`;
     }
   };
 
@@ -142,21 +151,21 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
     <View style={styles.container}>
       {/* Month Header */}
       <View style={styles.header}>
-        <Text style={styles.monthTitle}>
+        <Text style={[styles.monthTitle, { color: colors.text }]}>
           {selectedMonth.getFullYear()}년 {monthNames[selectedMonth.getMonth()]}
         </Text>
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: 'rgba(34, 197, 94, 0.6)' }]} />
-            <Text style={styles.legendText}>적음</Text>
+            <View style={[styles.legendDot, { backgroundColor: isDark ? 'rgba(34, 197, 94, 0.6)' : 'rgba(34, 197, 94, 0.7)' }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>적음</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: 'rgba(245, 158, 11, 0.6)' }]} />
-            <Text style={styles.legendText}>보통</Text>
+            <View style={[styles.legendDot, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.6)' : 'rgba(245, 158, 11, 0.7)' }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>보통</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: 'rgba(239, 68, 68, 0.6)' }]} />
-            <Text style={styles.legendText}>많음</Text>
+            <View style={[styles.legendDot, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.6)' : 'rgba(239, 68, 68, 0.7)' }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>많음</Text>
           </View>
         </View>
       </View>
@@ -167,6 +176,7 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
           <View key={day} style={styles.weekDayCell}>
             <Text style={[
               styles.weekDayText,
+              { color: colors.textSecondary },
               index === 0 && styles.sundayText,
               index === 6 && styles.saturdayText,
             ]}>
@@ -188,7 +198,7 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
                 style={[
                   styles.dayCell,
                   dayData.day === null && styles.emptyCell,
-                  dayData.isToday && styles.todayCell,
+                  dayData.isToday && { borderWidth: 2, borderColor: colors.purpleLight },
                   dayData.day !== null && {
                     backgroundColor: getHeatColor(dayData.intensity, dayData.spending),
                   },
@@ -206,14 +216,15 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
                   <>
                     <Text style={[
                       styles.dayNumber,
+                      { color: colors.text },
                       dayIndex === 0 && styles.sundayText,
                       dayIndex === 6 && styles.saturdayText,
-                      dayData.isToday && styles.todayText,
+                      dayData.isToday && { color: colors.purpleLight, fontWeight: '700' },
                     ]}>
                       {dayData.day}
                     </Text>
                     {dayData.spending > 0 && (
-                      <Text style={styles.daySpending} numberOfLines={1}>
+                      <Text style={[styles.daySpending, { color: colors.textSecondary }]} numberOfLines={1}>
                         {dayData.spending >= 10000
                           ? `${Math.floor(dayData.spending / 10000)}만`
                           : `${Math.floor(dayData.spending / 1000)}천`}
@@ -228,21 +239,21 @@ export const SpendingHeatmap: React.FC<SpendingHeatmapProps> = ({
       ))}
 
       {/* Summary Stats */}
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }]}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>일평균 예산</Text>
-          <Text style={styles.summaryValue}>₩{Math.round(dailyBudget).toLocaleString()}</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>일평균 예산</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>₩{Math.round(dailyBudget).toLocaleString()}</Text>
         </View>
-        <View style={styles.summaryDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>무지출일</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>무지출일</Text>
           <Text style={[styles.summaryValue, { color: '#22C55E' }]}>
             {calendarData.weeks.flat().filter((d) => d.day !== null && d.isPast && d.spending === 0).length}일
           </Text>
         </View>
-        <View style={styles.summaryDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>초과일</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>초과일</Text>
           <Text style={[styles.summaryValue, { color: '#EF4444' }]}>
             {calendarData.weeks.flat().filter((d) => d.day !== null && d.spending > dailyBudget).length}일
           </Text>

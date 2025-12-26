@@ -22,7 +22,8 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Colors, Gradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
+import { Colors, Gradients, LightGradients, Spacing, BorderRadius, FontSizes } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 const { width } = Dimensions.get('window');
 
@@ -72,6 +73,8 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
   existingEntry,
   selectedDate,
 }) => {
+  const { colors, isDark } = useTheme();
+  const gradients = isDark ? Gradients : LightGradients;
   const [selectedMood, setSelectedMood] = useState<string | null>(existingEntry?.mood || null);
   const [content, setContent] = useState(existingEntry?.content || '');
   const [selectedTags, setSelectedTags] = useState<string[]>(existingEntry?.tags || []);
@@ -126,7 +129,7 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={styles.overlay}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
 
         <KeyboardAvoidingView
@@ -139,27 +142,31 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
             style={styles.modalContainer}
           >
             <LinearGradient
-              colors={['rgba(124, 58, 237, 0.15)', 'rgba(10, 10, 15, 0.98)']}
-              style={styles.modalGradient}
+              colors={isDark ? ['rgba(124, 58, 237, 0.15)', 'rgba(10, 10, 15, 0.98)'] : ['rgba(124, 58, 237, 0.08)', 'rgba(255, 255, 255, 0.98)']}
+              style={[styles.modalGradient, { borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : 'rgba(124, 58, 237, 0.2)' }]}
             >
               {/* Header */}
               <View style={styles.header}>
-                <View style={styles.handle} />
-                <Text style={styles.title}>오늘의 일기</Text>
-                <Text style={styles.subtitle}>{formatDate(selectedDate || new Date())}</Text>
+                <View style={[styles.handle, { backgroundColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }]} />
+                <Text style={[styles.title, { color: colors.text }]}>오늘의 일기</Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{formatDate(selectedDate || new Date())}</Text>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
                 {/* Mood Selection */}
-                <Text style={styles.sectionTitle}>오늘 기분은 어때요?</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>오늘 기분은 어때요?</Text>
                 <View style={styles.moodsContainer}>
                   {MOODS.map((mood) => (
                     <TouchableOpacity
                       key={mood.id}
                       style={[
                         styles.moodItem,
+                        {
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                          borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                        },
                         selectedMood === mood.id && styles.moodItemSelected,
-                        selectedMood === mood.id && { borderColor: mood.color, backgroundColor: `${mood.color}20` },
+                        selectedMood === mood.id && { borderColor: mood.color, backgroundColor: `${mood.color}${isDark ? '20' : '15'}` },
                       ]}
                       onPress={() => setSelectedMood(mood.id)}
                       activeOpacity={0.7}
@@ -167,6 +174,7 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
                       <Text style={styles.moodEmoji}>{mood.emoji}</Text>
                       <Text style={[
                         styles.moodLabel,
+                        { color: colors.textSecondary },
                         selectedMood === mood.id && { color: mood.color },
                       ]}>
                         {mood.label}
@@ -176,30 +184,43 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
                 </View>
 
                 {/* Content Input */}
-                <Text style={styles.sectionTitle}>오늘 하루는 어땠나요?</Text>
-                <View style={styles.contentContainer}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>오늘 하루는 어땠나요?</Text>
+                <View style={[
+                  styles.contentContainer,
+                  {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                  }
+                ]}>
                   <TextInput
-                    style={styles.contentInput}
+                    style={[styles.contentInput, { color: colors.text }]}
                     value={content}
                     onChangeText={setContent}
                     placeholder="오늘 있었던 일, 느낀 점, 감사한 일 등을 자유롭게 적어보세요..."
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)'}
                     multiline
                     maxLength={500}
                     textAlignVertical="top"
                   />
-                  <Text style={styles.charCount}>{content.length}/500</Text>
+                  <Text style={[styles.charCount, { color: colors.textMuted }]}>{content.length}/500</Text>
                 </View>
 
                 {/* Tags */}
-                <Text style={styles.sectionTitle}>태그 (선택)</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>태그 (선택)</Text>
                 <View style={styles.tagsContainer}>
                   {TAGS.map((tag) => (
                     <TouchableOpacity
                       key={tag.id}
                       style={[
                         styles.tagItem,
-                        selectedTags.includes(tag.id) && styles.tagItemSelected,
+                        {
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                          borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                        },
+                        selectedTags.includes(tag.id) && {
+                          backgroundColor: isDark ? 'rgba(124, 58, 237, 0.2)' : 'rgba(124, 58, 237, 0.12)',
+                          borderColor: colors.primary,
+                        },
                       ]}
                       onPress={() => toggleTag(tag.id)}
                       activeOpacity={0.7}
@@ -207,7 +228,8 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
                       <Text style={styles.tagIcon}>{tag.icon}</Text>
                       <Text style={[
                         styles.tagLabel,
-                        selectedTags.includes(tag.id) && styles.tagLabelSelected,
+                        { color: colors.textSecondary },
+                        selectedTags.includes(tag.id) && { color: colors.primary },
                       ]}>
                         {tag.label}
                       </Text>
@@ -219,9 +241,21 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
               </ScrollView>
 
               {/* Buttons - Fixed at bottom */}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                  <Text style={styles.cancelButtonText}>취소</Text>
+              <View style={[
+                styles.buttonContainer,
+                {
+                  backgroundColor: isDark ? 'rgba(10, 10, 15, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                  borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                }
+              ]}>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelButton,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }
+                  ]}
+                  onPress={onClose}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>취소</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -233,12 +267,12 @@ export const AddDiaryModal: React.FC<AddDiaryModalProps> = ({
                   disabled={!selectedMood || !content.trim()}
                 >
                   <LinearGradient
-                    colors={selectedMood && content.trim() ? Gradients.primary : ['#333', '#333']}
+                    colors={selectedMood && content.trim() ? gradients.primary : (isDark ? ['#333', '#333'] : ['#ccc', '#ccc'])}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.addButtonGradient}
                   >
-                    <Text style={styles.addButtonText}>
+                    <Text style={[styles.addButtonText, { color: selectedMood && content.trim() ? '#FFFFFF' : colors.textSecondary }]}>
                       {existingEntry ? '수정하기' : '저장하기'}
                     </Text>
                   </LinearGradient>
