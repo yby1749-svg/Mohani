@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface ExpenseLocation {
@@ -126,20 +126,20 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addFriend = (name: string, emoji: string) => {
+  const addFriend = useCallback((name: string, emoji: string) => {
     const newFriend: Friend = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name,
       emoji,
     };
     setFriends((prev) => [...prev, newFriend]);
-  };
+  }, []);
 
-  const removeFriend = (id: string) => {
+  const removeFriend = useCallback((id: string) => {
     setFriends((prev) => prev.filter((f) => f.id !== id));
-  };
+  }, []);
 
-  const markSplitAsPaid = (expenseId: string, participantId: string) => {
+  const markSplitAsPaid = useCallback((expenseId: string, participantId: string) => {
     setExpenses((prev) =>
       prev.map((expense) => {
         if (expense.id === expenseId && expense.split) {
@@ -156,9 +156,9 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return expense;
       })
     );
-  };
+  }, []);
 
-  const getSplitBalances = () => {
+  const getSplitBalances = useCallback(() => {
     const balanceMap: Record<string, { friend: Friend; balance: number; expenses: Expense[] }> = {};
 
     expenses.forEach((expense) => {
@@ -188,21 +188,22 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     return Object.values(balanceMap).sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
-  };
+  }, [expenses, friends]);
 
-  const addExpense = (expense: Omit<Expense, 'id'>) => {
+  const addExpense = useCallback((expense: Omit<Expense, 'id'>) => {
     const newExpense: Expense = {
       ...expense,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     };
     setExpenses((prev) => [newExpense, ...prev]);
-  };
+  }, []);
 
-  const removeExpense = (id: string) => {
+  const removeExpense = useCallback((id: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
-  };
+  }, []);
 
-  const getTodayExpenses = () => {
+  // Memoized today's expenses
+  const todayExpenses = useMemo(() => {
     const today = new Date();
     return expenses.filter((e) => {
       const expenseDate = new Date(e.date);
@@ -212,13 +213,16 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         expenseDate.getFullYear() === today.getFullYear()
       );
     });
-  };
+  }, [expenses]);
 
-  const getTodayTotal = () => {
-    return getTodayExpenses().reduce((sum, e) => sum + e.amount, 0);
-  };
+  const getTodayExpenses = useCallback(() => todayExpenses, [todayExpenses]);
 
-  const getMonthlyTotal = () => {
+  const getTodayTotal = useCallback(() => {
+    return todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [todayExpenses]);
+
+  // Memoized monthly total
+  const monthlyTotal = useMemo(() => {
     const today = new Date();
     return expenses
       .filter((e) => {
@@ -229,9 +233,12 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         );
       })
       .reduce((sum, e) => sum + e.amount, 0);
-  };
+  }, [expenses]);
 
-  const getCategoryTotals = () => {
+  const getMonthlyTotal = useCallback(() => monthlyTotal, [monthlyTotal]);
+
+  // Memoized category totals
+  const categoryTotals = useMemo(() => {
     const today = new Date();
     const monthlyExpenses = expenses.filter((e) => {
       const expenseDate = new Date(e.date);
@@ -260,25 +267,40 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ...data,
       }))
       .sort((a, b) => b.total - a.total);
-  };
+  }, [expenses]);
+
+  const getCategoryTotals = useCallback(() => categoryTotals, [categoryTotals]);
+
+  const contextValue = useMemo(() => ({
+    expenses,
+    addExpense,
+    removeExpense,
+    getTodayExpenses,
+    getTodayTotal,
+    getMonthlyTotal,
+    getCategoryTotals,
+    friends,
+    addFriend,
+    removeFriend,
+    markSplitAsPaid,
+    getSplitBalances,
+  }), [
+    expenses,
+    addExpense,
+    removeExpense,
+    getTodayExpenses,
+    getTodayTotal,
+    getMonthlyTotal,
+    getCategoryTotals,
+    friends,
+    addFriend,
+    removeFriend,
+    markSplitAsPaid,
+    getSplitBalances,
+  ]);
 
   return (
-    <ExpenseContext.Provider
-      value={{
-        expenses,
-        addExpense,
-        removeExpense,
-        getTodayExpenses,
-        getTodayTotal,
-        getMonthlyTotal,
-        getCategoryTotals,
-        friends,
-        addFriend,
-        removeFriend,
-        markSplitAsPaid,
-        getSplitBalances,
-      }}
-    >
+    <ExpenseContext.Provider value={contextValue}>
       {children}
     </ExpenseContext.Provider>
   );

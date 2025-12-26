@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface CategoryLimit {
@@ -104,37 +104,37 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const updateSettings = (updates: Partial<UserSettings>) => {
+  const updateSettings = useCallback((updates: Partial<UserSettings>) => {
     setSettings((prev) => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const resetSettings = () => {
+  const resetSettings = useCallback(() => {
     setSettings(DEFAULT_SETTINGS);
-  };
+  }, []);
 
-  const updateCategoryLimit = (category: string, limit: number, enabled: boolean) => {
+  const updateCategoryLimit = useCallback((category: string, limit: number, enabled: boolean) => {
     setSettings((prev) => ({
       ...prev,
       categoryLimits: prev.categoryLimits.map((cl) =>
         cl.category === category ? { ...cl, limit, enabled } : cl
       ),
     }));
-  };
+  }, []);
 
-  const getCategoryLimit = (category: string) => {
+  const getCategoryLimit = useCallback((category: string) => {
     return settings.categoryLimits.find((cl) => cl.category === category);
-  };
+  }, [settings.categoryLimits]);
+
+  const contextValue = useMemo(() => ({
+    settings,
+    updateSettings,
+    resetSettings,
+    updateCategoryLimit,
+    getCategoryLimit,
+  }), [settings, updateSettings, resetSettings, updateCategoryLimit, getCategoryLimit]);
 
   return (
-    <SettingsContext.Provider
-      value={{
-        settings,
-        updateSettings,
-        resetSettings,
-        updateCategoryLimit,
-        getCategoryLimit,
-      }}
-    >
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );

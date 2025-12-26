@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, memo, useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -13,6 +13,11 @@ import { Colors } from '../constants/theme';
 import { useSettings } from '../context/SettingsContext';
 
 const { width, height } = Dimensions.get('window');
+
+// Reduced particle count for better performance
+const PARTICLE_COUNT = 8;
+const VERTICAL_LINES = 10;
+const HORIZONTAL_LINES = 12;
 
 const GlowOrb = ({
   color,
@@ -93,7 +98,8 @@ const GlowOrb = ({
   );
 };
 
-const Particle = ({ index }: { index: number }) => {
+// Memoized Particle component for performance
+const Particle = memo(({ index }: { index: number }) => {
   const translateY = useSharedValue(height + 50);
   const opacity = useSharedValue(0);
   const left = Math.random() * width;
@@ -143,7 +149,10 @@ const Particle = ({ index }: { index: number }) => {
       ]}
     />
   );
-};
+});
+
+// Memoize the GlowOrb component too
+const MemoizedGlowOrb = memo(GlowOrb);
 
 export default function AnimatedBackground() {
   const { settings } = useSettings();
@@ -169,49 +178,61 @@ export default function AnimatedBackground() {
     );
   }
 
+  // Pre-compute grid lines for performance
+  const verticalLines = useMemo(() =>
+    Array.from({ length: VERTICAL_LINES }).map((_, i) => (
+      <View
+        key={`v-${i}`}
+        style={[
+          styles.gridLine,
+          styles.gridLineVertical,
+          { left: (i / VERTICAL_LINES) * width },
+        ]}
+      />
+    )), []);
+
+  const horizontalLines = useMemo(() =>
+    Array.from({ length: HORIZONTAL_LINES }).map((_, i) => (
+      <View
+        key={`h-${i}`}
+        style={[
+          styles.gridLine,
+          styles.gridLineHorizontal,
+          { top: (i / HORIZONTAL_LINES) * height },
+        ]}
+      />
+    )), []);
+
+  const particles = useMemo(() =>
+    Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
+      <Particle key={i} index={i} />
+    )), []);
+
   // Dark mode: animated orbs and particles
   return (
     <View style={styles.container} pointerEvents="none">
-      {/* Grid lines effect */}
+      {/* Grid lines effect - reduced count */}
       <View style={styles.gridContainer}>
-        {Array.from({ length: 20 }).map((_, i) => (
-          <View
-            key={`v-${i}`}
-            style={[
-              styles.gridLine,
-              styles.gridLineVertical,
-              { left: (i / 20) * width },
-            ]}
-          />
-        ))}
-        {Array.from({ length: 30 }).map((_, i) => (
-          <View
-            key={`h-${i}`}
-            style={[
-              styles.gridLine,
-              styles.gridLineHorizontal,
-              { top: (i / 30) * height },
-            ]}
-          />
-        ))}
+        {verticalLines}
+        {horizontalLines}
       </View>
 
-      {/* Glowing orbs */}
-      <GlowOrb
+      {/* Glowing orbs - using memoized component */}
+      <MemoizedGlowOrb
         color={Colors.purplePrimary}
         size={300}
         initialX={width - 100}
         initialY={-100}
         delay={0}
       />
-      <GlowOrb
+      <MemoizedGlowOrb
         color="#92400e"
         size={250}
         initialX={-80}
         initialY={height * 0.4}
         delay={4000}
       />
-      <GlowOrb
+      <MemoizedGlowOrb
         color={Colors.purpleSecondary}
         size={200}
         initialX={width * 0.3}
@@ -219,10 +240,8 @@ export default function AnimatedBackground() {
         delay={8000}
       />
 
-      {/* Floating particles */}
-      {Array.from({ length: 20 }).map((_, i) => (
-        <Particle key={i} index={i} />
-      ))}
+      {/* Floating particles - reduced from 20 to 8 */}
+      {particles}
     </View>
   );
 }
