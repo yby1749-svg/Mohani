@@ -1470,7 +1470,7 @@ function SettingsScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
   const { isPremium, setShowUpgradeModal } = usePremium();
   const { expenses } = useExpenses();
-  const { recurringExpenses, addRecurring, deleteRecurring, toggleActive, getTotalMonthly } = useRecurring();
+  const { recurringExpenses, addRecurring, deleteRecurring, getTotalMonthly } = useRecurring();
   const { incomes, addIncome, deleteIncome, getMonthlyIncome, getTotalIncomeThisMonth } = useIncome();
 
   // 이번달 지출 건수
@@ -1737,7 +1737,6 @@ function SettingsScreen() {
                     paddingVertical: 12,
                     borderTopWidth: 1,
                     borderTopColor: colors.border,
-                    opacity: item.isActive ? 1 : 0.5,
                   }}
                 >
                   <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary + '15', justifyContent: 'center', alignItems: 'center' }}>
@@ -1752,9 +1751,6 @@ function SettingsScreen() {
                   <Text style={{ color: colors.expense, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
                     {item.amount.toLocaleString()}원
                   </Text>
-                  <TouchableOpacity activeOpacity={0.6} onPress={() => toggleActive(item.id)} style={{ padding: 4, marginRight: 4 }}>
-                    <Ionicons name={item.isActive ? 'pause-circle' : 'play-circle'} size={24} color={item.isActive ? colors.textMuted : colors.schedule} />
-                  </TouchableOpacity>
                   <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteRecurring(item.id, item.name)} style={{ padding: 4 }}>
                     <Ionicons name="trash-outline" size={20} color="#ef4444" />
                   </TouchableOpacity>
@@ -1794,20 +1790,7 @@ function SettingsScreen() {
             </View>
 
             <ScrollView style={{ padding: 20 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6 }}>금액</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-                placeholder="0"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="numeric"
-                value={incomeAmount}
-                onChangeText={(text) => {
-                  const numbers = text.replace(/[^0-9]/g, '');
-                  setIncomeAmount(numbers ? parseInt(numbers).toLocaleString() : '');
-                }}
-              />
-
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>수입 유형</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6 }}>수입 유형</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {INCOME_TYPES.map((type) => (
                   <TouchableOpacity
@@ -1838,6 +1821,19 @@ function SettingsScreen() {
                 placeholderTextColor={colors.textMuted}
                 value={incomeNote}
                 onChangeText={setIncomeNote}
+              />
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>금액</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                value={incomeAmount}
+                onChangeText={(text) => {
+                  const numbers = text.replace(/[^0-9]/g, '');
+                  setIncomeAmount(numbers ? parseInt(numbers).toLocaleString() : '');
+                }}
               />
 
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, padding: 12, backgroundColor: colors.bg, borderRadius: 8 }}>
@@ -1892,26 +1888,7 @@ function SettingsScreen() {
             </View>
 
             <ScrollView style={{ padding: 20 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6 }}>이름</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-                placeholder="예: 넷플릭스, KT 통신비"
-                placeholderTextColor={colors.textMuted}
-                value={recurringName}
-                onChangeText={setRecurringName}
-              />
-
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>금액</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-                placeholder="0"
-                placeholderTextColor={colors.textMuted}
-                value={recurringAmount}
-                onChangeText={setRecurringAmount}
-                keyboardType="number-pad"
-              />
-
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>카테고리</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6 }}>카테고리</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {Object.keys(categoryIcons).map(cat => (
                   <TouchableOpacity
@@ -1935,6 +1912,25 @@ function SettingsScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>이름</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="예: 넷플릭스, KT 통신비"
+                placeholderTextColor={colors.textMuted}
+                value={recurringName}
+                onChangeText={setRecurringName}
+              />
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>금액</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                value={recurringAmount}
+                onChangeText={setRecurringAmount}
+                keyboardType="number-pad"
+              />
 
               <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>주기</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
