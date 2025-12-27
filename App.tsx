@@ -281,6 +281,128 @@ function ScheduleProvider({ children }: { children: React.ReactNode }) {
 
 const useSchedules = () => useContext(ScheduleContext);
 
+// ============ RECURRING EXPENSE CONTEXT ============
+interface RecurringExpense {
+  id: string;
+  name: string;
+  amount: number;
+  category: string;
+  frequency: 'monthly' | 'yearly';
+  dayOfMonth: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+const RecurringContext = createContext<{
+  recurringExpenses: RecurringExpense[];
+  addRecurring: (expense: Omit<RecurringExpense, 'id' | 'createdAt' | 'isActive'>) => void;
+  updateRecurring: (id: string, updates: Partial<RecurringExpense>) => void;
+  deleteRecurring: (id: string) => void;
+  toggleActive: (id: string) => void;
+  getTotalMonthly: () => number;
+  getUpcoming: (days?: number) => { expense: RecurringExpense; dueDate: Date; daysUntil: number }[];
+}>({
+  recurringExpenses: [],
+  addRecurring: () => {},
+  updateRecurring: () => {},
+  deleteRecurring: () => {},
+  toggleActive: () => {},
+  getTotalMonthly: () => 0,
+  getUpcoming: () => [],
+});
+
+function RecurringProvider({ children }: { children: React.ReactNode }) {
+  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => { loadRecurring(); }, []);
+  useEffect(() => { if (isLoaded) saveRecurring(); }, [recurringExpenses]);
+
+  const loadRecurring = async () => {
+    try {
+      const data = await AsyncStorage.getItem('@mohani_recurring');
+      if (data) setRecurringExpenses(JSON.parse(data));
+      setIsLoaded(true);
+    } catch (e) { setIsLoaded(true); }
+  };
+
+  const saveRecurring = async () => {
+    try {
+      await AsyncStorage.setItem('@mohani_recurring', JSON.stringify(recurringExpenses));
+    } catch (e) {}
+  };
+
+  const addRecurring = (expense: Omit<RecurringExpense, 'id' | 'createdAt' | 'isActive'>) => {
+    const newExpense: RecurringExpense = {
+      ...expense,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      isActive: true,
+    };
+    setRecurringExpenses(prev => [newExpense, ...prev]);
+  };
+
+  const updateRecurring = (id: string, updates: Partial<RecurringExpense>) => {
+    setRecurringExpenses(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+  };
+
+  const deleteRecurring = (id: string) => {
+    setRecurringExpenses(prev => prev.filter(item => item.id !== id));
+  };
+
+  const toggleActive = (id: string) => {
+    setRecurringExpenses(prev => prev.map(item => item.id === id ? { ...item, isActive: !item.isActive } : item));
+  };
+
+  const getTotalMonthly = () => {
+    return recurringExpenses
+      .filter(e => e.isActive)
+      .reduce((sum, e) => {
+        if (e.frequency === 'yearly') return sum + Math.round(e.amount / 12);
+        return sum + e.amount;
+      }, 0);
+  };
+
+  const getUpcoming = (days: number = 7) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return recurringExpenses
+      .filter(e => e.isActive)
+      .map(expense => {
+        const dueDate = new Date(today);
+        const targetDay = expense.dayOfMonth;
+        const currentDay = today.getDate();
+
+        if (expense.frequency === 'monthly') {
+          if (currentDay > targetDay) {
+            dueDate.setMonth(dueDate.getMonth() + 1);
+          }
+          dueDate.setDate(Math.min(targetDay, new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0).getDate()));
+        } else {
+          // yearly - use createdAt month
+          const created = new Date(expense.createdAt);
+          dueDate.setMonth(created.getMonth());
+          dueDate.setDate(targetDay);
+          if (dueDate <= today) dueDate.setFullYear(dueDate.getFullYear() + 1);
+        }
+
+        const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return { expense, dueDate, daysUntil };
+      })
+      .filter(item => item.daysUntil >= 0 && item.daysUntil <= days)
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+  };
+
+  return (
+    <RecurringContext.Provider value={{ recurringExpenses, addRecurring, updateRecurring, deleteRecurring, toggleActive, getTotalMonthly, getUpcoming }}>
+      {children}
+    </RecurringContext.Provider>
+  );
+}
+
+const useRecurring = () => useContext(RecurringContext);
+
 // ============ CALENDAR SCREEN ============
 function CalendarScreen() {
   const today = new Date();
@@ -1198,11 +1320,20 @@ function SettingsScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
   const { isPremium, setShowUpgradeModal } = usePremium();
   const { expenses } = useExpenses();
+  const { recurringExpenses, addRecurring, deleteRecurring, toggleActive, getTotalMonthly } = useRecurring();
 
   // 이번달 지출 건수
   const today = new Date();
   const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const thisMonthCount = expenses.filter(e => e.date.startsWith(thisMonth)).length;
+
+  // 고정 지출 추가 모달
+  const [showAddRecurring, setShowAddRecurring] = useState(false);
+  const [recurringName, setRecurringName] = useState('');
+  const [recurringAmount, setRecurringAmount] = useState('');
+  const [recurringCategory, setRecurringCategory] = useState('구독');
+  const [recurringFrequency, setRecurringFrequency] = useState<'monthly' | 'yearly'>('monthly');
+  const [recurringDay, setRecurringDay] = useState(today.getDate().toString());
 
   const clearData = () => {
     Alert.alert('데이터 초기화', '모든 데이터를 삭제하시겠습니까?', [
@@ -1210,13 +1341,50 @@ function SettingsScreen() {
       { text: '삭제', style: 'destructive', onPress: async () => {
         await AsyncStorage.removeItem('@mohani_expenses');
         await AsyncStorage.removeItem('@mohani_schedules');
+        await AsyncStorage.removeItem('@mohani_recurring');
         Alert.alert('완료', '데이터가 삭제되었습니다. 앱을 재시작하세요.');
       }},
     ]);
   };
 
+  const handleAddRecurring = () => {
+    if (!recurringName.trim() || !recurringAmount) {
+      Alert.alert('알림', '이름과 금액을 입력해주세요');
+      return;
+    }
+    addRecurring({
+      name: recurringName.trim(),
+      amount: parseInt(recurringAmount) || 0,
+      category: recurringCategory,
+      frequency: recurringFrequency,
+      dayOfMonth: parseInt(recurringDay) || 1,
+    });
+    setShowAddRecurring(false);
+    setRecurringName('');
+    setRecurringAmount('');
+    setRecurringCategory('구독');
+    setRecurringFrequency('monthly');
+    setRecurringDay(today.getDate().toString());
+  };
+
+  const handleDeleteRecurring = (id: string, name: string) => {
+    Alert.alert('삭제', `"${name}"을(를) 삭제하시겠습니까?`, [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => deleteRecurring(id) }
+    ]);
+  };
+
+  const categoryIcons: Record<string, string> = {
+    '구독': 'play-circle',
+    '통신': 'phone-portrait',
+    '보험': 'shield-checkmark',
+    '주거': 'home',
+    '교통': 'car',
+    '기타': 'ellipsis-horizontal-circle',
+  };
+
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>설정</Text></View>
 
       {/* 프리미엄 카드 */}
@@ -1255,12 +1423,63 @@ function SettingsScreen() {
         </TouchableOpacity>
       )}
 
+      {/* 고정 지출 섹션 */}
       <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <View style={styles.appInfo}>
-          <Text style={[styles.appName, { color: colors.text }]}>Mohani Simple</Text>
-          <Text style={[styles.appDesc, { color: colors.textMuted }]}>달력 중심 가계부</Text>
-          <Text style={[styles.version, { color: colors.textMuted }]}>v1.1.0</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <View>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>고정 지출</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
+              월 예상: {getTotalMonthly().toLocaleString()}원
+            </Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setShowAddRecurring(true)}
+            style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+          >
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>+ 추가</Text>
+          </TouchableOpacity>
         </View>
+
+        {recurringExpenses.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+            <Ionicons name="repeat-outline" size={40} color={colors.textMuted} />
+            <Text style={{ color: colors.textMuted, marginTop: 8 }}>등록된 고정 지출이 없습니다</Text>
+          </View>
+        ) : (
+          recurringExpenses.map(item => (
+            <View
+              key={item.id}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 12,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+                opacity: item.isActive ? 1 : 0.5,
+              }}
+            >
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary + '15', justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name={categoryIcons[item.category] as any || 'card'} size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{item.name}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                  {item.frequency === 'monthly' ? `매월 ${item.dayOfMonth}일` : '매년'} · {item.category}
+                </Text>
+              </View>
+              <Text style={{ color: colors.expense, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
+                {item.amount.toLocaleString()}원
+              </Text>
+              <TouchableOpacity activeOpacity={0.6} onPress={() => toggleActive(item.id)} style={{ padding: 4, marginRight: 4 }}>
+                <Ionicons name={item.isActive ? 'pause-circle' : 'play-circle'} size={24} color={item.isActive ? colors.textMuted : colors.schedule} />
+              </TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteRecurring(item.id, item.name)} style={{ padding: 4 }}>
+                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
@@ -1277,7 +1496,121 @@ function SettingsScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
-    </View>
+
+      <View style={{ height: 40 }} />
+
+      {/* 고정 지출 추가 모달 */}
+      <Modal visible={showAddRecurring} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>고정 지출 추가</Text>
+              <TouchableOpacity onPress={() => setShowAddRecurring(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ padding: 20 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6 }}>이름</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="예: 넷플릭스, KT 통신비"
+                placeholderTextColor={colors.textMuted}
+                value={recurringName}
+                onChangeText={setRecurringName}
+              />
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>금액</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                value={recurringAmount}
+                onChangeText={setRecurringAmount}
+                keyboardType="number-pad"
+              />
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>카테고리</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {Object.keys(categoryIcons).map(cat => (
+                  <TouchableOpacity
+                    key={cat}
+                    activeOpacity={0.7}
+                    onPress={() => setRecurringCategory(cat)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: recurringCategory === cat ? colors.primary : colors.border,
+                      backgroundColor: recurringCategory === cat ? colors.primary + '15' : 'transparent',
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name={categoryIcons[cat] as any} size={16} color={recurringCategory === cat ? colors.primary : colors.textMuted} />
+                    <Text style={{ color: recurringCategory === cat ? colors.primary : colors.text, fontSize: 13 }}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>주기</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setRecurringFrequency('monthly')}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: recurringFrequency === 'monthly' ? colors.primary : colors.border,
+                    backgroundColor: recurringFrequency === 'monthly' ? colors.primary + '15' : 'transparent',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: recurringFrequency === 'monthly' ? colors.primary : colors.text, fontWeight: '500' }}>매월</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setRecurringFrequency('yearly')}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: recurringFrequency === 'yearly' ? colors.primary : colors.border,
+                    backgroundColor: recurringFrequency === 'yearly' ? colors.primary + '15' : 'transparent',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: recurringFrequency === 'yearly' ? colors.primary : colors.text, fontWeight: '500' }}>매년</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>결제일</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="1-31"
+                placeholderTextColor={colors.textMuted}
+                value={recurringDay}
+                onChangeText={(t) => setRecurringDay(t.replace(/[^0-9]/g, '').slice(0, 2))}
+                keyboardType="number-pad"
+              />
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleAddRecurring}
+                style={{ backgroundColor: colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 24 }}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>추가하기</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 }
 
@@ -1917,8 +2250,10 @@ export default function App() {
         <PremiumProvider>
           <ExpenseProvider>
             <ScheduleProvider>
-              <AppContent />
-              <UpgradeModal />
+              <RecurringProvider>
+                <AppContent />
+                <UpgradeModal />
+              </RecurringProvider>
             </ScheduleProvider>
           </ExpenseProvider>
         </PremiumProvider>
@@ -2084,6 +2419,7 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 16 },
   inputLabel: { color: Colors.textMuted, fontSize: 14, marginBottom: 8 },
   textInput: { backgroundColor: Colors.bg, borderRadius: 12, padding: 14, color: Colors.text, fontSize: 16 },
+  input: { padding: 12, borderRadius: 8, borderWidth: 1, fontSize: 16 },
 
   appInfo: { alignItems: 'center', paddingVertical: 20 },
   appName: { color: Colors.text, fontSize: 22, fontWeight: 'bold' },
