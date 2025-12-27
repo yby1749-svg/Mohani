@@ -3,7 +3,8 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Keyboard, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Keyboard, Animated, Dimensions } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
@@ -2000,6 +2001,9 @@ function ExpensesScreen() {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [showExpenseView, setShowExpenseView] = useState(false);
+  const [showStatsView, setShowStatsView] = useState(false);
+
+  const screenWidth = Dimensions.get('window').width;
 
   // 프리미엄 기능 체크
   const handlePDFExport = () => {
@@ -2214,6 +2218,29 @@ function ExpensesScreen() {
   const weeklyData = getWeeklyData();
   const monthlyData = getMonthlyData();
 
+  // 월별 지출 차트 데이터 (최근 6개월)
+  const getChartData = () => {
+    const months: { label: string; total: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const y = targetDate.getFullYear();
+      const m = targetDate.getMonth() + 1;
+      let total = 0;
+      expenses.forEach(e => {
+        const [ey, em] = e.date.split('-').map(Number);
+        if (ey === y && em === m) total += e.amount;
+      });
+      months.push({ label: `${m}월`, total });
+    }
+    return months;
+  };
+
+  const chartData = getChartData();
+  const chartLabels = chartData.map(d => d.label);
+  const chartValues = chartData.map(d => d.total);
+  const maxChartValue = Math.max(...chartValues, 1);
+  const avgSpending = Math.round(chartValues.reduce((a, b) => a + b, 0) / chartValues.length);
+
   const formatDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
@@ -2383,6 +2410,98 @@ function ExpensesScreen() {
         )}
             </View>
           </>
+        )}
+      </View>
+
+      {/* 통계 보기 섹션 */}
+      <View style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, marginTop: 16 }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setShowStatsView(!showStatsView)}
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="stats-chart" size={22} color={colors.primary} />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>통계 보기</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
+                월 평균 {avgSpending.toLocaleString()}원
+              </Text>
+            </View>
+          </View>
+          <Ionicons name={showStatsView ? 'chevron-up' : 'chevron-down'} size={22} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {showStatsView && (
+          <View style={{ marginTop: 20 }}>
+            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', marginBottom: 16 }}>월별 지출 추이 (최근 6개월)</Text>
+
+            {chartValues.some(v => v > 0) ? (
+              <View style={{ alignItems: 'center' }}>
+                <LineChart
+                  data={{
+                    labels: chartLabels,
+                    datasets: [{ data: chartValues.map(v => v || 0) }],
+                  }}
+                  width={screenWidth - 80}
+                  height={200}
+                  chartConfig={{
+                    backgroundColor: colors.card,
+                    backgroundGradientFrom: colors.card,
+                    backgroundGradientTo: colors.card,
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(124, 58, 237, ${opacity})`,
+                    labelColor: () => colors.textMuted,
+                    style: { borderRadius: 16 },
+                    propsForDots: {
+                      r: '5',
+                      strokeWidth: '2',
+                      stroke: colors.primary,
+                    },
+                    propsForBackgroundLines: {
+                      strokeDasharray: '',
+                      stroke: colors.border,
+                    },
+                    formatYLabel: (value) => {
+                      const num = parseInt(value);
+                      if (num >= 10000) return `${Math.round(num / 10000)}만`;
+                      if (num >= 1000) return `${Math.round(num / 1000)}천`;
+                      return `${num}`;
+                    },
+                  }}
+                  bezier
+                  style={{ borderRadius: 12 }}
+                  withInnerLines={true}
+                  withOuterLines={false}
+                  withVerticalLines={false}
+                  withHorizontalLines={true}
+                  fromZero={true}
+                />
+
+                {/* 월별 상세 */}
+                <View style={{ width: '100%', marginTop: 20 }}>
+                  {chartData.map((item, idx) => (
+                    <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: colors.border }}>
+                      <Text style={{ color: colors.text, fontSize: 14 }}>{item.label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 100, height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' }}>
+                          <View style={{ width: `${(item.total / maxChartValue) * 100}%`, height: '100%', backgroundColor: colors.primary, borderRadius: 3 }} />
+                        </View>
+                        <Text style={{ color: colors.expense, fontSize: 14, fontWeight: '500', minWidth: 80, textAlign: 'right' }}>
+                          {item.total.toLocaleString()}원
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <Ionicons name="analytics-outline" size={48} color={colors.textMuted} />
+                <Text style={{ color: colors.textMuted, marginTop: 12 }}>지출 데이터가 없습니다</Text>
+              </View>
+            )}
+          </View>
         )}
       </View>
 
