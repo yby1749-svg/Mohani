@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -612,90 +612,18 @@ function CalendarScreen() {
   const [expenseItems, setExpenseItems] = useState([{ id: 1, name: '', amount: '', checked: false }]);
   const expenseTotal = expenseItems.reduce((sum, item) => sum + (parseInt(item.amount) || 0), 0);
 
-  // Memo state
-  const [savedMemos, setSavedMemos] = useState<{id: number; name: string; items: typeof expenseItems}[]>([]);
-  const [showMemoName, setShowMemoName] = useState(false);
-  const [memoName, setMemoName] = useState('');
-  const [currentMemoId, setCurrentMemoId] = useState<number | null>(null);
-
   // Expanded expenses state
   const [expandedExpenses, setExpandedExpenses] = useState<Set<string>>(new Set());
 
   // Focus state for new items
   const [focusedItemId, setFocusedItemId] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadMemos();
-  }, []);
-
-  const loadMemos = async () => {
-    try {
-      const data = await AsyncStorage.getItem('@mohani_shopping_memos');
-      if (data) setSavedMemos(JSON.parse(data));
-    } catch (e) {}
-  };
-
-  const saveMemoToStorage = async (memos: typeof savedMemos) => {
-    try {
-      await AsyncStorage.setItem('@mohani_shopping_memos', JSON.stringify(memos));
-      setSavedMemos(memos);
-    } catch (e) {}
-  };
-
-  const handleSaveMemo = () => {
-    if (expenseItems.every(i => !i.name.trim())) {
-      Alert.alert('알림', '항목을 입력해주세요');
-      return;
-    }
-    // If we have a loaded memo, update it directly
-    if (currentMemoId) {
-      const updated = savedMemos.map(m =>
-        m.id === currentMemoId ? { ...m, items: expenseItems } : m
-      );
-      saveMemoToStorage(updated);
-      Alert.alert('완료', '메모가 업데이트되었습니다!');
-      // Close modal and go back to day detail
-      setShowAddExpense(false);
-      setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
-      setCurrentMemoId(null);
-      setMemoName('');
-    } else {
-      // New memo - ask for name
-      setShowMemoName(true);
-    }
-  };
-
-  const confirmSaveMemo = () => {
-    const name = memoName.trim() || `메모 ${savedMemos.length + 1}`;
-    const newMemo = { id: Date.now(), name, items: expenseItems };
-    saveMemoToStorage([...savedMemos, newMemo]);
-    Alert.alert('완료', '메모가 저장되었습니다!');
-    setShowMemoName(false);
-    setMemoName('');
-    // Close modal and go back to day detail
-    setShowAddExpense(false);
-    setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
-    setCurrentMemoId(null);
-  };
-
-  const loadMemo = (memo: typeof savedMemos[0]) => {
-    setExpenseItems(memo.items.map(i => ({ ...i, id: Date.now() + Math.random() })));
-    setCurrentMemoId(memo.id);
-    setMemoName(memo.name);
-  };
-
-  const deleteMemo = (id: number) => {
-    Alert.alert('삭제', '이 메모를 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => {
-        saveMemoToStorage(savedMemos.filter(m => m.id !== id));
-        if (currentMemoId === id) {
-          setCurrentMemoId(null);
-          setMemoName('');
-        }
-      }}
-    ]);
-  };
+  // 날짜별 메모 state
+  const [dateMemos, setDateMemos] = useState<{id: number; name: string; items: typeof expenseItems}[]>([]);
+  const [showSavedMemos, setShowSavedMemos] = useState(false);
+  const [showMemoName, setShowMemoName] = useState(false);
+  const [memoName, setMemoName] = useState('');
+  const [currentMemoId, setCurrentMemoId] = useState<number | null>(null);
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
@@ -710,6 +638,90 @@ function CalendarScreen() {
   const selectedSchedules = getSchedulesByDate(selectedDateStr);
   const totalForDay = selectedExpenses.reduce((sum, e) => sum + e.amount, 0);
   const hasData = selectedExpenses.length > 0 || selectedSchedules.length > 0;
+
+  // 날짜별 메모 로드/저장 함수
+  const loadDateMemos = useCallback(async (dateStr: string) => {
+    try {
+      const data = await AsyncStorage.getItem(`@mohani_memo_${dateStr}`);
+      if (data) {
+        setDateMemos(JSON.parse(data));
+      } else {
+        setDateMemos([]);
+      }
+    } catch (e) {
+      setDateMemos([]);
+    }
+  }, []);
+
+  const saveDateMemos = useCallback(async (dateStr: string, memos: typeof dateMemos) => {
+    try {
+      await AsyncStorage.setItem(`@mohani_memo_${dateStr}`, JSON.stringify(memos));
+      setDateMemos(memos);
+    } catch (e) {}
+  }, []);
+
+  // 날짜 변경시 메모 로드 (showDetail이 true일 때만)
+  const prevDateRef = useRef<string>('');
+  useEffect(() => {
+    if (showDetail && selectedDateStr !== prevDateRef.current) {
+      prevDateRef.current = selectedDateStr;
+      loadDateMemos(selectedDateStr);
+      setCurrentMemoId(null);
+      setMemoName('');
+    }
+  }, [showDetail, selectedDateStr, loadDateMemos]);
+
+  const handleSaveMemo = () => {
+    if (expenseItems.every(i => !i.name.trim())) {
+      Alert.alert('알림', '항목을 입력해주세요');
+      return;
+    }
+    if (currentMemoId) {
+      const updated = dateMemos.map(m => m.id === currentMemoId ? { ...m, items: expenseItems } : m);
+      saveDateMemos(selectedDateStr, updated);
+      Alert.alert('완료', '메모가 업데이트되었습니다!');
+      // 날짜 상세 화면으로 돌아가기
+      setShowAddExpense(false);
+      setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
+      setCurrentMemoId(null);
+      setMemoName('');
+    } else {
+      setShowMemoName(true);
+    }
+  };
+
+  const confirmSaveMemo = () => {
+    const name = memoName.trim() || `메모 ${dateMemos.length + 1}`;
+    const newMemo = { id: Date.now(), name, items: expenseItems };
+    saveDateMemos(selectedDateStr, [...dateMemos, newMemo]);
+    Alert.alert('완료', '메모가 저장되었습니다!');
+    setShowMemoName(false);
+    setMemoName('');
+    // 날짜 상세 화면으로 돌아가기
+    setShowAddExpense(false);
+    setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
+    setCurrentMemoId(null);
+  };
+
+  const loadMemo = (memo: typeof dateMemos[0]) => {
+    setExpenseItems(memo.items.map(i => ({ ...i, id: Date.now() + Math.random() })));
+    setCurrentMemoId(memo.id);
+    setMemoName(memo.name);
+    setShowSavedMemos(false);
+  };
+
+  const deleteMemo = (id: number) => {
+    Alert.alert('삭제', '이 메모를 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => {
+        saveDateMemos(selectedDateStr, dateMemos.filter(m => m.id !== id));
+        if (currentMemoId === id) {
+          setCurrentMemoId(null);
+          setMemoName('');
+        }
+      }}
+    ]);
+  };
 
   const handleDayPress = (day: number) => {
     setSelectedDate(day);
@@ -729,30 +741,49 @@ function CalendarScreen() {
       const dayOfWeek = new Date(viewYear, viewMonth, day).getDay();
       const isSunday = dayOfWeek === 0;
       const isSaturday = dayOfWeek === 6;
+      const hasData = hasExpense || hasSchedule;
 
       cells.push(
         <TouchableOpacity
           key={day}
-          activeOpacity={0.7}
-          style={[
-            styles.dayCellModern,
-            isToday && !isSelected && styles.todayCellModern,
-            isSelected && styles.selectedCellModern,
-          ]}
+          activeOpacity={0.6}
+          style={[styles.dayCellModern]}
           onPress={() => handleDayPress(day)}
         >
-          <Text style={[
-            styles.dayTextModern,
-            { color: colors.text },
-            isSunday && { color: '#ef4444' },
-            isSaturday && { color: '#3b82f6' },
-            isToday && !isSelected && styles.todayTextModern,
-            isSelected && styles.selectedTextModern,
-          ]}>{day}</Text>
-          {(hasSchedule || hasExpense) && (
-            <View style={styles.dotsModern}>
-              {hasSchedule && <View style={[styles.dotModern, { backgroundColor: isSelected ? 'rgba(255,255,255,0.8)' : colors.schedule }]} />}
-              {hasExpense && <View style={[styles.dotModern, { backgroundColor: isSelected ? 'rgba(255,255,255,0.8)' : colors.expense }]} />}
+          {isSelected ? (
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.selectedCellGradient}
+            >
+              <Text style={styles.selectedTextModern}>{day}</Text>
+              {hasData && (
+                <View style={styles.dotsModern}>
+                  {hasSchedule && <View style={[styles.dotModern, { backgroundColor: 'rgba(255,255,255,0.9)' }]} />}
+                  {hasExpense && <View style={[styles.dotModern, { backgroundColor: 'rgba(255,255,255,0.9)' }]} />}
+                </View>
+              )}
+            </LinearGradient>
+          ) : (
+            <View style={[
+              styles.dayCellInner,
+              isToday && styles.todayCellModern,
+              hasData && !isToday && { backgroundColor: colors.bg },
+            ]}>
+              <Text style={[
+                styles.dayTextModern,
+                { color: colors.text },
+                isSunday && { color: '#ef4444' },
+                isSaturday && { color: '#3b82f6' },
+                isToday && styles.todayTextModern,
+              ]}>{day}</Text>
+              {hasData && (
+                <View style={styles.dotsModern}>
+                  {hasSchedule && <View style={[styles.dotModern, { backgroundColor: colors.schedule }]} />}
+                  {hasExpense && <View style={[styles.dotModern, { backgroundColor: colors.expense }]} />}
+                </View>
+              )}
             </View>
           )}
         </TouchableOpacity>
@@ -774,67 +805,97 @@ function CalendarScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Modern Header */}
+      {/* Premium Glass Header */}
       <LinearGradient
-        colors={['#7c3aed', '#a855f7', '#c084fc']}
+        colors={['#667eea', '#764ba2', '#f093fb']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.calendarHeader}
       >
+        {/* Decorative circles */}
+        <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+        <View style={{ position: 'absolute', bottom: -40, left: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+
         <View style={styles.calendarHeaderContent}>
           <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.calendarYear}>{viewYear}</Text>
-              {!isPremium && <Ionicons name="lock-closed" size={12} color="rgba(255,255,255,0.6)" />}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <Text style={[styles.calendarYear, { opacity: 0.9, fontSize: 14, fontWeight: '500' }]}>{viewYear}년</Text>
+              {!isPremium && (
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="lock-closed" size={10} color="rgba(255,255,255,0.8)" />
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10 }}>PRO</Text>
+                </View>
+              )}
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <TouchableOpacity activeOpacity={0.7} onPress={goToPrevMonth} style={[styles.navButton, !isPremium && { opacity: 0.6 }]}>
-                <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.9)" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={goToPrevMonth}
+                style={[styles.navButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 8 }, !isPremium && { opacity: 0.5 }]}
+              >
+                <Ionicons name="chevron-back" size={20} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.calendarMonth}>{viewMonth + 1}월</Text>
-              <TouchableOpacity activeOpacity={0.7} onPress={goToNextMonth} style={[styles.navButton, !isPremium && { opacity: 0.6 }]}>
-                <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.9)" />
+              <Text style={[styles.calendarMonth, { fontSize: 32, fontWeight: '800', letterSpacing: -1 }]}>{viewMonth + 1}월</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={goToNextMonth}
+                style={[styles.navButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 8 }, !isPremium && { opacity: 0.5 }]}
+              >
+                <Ionicons name="chevron-forward" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
           {!isCurrentMonth ? (
-            <TouchableOpacity activeOpacity={0.7} onPress={goToToday} style={styles.calendarTodayBtn}>
-              <Text style={styles.calendarTodayBtnText}>오늘</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={goToToday}
+              style={[styles.calendarTodayBtn, { backgroundColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]}
+            >
+              <Ionicons name="today-outline" size={14} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={styles.calendarTodayBtnText}>오늘로</Text>
             </TouchableOpacity>
           ) : (
-            <View style={styles.calendarToday}>
-              <Text style={styles.calendarTodayNum}>{today.getDate()}</Text>
-              <Text style={styles.calendarTodayLabel}>오늘</Text>
+            <View style={[styles.calendarToday, { backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]}>
+              <Text style={[styles.calendarTodayNum, { fontSize: 28, fontWeight: '800' }]}>{today.getDate()}</Text>
+              <Text style={[styles.calendarTodayLabel, { fontSize: 10, letterSpacing: 1 }]}>TODAY</Text>
             </View>
           )}
         </View>
       </LinearGradient>
 
-      {/* Calendar Card */}
-      <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
+      {/* Glass Calendar Card */}
+      <View style={[styles.calendarCard, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
+        {/* Week Header with gradient underline */}
         <View style={styles.weekHeaderModern}>
           {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
             <View key={i} style={styles.weekDayWrapper}>
               <Text style={[
                 styles.weekDayModern,
-                { color: colors.textMuted },
+                { color: colors.textMuted, fontWeight: '700', fontSize: 13 },
                 i === 0 && { color: '#ef4444' },
                 i === 6 && { color: '#3b82f6' }
               ]}>{d}</Text>
             </View>
           ))}
         </View>
+        <LinearGradient
+          colors={['#667eea', '#764ba2', '#f093fb']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ height: 2, marginHorizontal: 8, borderRadius: 1, marginBottom: 8, opacity: 0.3 }}
+        />
 
         <View style={styles.calendarGrid}>{renderCalendar()}</View>
 
-        <View style={styles.legendModern}>
-          <View style={styles.legendItemModern}>
-            <View style={[styles.legendDot, { backgroundColor: colors.schedule }]} />
-            <Text style={[styles.legendTextModern, { color: colors.textMuted }]}>일정</Text>
+        {/* Modern Legend */}
+        <View style={[styles.legendModern, { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }]}>
+          <View style={[styles.legendItemModern, { backgroundColor: colors.schedule + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
+            <View style={[styles.legendDot, { backgroundColor: colors.schedule, width: 8, height: 8 }]} />
+            <Text style={[styles.legendTextModern, { color: colors.schedule, fontWeight: '600' }]}>일정</Text>
           </View>
-          <View style={styles.legendItemModern}>
-            <View style={[styles.legendDot, { backgroundColor: colors.expense }]} />
-            <Text style={[styles.legendTextModern, { color: colors.textMuted }]}>지출</Text>
+          <View style={[styles.legendItemModern, { backgroundColor: colors.expense + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
+            <View style={[styles.legendDot, { backgroundColor: colors.expense, width: 8, height: 8 }]} />
+            <Text style={[styles.legendTextModern, { color: colors.expense, fontWeight: '600' }]}>지출</Text>
           </View>
         </View>
       </View>
@@ -953,30 +1014,36 @@ function CalendarScreen() {
                 )}
               </View>
 
-              {/* Saved Memos Section - only show if there are saved memos */}
-              {savedMemos.length > 0 && (
+              {/* 메모장 Section - 메모가 있을 때만 표시 */}
+              {dateMemos.length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>저장메모</Text>
-                    <View style={[styles.addBtnSmall, { backgroundColor: colors.primary }]}>
-                      <Ionicons name="document-text" size={16} color="#fff" />
-                    </View>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>메모장</Text>
                   </View>
-                  {savedMemos.map(memo => (
-                    <TouchableOpacity key={memo.id} activeOpacity={0.6} style={[styles.savedMemoItem, { backgroundColor: colors.bg }]} onPress={() => { loadMemo(memo); setShowAddExpense(true); }}>
-                      <View style={styles.savedMemoInfo}>
-                        <Text style={[styles.savedMemoName, { color: colors.text }]}>{memo.name}</Text>
-                        <Text style={[styles.savedMemoDetails, { color: colors.textMuted }]}>
-                          {memo.items.filter(i => i.name).length}개 항목 · {memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}원
-                        </Text>
+                  {dateMemos.map(memo => (
+                    <View key={memo.id} style={[styles.memoItem, { backgroundColor: colors.bg }]}>
+                      <View style={styles.memoItemLeft}>
+                        <Ionicons name="document-text" size={20} color={colors.primary} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.memoItemName, { color: colors.text }]}>{memo.name}</Text>
+                          <Text style={[styles.memoItemDetail, { color: colors.textMuted }]}>
+                            {memo.items.filter(i => i.name).length}개 항목 · {memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}원
+                          </Text>
+                        </View>
                       </View>
-                      <TouchableOpacity activeOpacity={0.5} onPress={() => deleteMemo(memo.id)} style={styles.deleteMemoButton}>
-                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                      </TouchableOpacity>
-                    </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity onPress={() => { loadMemo(memo); setShowAddExpense(true); }}>
+                          <Ionicons name="create-outline" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => deleteMemo(memo.id)}>
+                          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   ))}
                 </View>
               )}
+
             </ScrollView>
 
             {totalForDay > 0 && (
@@ -1078,10 +1145,17 @@ function CalendarScreen() {
                 </TouchableOpacity>
               </View>
 
+              {dateMemos.length > 0 && (
+                <TouchableOpacity activeOpacity={0.6} style={[styles.memoButton, { marginTop: 8 }]} onPress={() => setShowSavedMemos(true)}>
+                  <Ionicons name="folder-open-outline" size={20} color={colors.primary} />
+                  <Text style={[styles.memoButtonText, { color: colors.primary }]}>저장된 메모 ({dateMemos.length})</Text>
+                </TouchableOpacity>
+              )}
+
               {currentMemoId && (
                 <View style={styles.currentMemoInfo}>
                   <Ionicons name="document-text" size={14} color={colors.textMuted} />
-                  <Text style={[styles.currentMemoText, { color: colors.textMuted }]}>현재: {savedMemos.find(m => m.id === currentMemoId)?.name}</Text>
+                  <Text style={[styles.currentMemoText, { color: colors.textMuted }]}>현재: {dateMemos.find(m => m.id === currentMemoId)?.name}</Text>
                   <TouchableOpacity activeOpacity={0.6} onPress={() => { setCurrentMemoId(null); setMemoName(''); setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]); }}>
                     <Text style={[styles.newMemoLink, { color: colors.primary }]}>새 메모</Text>
                   </TouchableOpacity>
@@ -1105,12 +1179,12 @@ function CalendarScreen() {
                     date: selectedDateStr,
                     category: '구매',
                     amount: expenseTotal,
-                    memo: currentMemoId ? savedMemos.find(m => m.id === currentMemoId)?.name || '장보기' : '장보기',
+                    memo: currentMemoId ? dateMemos.find(m => m.id === currentMemoId)?.name || '장보기' : '장보기',
                     items: expenseItems.filter(i => i.name).map(i => ({ name: i.name, amount: parseInt(i.amount) || 0, checked: i.checked }))
                   });
-                  // Delete memo if it was loaded from saved memos
+                  // 메모가 있으면 삭제 (사용 완료)
                   if (currentMemoId) {
-                    saveMemoToStorage(savedMemos.filter(m => m.id !== currentMemoId));
+                    saveDateMemos(selectedDateStr, dateMemos.filter(m => m.id !== currentMemoId));
                     setCurrentMemoId(null);
                     setMemoName('');
                   }
@@ -1125,7 +1199,7 @@ function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* Memo Name Input Modal */}
+      {/* 메모 이름 입력 모달 */}
       <Modal visible={showMemoName} transparent animationType="fade">
         <View style={styles.memoModalOverlay}>
           <View style={[styles.memoModal, { backgroundColor: colors.card }]}>
@@ -1150,19 +1224,48 @@ function CalendarScreen() {
         </View>
       </Modal>
 
+      {/* 저장된 메모 목록 모달 */}
+      <Modal visible={showSavedMemos} transparent animationType="slide">
+        <View style={styles.memoModalOverlay}>
+          <View style={[styles.savedMemosModal, { backgroundColor: colors.card }]}>
+            <View style={styles.savedMemosHeader}>
+              <Text style={[styles.savedMemosTitle, { color: colors.text }]}>{selectedDateStr} 저장된 메모</Text>
+              <TouchableOpacity onPress={() => setShowSavedMemos(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.savedMemosList}>
+              {dateMemos.length === 0 ? (
+                <Text style={[styles.noMemosText, { color: colors.textMuted }]}>저장된 메모가 없습니다</Text>
+              ) : (
+                dateMemos.map(memo => (
+                  <TouchableOpacity key={memo.id} style={[styles.savedMemoItem, { backgroundColor: colors.bg }]} onPress={() => loadMemo(memo)}>
+                    <View style={styles.savedMemoInfo}>
+                      <Text style={[styles.savedMemoName, { color: colors.text }]}>{memo.name}</Text>
+                      <Text style={[styles.savedMemoDetails, { color: colors.textMuted }]}>
+                        {memo.items.filter(i => i.name).length}개 항목 · {memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}원
+                      </Text>
+                    </View>
+                    <TouchableOpacity onPress={() => deleteMemo(memo.id)} style={styles.deleteMemoButton}>
+                      <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity style={[styles.newMemoButton, { borderTopColor: colors.border }]} onPress={() => { setCurrentMemoId(null); setMemoName(''); setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]); setShowSavedMemos(false); }}>
+              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+              <Text style={[styles.newMemoButtonText, { color: colors.primary }]}>새 메모 작성</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
 
 // ============ ADD SCREEN ============
-interface SavedMemo {
-  id: number;
-  name: string;
-  items: { id: number; name: string; amount: string; checked: boolean }[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 function AddScreen() {
   const { addExpense } = useExpenses();
   const { addSchedule } = useSchedules();
@@ -1172,88 +1275,6 @@ function AddScreen() {
   // Expense state
   const [items, setItems] = useState([{ id: 1, name: '', amount: '0', checked: false }]);
   const total = items.reduce((sum, item) => sum + (parseInt(item.amount) || 0), 0);
-
-  // Saved memos state
-  const [savedMemos, setSavedMemos] = useState<SavedMemo[]>([]);
-  const [currentMemoId, setCurrentMemoId] = useState<number | null>(null);
-  const [memoName, setMemoName] = useState('');
-  const [showSavedMemos, setShowSavedMemos] = useState(false);
-  const [showMemoNameInput, setShowMemoNameInput] = useState(false);
-
-  // Load saved memos on mount
-  useEffect(() => {
-    loadSavedMemos();
-  }, []);
-
-  const loadSavedMemos = async () => {
-    try {
-      const data = await AsyncStorage.getItem('@mohani_shopping_memos');
-      if (data) setSavedMemos(JSON.parse(data));
-    } catch (e) { console.log('Failed to load memos'); }
-  };
-
-  const saveMemoToStorage = async (memos: SavedMemo[]) => {
-    try {
-      await AsyncStorage.setItem('@mohani_shopping_memos', JSON.stringify(memos));
-      setSavedMemos(memos);
-    } catch (e) { console.log('Failed to save memos'); }
-  };
-
-  const saveMemo = () => {
-    if (items.every(i => !i.name.trim())) {
-      Alert.alert('알림', '항목을 입력해주세요');
-      return;
-    }
-    setShowMemoNameInput(true);
-  };
-
-  const confirmSaveMemo = () => {
-    const now = new Date().toISOString();
-    const name = memoName.trim() || `메모 ${savedMemos.length + 1}`;
-
-    if (currentMemoId) {
-      // Update existing memo
-      const updated = savedMemos.map(m => m.id === currentMemoId ? { ...m, name, items, updatedAt: now } : m);
-      saveMemoToStorage(updated);
-      Alert.alert('완료', '메모가 업데이트되었습니다!');
-    } else {
-      // Create new memo
-      const newMemo: SavedMemo = { id: Date.now(), name, items, createdAt: now, updatedAt: now };
-      saveMemoToStorage([...savedMemos, newMemo]);
-      setCurrentMemoId(newMemo.id);
-      Alert.alert('완료', '메모가 저장되었습니다!');
-    }
-    setShowMemoNameInput(false);
-    setMemoName('');
-  };
-
-  const loadMemo = (memo: SavedMemo) => {
-    setItems(memo.items.map(i => ({ ...i, id: Date.now() + Math.random() })));
-    setCurrentMemoId(memo.id);
-    setMemoName(memo.name);
-    setShowSavedMemos(false);
-  };
-
-  const deleteMemo = (id: number) => {
-    Alert.alert('삭제', '이 메모를 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => {
-        const updated = savedMemos.filter(m => m.id !== id);
-        saveMemoToStorage(updated);
-        if (currentMemoId === id) {
-          setCurrentMemoId(null);
-          setMemoName('');
-        }
-      }}
-    ]);
-  };
-
-  const newMemo = () => {
-    setItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
-    setCurrentMemoId(null);
-    setMemoName('');
-    setShowSavedMemos(false);
-  };
 
   // Schedule state
   const [scheduleTitle, setScheduleTitle] = useState('');
@@ -1333,23 +1354,6 @@ function AddScreen() {
               <Ionicons name="add" size={20} color={colors.primary} /><Text style={[styles.addItemText, { color: colors.primary }]}>항목 추가</Text>
             </TouchableOpacity>
 
-            <View style={styles.memoButtonRow}>
-              <TouchableOpacity style={styles.memoButton} onPress={saveMemo}>
-                <Ionicons name="save-outline" size={18} color={colors.primary} /><Text style={[styles.memoButtonText, { color: colors.primary }]}>{currentMemoId ? '메모 업데이트' : '메모 저장하기'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.memoButton} onPress={() => setShowSavedMemos(true)}>
-                <Ionicons name="folder-outline" size={18} color={colors.primary} /><Text style={[styles.memoButtonText, { color: colors.primary }]}>저장된 메모</Text>
-              </TouchableOpacity>
-            </View>
-
-            {currentMemoId && (
-              <View style={styles.currentMemoInfo}>
-                <Ionicons name="document-text" size={14} color={colors.textMuted} />
-                <Text style={[styles.currentMemoText, { color: colors.textMuted }]}>현재: {savedMemos.find(m => m.id === currentMemoId)?.name}</Text>
-                <TouchableOpacity onPress={newMemo}><Text style={[styles.newMemoLink, { color: colors.primary }]}>새 메모</Text></TouchableOpacity>
-              </View>
-            )}
-
             <View style={[styles.totalRow, { borderTopColor: colors.border }]}><Text style={[styles.totalLabel, { color: colors.text }]}>합계</Text><Text style={[styles.totalAmount, { color: colors.primary }]}>{total.toLocaleString()}원</Text></View>
 
             <TouchableOpacity style={styles.primaryButton} onPress={saveExpense}>
@@ -1401,67 +1405,6 @@ function AddScreen() {
         </View>
       )}
 
-      {/* Memo Name Input Modal */}
-      <Modal visible={showMemoNameInput} transparent animationType="fade">
-        <View style={styles.memoModalOverlay}>
-          <View style={styles.memoModal}>
-            <Text style={styles.memoModalTitle}>메모 이름</Text>
-            <TextInput
-              style={styles.memoNameInput}
-              value={memoName}
-              onChangeText={setMemoName}
-              placeholder="메모 이름을 입력하세요"
-              placeholderTextColor={Colors.textMuted}
-              autoFocus
-            />
-            <View style={styles.memoModalButtons}>
-              <TouchableOpacity style={styles.memoModalCancel} onPress={() => { setShowMemoNameInput(false); setMemoName(''); }}>
-                <Text style={styles.memoModalCancelText}>취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.memoModalSave} onPress={confirmSaveMemo}>
-                <Text style={styles.memoModalSaveText}>저장</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Saved Memos List Modal */}
-      <Modal visible={showSavedMemos} transparent animationType="slide">
-        <View style={styles.memoModalOverlay}>
-          <View style={styles.savedMemosModal}>
-            <View style={styles.savedMemosHeader}>
-              <Text style={styles.savedMemosTitle}>저장된 메모</Text>
-              <TouchableOpacity onPress={() => setShowSavedMemos(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.savedMemosList}>
-              {savedMemos.length === 0 ? (
-                <Text style={styles.noMemosText}>저장된 메모가 없습니다</Text>
-              ) : (
-                savedMemos.map(memo => (
-                  <TouchableOpacity key={memo.id} style={styles.savedMemoItem} onPress={() => loadMemo(memo)}>
-                    <View style={styles.savedMemoInfo}>
-                      <Text style={styles.savedMemoName}>{memo.name}</Text>
-                      <Text style={styles.savedMemoDetails}>
-                        {memo.items.filter(i => i.name).length}개 항목 · {memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}원
-                      </Text>
-                    </View>
-                    <TouchableOpacity onPress={() => deleteMemo(memo.id)} style={styles.deleteMemoButton}>
-                      <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-            <TouchableOpacity style={styles.newMemoButton} onPress={newMemo}>
-              <Ionicons name="add-circle-outline" size={20} color={Colors.primary} />
-              <Text style={styles.newMemoButtonText}>새 메모 작성</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
@@ -2827,14 +2770,16 @@ const styles = StyleSheet.create({
   weekDayModern: { fontSize: 13, fontWeight: '600' },
   calendarGrid: { paddingVertical: 8 },
   weekRowModern: { flexDirection: 'row', marginBottom: 4 },
-  dayCellModern: { flex: 1, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', margin: 2, borderRadius: 12 },
-  todayCellModern: { backgroundColor: 'rgba(124, 58, 237, 0.1)', borderWidth: 2, borderColor: Colors.primary },
+  dayCellModern: { flex: 1, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', margin: 2 },
+  dayCellInner: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', borderRadius: 14 },
+  todayCellModern: { backgroundColor: 'rgba(102, 126, 234, 0.15)', borderWidth: 2, borderColor: '#667eea', borderRadius: 14 },
   selectedCellModern: { backgroundColor: Colors.primary, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-  dayTextModern: { fontSize: 16, fontWeight: '500' },
-  todayTextModern: { color: Colors.primary, fontWeight: 'bold' },
-  selectedTextModern: { color: '#fff', fontWeight: 'bold' },
-  dotsModern: { flexDirection: 'row', marginTop: 4, gap: 3 },
-  dotModern: { width: 5, height: 5, borderRadius: 3 },
+  selectedCellGradient: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', borderRadius: 14, shadowColor: '#667eea', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 },
+  dayTextModern: { fontSize: 15, fontWeight: '600' },
+  todayTextModern: { color: '#667eea', fontWeight: '800' },
+  selectedTextModern: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  dotsModern: { flexDirection: 'row', marginTop: 3, gap: 4 },
+  dotModern: { width: 6, height: 6, borderRadius: 3 },
   legendModern: { flexDirection: 'row', justifyContent: 'center', gap: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' },
   legendItemModern: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
@@ -2961,7 +2906,7 @@ const styles = StyleSheet.create({
 
   // Memo styles
   memoButtonRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 8 },
-  memoButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(124, 58, 237, 0.1)', paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10, gap: 6, minHeight: 48 },
+  memoButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(124, 58, 237, 0.1)', paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10, gap: 6, minHeight: 48 },
   memoButtonText: { color: Colors.primary, fontSize: 13, fontWeight: '500' },
   currentMemoInfo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, gap: 6 },
   currentMemoText: { color: Colors.textMuted, fontSize: 12 },
@@ -2976,6 +2921,11 @@ const styles = StyleSheet.create({
   memoModalCancelText: { color: Colors.textMuted, fontSize: 16 },
   memoModalSave: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: Colors.primary, alignItems: 'center' },
   memoModalSaveText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  memoItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.bg, padding: 16, borderRadius: 12, marginBottom: 8 },
+  memoItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  memoItemName: { color: Colors.text, fontSize: 16, fontWeight: '600' },
+  memoItemDetail: { color: Colors.textMuted, fontSize: 13, marginTop: 2 },
 
   savedMemosModal: { backgroundColor: Colors.card, borderRadius: 16, width: '90%', maxHeight: '70%', padding: 16 },
   savedMemosHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
