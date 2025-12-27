@@ -102,7 +102,8 @@ const PremiumContext = createContext<{
 }>({ isPremium: false, showUpgradeModal: false, setShowUpgradeModal: () => {}, purchasePremium: () => {}, restorePurchase: () => {} });
 
 function PremiumProvider({ children }: { children: React.ReactNode }) {
-  const [isPremium, setIsPremium] = useState(false);
+  // TODO: 출시 시 false로 변경
+  const [isPremium, setIsPremium] = useState(true); // 개발 중 모든 기능 활성화
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => { loadPremiumStatus(); }, []);
@@ -679,7 +680,7 @@ function CalendarScreen() {
     if (currentMemoId) {
       const updated = dateMemos.map(m => m.id === currentMemoId ? { ...m, items: expenseItems } : m);
       saveDateMemos(selectedDateStr, updated);
-      Alert.alert('완료', '메모가 업데이트되었습니다!');
+      Alert.alert('완료', '임시저장 되었습니다!');
       // 날짜 상세 화면으로 돌아가기
       setShowAddExpense(false);
       setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
@@ -694,7 +695,7 @@ function CalendarScreen() {
     const name = memoName.trim() || `메모 ${dateMemos.length + 1}`;
     const newMemo = { id: Date.now(), name, items: expenseItems };
     saveDateMemos(selectedDateStr, [...dateMemos, newMemo]);
-    Alert.alert('완료', '메모가 저장되었습니다!');
+    Alert.alert('완료', '임시저장 되었습니다!');
     setShowMemoName(false);
     setMemoName('');
     // 날짜 상세 화면으로 돌아가기
@@ -1021,7 +1022,12 @@ function CalendarScreen() {
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>메모장</Text>
                   </View>
                   {dateMemos.map(memo => (
-                    <View key={memo.id} style={[styles.memoItem, { backgroundColor: colors.bg }]}>
+                    <TouchableOpacity
+                      key={memo.id}
+                      style={[styles.memoItem, { backgroundColor: colors.bg }]}
+                      activeOpacity={0.7}
+                      onPress={() => { loadMemo(memo); setShowAddExpense(true); }}
+                    >
                       <View style={styles.memoItemLeft}>
                         <Ionicons name="document-text" size={20} color={colors.primary} />
                         <View style={{ flex: 1 }}>
@@ -1031,15 +1037,10 @@ function CalendarScreen() {
                           </Text>
                         </View>
                       </View>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity onPress={() => { loadMemo(memo); setShowAddExpense(true); }}>
-                          <Ionicons name="create-outline" size={20} color={colors.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteMemo(memo.id)}>
-                          <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+                      <TouchableOpacity onPress={() => deleteMemo(memo.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -1126,7 +1127,7 @@ function CalendarScreen() {
                     autoFocus={item.id === focusedItemId}
                     onFocus={() => { if (focusedItemId === item.id) setFocusedItemId(null); }}
                   />
-                  <TextInput style={[styles.itemAmountInput, { color: colors.text }]} value={item.amount} onChangeText={(text) => setExpenseItems(expenseItems.map(i => i.id === item.id ? { ...i, amount: text.replace(/^0+/, '') || '' } : i))} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
+                  <TextInput style={[styles.itemAmountInput, { color: colors.text }]} value={item.amount ? parseInt(item.amount).toLocaleString() : ''} onChangeText={(text) => setExpenseItems(expenseItems.map(i => i.id === item.id ? { ...i, amount: text.replace(/[^0-9]/g, '').replace(/^0+/, '') || '' } : i))} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
                   <Text style={[styles.won, { color: colors.textMuted }]}>원</Text>
                 </View>
               ))}
@@ -1141,26 +1142,9 @@ function CalendarScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity activeOpacity={0.6} style={[styles.memoButton, { flex: 1 }]} onPress={handleSaveMemo}>
                   <Ionicons name={currentMemoId ? "sync-outline" : "save-outline"} size={20} color={colors.primary} />
-                  <Text style={[styles.memoButtonText, { color: colors.primary }]}>{currentMemoId ? '메모 업데이트' : '메모 저장'}</Text>
+                  <Text style={[styles.memoButtonText, { color: colors.primary }]}>{currentMemoId ? '임시저장 업데이트' : '임시저장'}</Text>
                 </TouchableOpacity>
               </View>
-
-              {dateMemos.length > 0 && (
-                <TouchableOpacity activeOpacity={0.6} style={[styles.memoButton, { marginTop: 8 }]} onPress={() => setShowSavedMemos(true)}>
-                  <Ionicons name="folder-open-outline" size={20} color={colors.primary} />
-                  <Text style={[styles.memoButtonText, { color: colors.primary }]}>저장된 메모 ({dateMemos.length})</Text>
-                </TouchableOpacity>
-              )}
-
-              {currentMemoId && (
-                <View style={styles.currentMemoInfo}>
-                  <Ionicons name="document-text" size={14} color={colors.textMuted} />
-                  <Text style={[styles.currentMemoText, { color: colors.textMuted }]}>현재: {dateMemos.find(m => m.id === currentMemoId)?.name}</Text>
-                  <TouchableOpacity activeOpacity={0.6} onPress={() => { setCurrentMemoId(null); setMemoName(''); setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]); }}>
-                    <Text style={[styles.newMemoLink, { color: colors.primary }]}>새 메모</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
 
               <View style={[styles.totalRow, { borderTopColor: colors.border, marginTop: 16 }]}>
                 <Text style={[styles.totalLabel, { color: colors.text }]}>합계</Text>
@@ -1345,7 +1329,7 @@ function AddScreen() {
                   {item.checked && <Ionicons name="checkmark" size={16} color="#fff" />}
                 </TouchableOpacity>
                 <TextInput style={[styles.itemNameInput, { color: colors.text }, item.checked && styles.itemChecked]} value={item.name} onChangeText={(text) => setItems(items.map(i => i.id === item.id ? { ...i, name: text } : i))} placeholder="항목명" placeholderTextColor={colors.textMuted} />
-                <TextInput style={[styles.itemAmountInput, { color: colors.text }]} value={item.amount} onChangeText={(text) => setItems(items.map(i => i.id === item.id ? { ...i, amount: text.replace(/^0+/, '') || '' } : i))} onFocus={() => { if (item.amount === '0') setItems(items.map(i => i.id === item.id ? { ...i, amount: '' } : i)); }} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
+                <TextInput style={[styles.itemAmountInput, { color: colors.text }]} value={item.amount ? parseInt(item.amount).toLocaleString() : ''} onChangeText={(text) => setItems(items.map(i => i.id === item.id ? { ...i, amount: text.replace(/[^0-9]/g, '').replace(/^0+/, '') || '' } : i))} onFocus={() => { if (item.amount === '0') setItems(items.map(i => i.id === item.id ? { ...i, amount: '' } : i)); }} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
                 <Text style={[styles.won, { color: colors.textMuted }]}>원</Text>
               </View>
             ))}
@@ -1529,8 +1513,8 @@ function SettingsScreen() {
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>설정</Text></View>
 
-      {/* 프리미엄 카드 */}
-      {isPremium ? (
+      {/* 프리미엄 카드 - TODO: 출시 시 주석 해제 */}
+      {/* {isPremium ? (
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center' }}>
@@ -1563,7 +1547,7 @@ function SettingsScreen() {
             </View>
           </LinearGradient>
         </TouchableOpacity>
-      )}
+      )} */}
 
       {/* 수입 섹션 */}
       <View style={[styles.card, { backgroundColor: colors.card }]}>
