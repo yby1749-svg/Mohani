@@ -1117,8 +1117,6 @@ function AddScreen() {
 
 // ============ SETTINGS SCREEN ============
 function SettingsScreen() {
-  const { expenses } = useExpenses();
-  const { schedules } = useSchedules();
   const { isDark, toggleTheme, colors } = useTheme();
 
   const clearData = () => {
@@ -1132,8 +1130,6 @@ function SettingsScreen() {
     ]);
   };
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>설정</Text></View>
@@ -1144,13 +1140,6 @@ function SettingsScreen() {
           <Text style={[styles.appDesc, { color: colors.textMuted }]}>달력 중심 가계부</Text>
           <Text style={[styles.version, { color: colors.textMuted }]}>v1.1.0</Text>
         </View>
-      </View>
-
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>이번 달 통계</Text>
-        <View style={styles.statRow}><Text style={[styles.statLabel, { color: colors.textMuted }]}>총 지출</Text><Text style={[styles.statValue, { color: colors.text }]}>{totalExpenses.toLocaleString()}원</Text></View>
-        <View style={styles.statRow}><Text style={[styles.statLabel, { color: colors.textMuted }]}>지출 건수</Text><Text style={[styles.statValue, { color: colors.text }]}>{expenses.length}건</Text></View>
-        <View style={styles.statRow}><Text style={[styles.statLabel, { color: colors.textMuted }]}>일정 수</Text><Text style={[styles.statValue, { color: colors.schedule }]}>{schedules.length}개</Text></View>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
