@@ -301,6 +301,8 @@ const RecurringContext = createContext<{
   toggleActive: (id: string) => void;
   getTotalMonthly: () => number;
   getUpcoming: (days?: number) => { expense: RecurringExpense; dueDate: Date; daysUntil: number }[];
+  processRecurringForDate: (date: string, addExpense: (expense: Omit<Expense, 'id'>) => void) => void;
+  getRecurringForDate: (date: string) => RecurringExpense[];
 }>({
   recurringExpenses: [],
   addRecurring: () => {},
@@ -309,19 +311,24 @@ const RecurringContext = createContext<{
   toggleActive: () => {},
   getTotalMonthly: () => 0,
   getUpcoming: () => [],
+  processRecurringForDate: () => {},
+  getRecurringForDate: () => [],
 });
 
 function RecurringProvider({ children }: { children: React.ReactNode }) {
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [processedEntries, setProcessedEntries] = useState<{ recurringId: string; date: string }[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => { loadRecurring(); }, []);
-  useEffect(() => { if (isLoaded) saveRecurring(); }, [recurringExpenses]);
+  useEffect(() => { if (isLoaded) saveRecurring(); }, [recurringExpenses, processedEntries]);
 
   const loadRecurring = async () => {
     try {
       const data = await AsyncStorage.getItem('@mohani_recurring');
+      const processed = await AsyncStorage.getItem('@mohani_recurring_processed');
       if (data) setRecurringExpenses(JSON.parse(data));
+      if (processed) setProcessedEntries(JSON.parse(processed));
       setIsLoaded(true);
     } catch (e) { setIsLoaded(true); }
   };
@@ -329,6 +336,7 @@ function RecurringProvider({ children }: { children: React.ReactNode }) {
   const saveRecurring = async () => {
     try {
       await AsyncStorage.setItem('@mohani_recurring', JSON.stringify(recurringExpenses));
+      await AsyncStorage.setItem('@mohani_recurring_processed', JSON.stringify(processedEntries));
     } catch (e) {}
   };
 
@@ -394,14 +402,149 @@ function RecurringProvider({ children }: { children: React.ReactNode }) {
       .sort((a, b) => a.daysUntil - b.daysUntil);
   };
 
+  const getRecurringForDate = (date: string): RecurringExpense[] => {
+    const [year, month, day] = date.split('-').map(Number);
+    const targetDate = new Date(year, month - 1, day);
+    const dayOfMonth = targetDate.getDate();
+    const monthOfYear = targetDate.getMonth();
+
+    return recurringExpenses.filter(e => {
+      if (!e.isActive) return false;
+      if (e.frequency === 'monthly') {
+        return e.dayOfMonth === dayOfMonth;
+      } else {
+        // yearly - check month and day
+        const created = new Date(e.createdAt);
+        return created.getMonth() === monthOfYear && e.dayOfMonth === dayOfMonth;
+      }
+    });
+  };
+
+  const processRecurringForDate = (date: string, addExpense: (expense: Omit<Expense, 'id'>) => void) => {
+    const recurring = getRecurringForDate(date);
+
+    recurring.forEach(expense => {
+      const isProcessed = processedEntries.some(
+        entry => entry.recurringId === expense.id && entry.date === date
+      );
+
+      if (!isProcessed) {
+        addExpense({
+          date,
+          category: expense.category,
+          amount: expense.amount,
+          memo: `[고정] ${expense.name}`,
+        });
+        setProcessedEntries(prev => [...prev, { recurringId: expense.id, date }]);
+      }
+    });
+  };
+
   return (
-    <RecurringContext.Provider value={{ recurringExpenses, addRecurring, updateRecurring, deleteRecurring, toggleActive, getTotalMonthly, getUpcoming }}>
+    <RecurringContext.Provider value={{ recurringExpenses, addRecurring, updateRecurring, deleteRecurring, toggleActive, getTotalMonthly, getUpcoming, processRecurringForDate, getRecurringForDate }}>
       {children}
     </RecurringContext.Provider>
   );
 }
 
 const useRecurring = () => useContext(RecurringContext);
+
+// ============ INCOME CONTEXT ============
+interface Income {
+  id: string;
+  amount: number;
+  source: string;
+  type: 'salary' | 'bonus' | 'freelance' | 'investment' | 'gift' | 'other';
+  date: string;
+  note?: string;
+  isRecurring: boolean;
+  recurringDay?: number;
+}
+
+const INCOME_TYPES = [
+  { id: 'salary', label: '급여', icon: 'briefcase' },
+  { id: 'bonus', label: '보너스', icon: 'gift' },
+  { id: 'freelance', label: '프리랜서', icon: 'laptop' },
+  { id: 'investment', label: '투자 수익', icon: 'trending-up' },
+  { id: 'gift', label: '용돈/선물', icon: 'heart' },
+  { id: 'other', label: '기타', icon: 'cash' },
+] as const;
+
+const IncomeContext = createContext<{
+  incomes: Income[];
+  addIncome: (income: Omit<Income, 'id'>) => void;
+  updateIncome: (id: string, updates: Partial<Income>) => void;
+  deleteIncome: (id: string) => void;
+  getMonthlyIncome: () => number;
+  getTotalIncomeThisMonth: () => number;
+}>({
+  incomes: [],
+  addIncome: () => {},
+  updateIncome: () => {},
+  deleteIncome: () => {},
+  getMonthlyIncome: () => 0,
+  getTotalIncomeThisMonth: () => 0,
+});
+
+function IncomeProvider({ children }: { children: React.ReactNode }) {
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => { loadIncomes(); }, []);
+  useEffect(() => { if (isLoaded) saveIncomes(); }, [incomes]);
+
+  const loadIncomes = async () => {
+    try {
+      const data = await AsyncStorage.getItem('@mohani_incomes');
+      if (data) setIncomes(JSON.parse(data));
+      setIsLoaded(true);
+    } catch (e) { setIsLoaded(true); }
+  };
+
+  const saveIncomes = async () => {
+    try {
+      await AsyncStorage.setItem('@mohani_incomes', JSON.stringify(incomes));
+    } catch (e) {}
+  };
+
+  const addIncome = (income: Omit<Income, 'id'>) => {
+    const newIncome: Income = {
+      ...income,
+      id: Date.now().toString(),
+    };
+    setIncomes(prev => [newIncome, ...prev]);
+  };
+
+  const updateIncome = (id: string, updates: Partial<Income>) => {
+    setIncomes(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+  };
+
+  const deleteIncome = (id: string) => {
+    setIncomes(prev => prev.filter(item => item.id !== id));
+  };
+
+  const getMonthlyIncome = () => {
+    return incomes
+      .filter(income => income.isRecurring)
+      .reduce((sum, income) => sum + income.amount, 0);
+  };
+
+  const getTotalIncomeThisMonth = () => {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return incomes
+      .filter(income => income.date.startsWith(thisMonth))
+      .reduce((sum, income) => sum + income.amount, 0);
+  };
+
+  return (
+    <IncomeContext.Provider value={{ incomes, addIncome, updateIncome, deleteIncome, getMonthlyIncome, getTotalIncomeThisMonth }}>
+      {children}
+    </IncomeContext.Provider>
+  );
+}
+
+const useIncome = () => useContext(IncomeContext);
 
 // ============ CALENDAR SCREEN ============
 function CalendarScreen() {
@@ -412,8 +555,15 @@ function CalendarScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const { expenses, addExpense, deleteExpense, getExpensesByDate, getDatesWithExpenses } = useExpenses();
   const { schedules, addSchedule, getSchedulesByDate, getDatesWithSchedules, deleteSchedule } = useSchedules();
+  const { processRecurringForDate, getRecurringForDate } = useRecurring();
   const { colors } = useTheme();
   const { isPremium, setShowUpgradeModal } = usePremium();
+
+  // 오늘 날짜의 고정 지출 자동 처리
+  useEffect(() => {
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    processRecurringForDate(todayStr, addExpense);
+  }, []);
 
   // Month navigation (프리미엄 기능)
   const goToPrevMonth = () => {
@@ -1321,14 +1471,24 @@ function SettingsScreen() {
   const { isPremium, setShowUpgradeModal } = usePremium();
   const { expenses } = useExpenses();
   const { recurringExpenses, addRecurring, deleteRecurring, toggleActive, getTotalMonthly } = useRecurring();
+  const { incomes, addIncome, deleteIncome, getMonthlyIncome, getTotalIncomeThisMonth } = useIncome();
 
   // 이번달 지출 건수
   const today = new Date();
   const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const thisMonthCount = expenses.filter(e => e.date.startsWith(thisMonth)).length;
 
+  // 수입 추가 모달
+  const [showAddIncome, setShowAddIncome] = useState(false);
+  const [showIncomeList, setShowIncomeList] = useState(false);
+  const [incomeAmount, setIncomeAmount] = useState('');
+  const [incomeType, setIncomeType] = useState<'salary' | 'bonus' | 'freelance' | 'investment' | 'gift' | 'other'>('salary');
+  const [incomeNote, setIncomeNote] = useState('');
+  const [incomeIsRecurring, setIncomeIsRecurring] = useState(false);
+
   // 고정 지출 추가 모달
   const [showAddRecurring, setShowAddRecurring] = useState(false);
+  const [showRecurringList, setShowRecurringList] = useState(false);
   const [recurringName, setRecurringName] = useState('');
   const [recurringAmount, setRecurringAmount] = useState('');
   const [recurringCategory, setRecurringCategory] = useState('구독');
@@ -1372,6 +1532,44 @@ function SettingsScreen() {
       { text: '취소', style: 'cancel' },
       { text: '삭제', style: 'destructive', onPress: () => deleteRecurring(id) }
     ]);
+  };
+
+  const handleAddIncome = () => {
+    if (!incomeAmount) {
+      Alert.alert('알림', '금액을 입력해주세요');
+      return;
+    }
+    const typeInfo = INCOME_TYPES.find(t => t.id === incomeType);
+    addIncome({
+      amount: parseInt(incomeAmount.replace(/,/g, '')) || 0,
+      source: typeInfo?.label || '기타',
+      type: incomeType,
+      date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+      note: incomeNote.trim() || undefined,
+      isRecurring: incomeIsRecurring,
+      recurringDay: incomeIsRecurring ? today.getDate() : undefined,
+    });
+    setShowAddIncome(false);
+    setIncomeAmount('');
+    setIncomeType('salary');
+    setIncomeNote('');
+    setIncomeIsRecurring(false);
+  };
+
+  const handleDeleteIncome = (id: string, source: string) => {
+    Alert.alert('삭제', `"${source}" 수입을 삭제하시겠습니까?`, [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => deleteIncome(id) }
+    ]);
+  };
+
+  const incomeIcons: Record<string, string> = {
+    'salary': 'briefcase',
+    'bonus': 'gift',
+    'freelance': 'laptop',
+    'investment': 'trending-up',
+    'gift': 'heart',
+    'other': 'cash',
   };
 
   const categoryIcons: Record<string, string> = {
@@ -1423,62 +1621,147 @@ function SettingsScreen() {
         </TouchableOpacity>
       )}
 
-      {/* 고정 지출 섹션 */}
+      {/* 수입 섹션 */}
       <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>고정 지출</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
-              월 예상: {getTotalMonthly().toLocaleString()}원
-            </Text>
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setShowAddRecurring(true)}
-            style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
-          >
-            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>+ 추가</Text>
-          </TouchableOpacity>
-        </View>
-
-        {recurringExpenses.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-            <Ionicons name="repeat-outline" size={40} color={colors.textMuted} />
-            <Text style={{ color: colors.textMuted, marginTop: 8 }}>등록된 고정 지출이 없습니다</Text>
-          </View>
-        ) : (
-          recurringExpenses.map(item => (
-            <View
-              key={item.id}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: 12,
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-                opacity: item.isActive ? 1 : 0.5,
-              }}
-            >
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary + '15', justifyContent: 'center', alignItems: 'center' }}>
-                <Ionicons name={categoryIcons[item.category] as any || 'card'} size={20} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{item.name}</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                  {item.frequency === 'monthly' ? `매월 ${item.dayOfMonth}일` : '매년'} · {item.category}
-                </Text>
-              </View>
-              <Text style={{ color: colors.expense, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
-                {item.amount.toLocaleString()}원
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setShowIncomeList(!showIncomeList)}
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="wallet" size={22} color={colors.schedule} />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>수입</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
+                {incomes.length}개 · 이번달 {getTotalIncomeThisMonth().toLocaleString()}원
               </Text>
-              <TouchableOpacity activeOpacity={0.6} onPress={() => toggleActive(item.id)} style={{ padding: 4, marginRight: 4 }}>
-                <Ionicons name={item.isActive ? 'pause-circle' : 'play-circle'} size={24} color={item.isActive ? colors.textMuted : colors.schedule} />
-              </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteRecurring(item.id, item.name)} style={{ padding: 4 }}>
-                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            </View>
+          </View>
+          <Ionicons name={showIncomeList ? 'chevron-up' : 'chevron-down'} size={22} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {showIncomeList && (
+          <>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, marginBottom: 8 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowAddIncome(true)}
+                style={{ backgroundColor: colors.schedule, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+              >
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>+ 추가</Text>
               </TouchableOpacity>
             </View>
-          ))
+
+            {incomes.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                <Ionicons name="wallet-outline" size={40} color={colors.textMuted} />
+                <Text style={{ color: colors.textMuted, marginTop: 8 }}>등록된 수입이 없습니다</Text>
+              </View>
+            ) : (
+              incomes.map(item => (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 12,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                  }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.schedule + '15', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name={incomeIcons[item.type] as any || 'cash'} size={20} color={colors.schedule} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{item.source}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                      {item.note || (item.isRecurring ? '매월 반복' : '일회성')}
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.schedule, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
+                    +{item.amount.toLocaleString()}원
+                  </Text>
+                  <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteIncome(item.id, item.source)} style={{ padding: 4 }}>
+                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </>
+        )}
+      </View>
+
+      {/* 고정 지출 섹션 */}
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setShowRecurringList(!showRecurringList)}
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="repeat" size={22} color={colors.primary} />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>고정 지출</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
+                {recurringExpenses.length}개 · 월 {getTotalMonthly().toLocaleString()}원
+              </Text>
+            </View>
+          </View>
+          <Ionicons name={showRecurringList ? 'chevron-up' : 'chevron-down'} size={22} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {showRecurringList && (
+          <>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, marginBottom: 8 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowAddRecurring(true)}
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+              >
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>+ 추가</Text>
+              </TouchableOpacity>
+            </View>
+
+            {recurringExpenses.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                <Ionicons name="repeat-outline" size={40} color={colors.textMuted} />
+                <Text style={{ color: colors.textMuted, marginTop: 8 }}>등록된 고정 지출이 없습니다</Text>
+              </View>
+            ) : (
+              recurringExpenses.map(item => (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 12,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                    opacity: item.isActive ? 1 : 0.5,
+                  }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary + '15', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name={categoryIcons[item.category] as any || 'card'} size={20} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{item.name}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                      {item.frequency === 'monthly' ? `매월 ${item.dayOfMonth}일` : '매년'} · {item.category}
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.expense, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
+                    {item.amount.toLocaleString()}원
+                  </Text>
+                  <TouchableOpacity activeOpacity={0.6} onPress={() => toggleActive(item.id)} style={{ padding: 4, marginRight: 4 }}>
+                    <Ionicons name={item.isActive ? 'pause-circle' : 'play-circle'} size={24} color={item.isActive ? colors.textMuted : colors.schedule} />
+                  </TouchableOpacity>
+                  <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteRecurring(item.id, item.name)} style={{ padding: 4 }}>
+                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </>
         )}
       </View>
 
@@ -1498,6 +1781,104 @@ function SettingsScreen() {
       </View>
 
       <View style={{ height: 40 }} />
+
+      {/* 수입 추가 모달 */}
+      <Modal visible={showAddIncome} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>수입 추가</Text>
+              <TouchableOpacity onPress={() => setShowAddIncome(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ padding: 20 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6 }}>금액</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                value={incomeAmount}
+                onChangeText={(text) => {
+                  const numbers = text.replace(/[^0-9]/g, '');
+                  setIncomeAmount(numbers ? parseInt(numbers).toLocaleString() : '');
+                }}
+              />
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>수입 유형</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {INCOME_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type.id}
+                    onPress={() => setIncomeType(type.id as any)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 16,
+                      backgroundColor: incomeType === type.id ? colors.schedule + '20' : colors.bg,
+                      borderWidth: 1,
+                      borderColor: incomeType === type.id ? colors.schedule : colors.border,
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name={type.icon as any} size={16} color={incomeType === type.id ? colors.schedule : colors.textMuted} />
+                    <Text style={{ color: incomeType === type.id ? colors.schedule : colors.text, fontSize: 13 }}>{type.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 16 }}>메모 (선택)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                placeholder="예: 12월 급여"
+                placeholderTextColor={colors.textMuted}
+                value={incomeNote}
+                onChangeText={setIncomeNote}
+              />
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, padding: 12, backgroundColor: colors.bg, borderRadius: 8 }}>
+                <Text style={{ color: colors.text, fontSize: 14 }}>매월 반복 수입</Text>
+                <TouchableOpacity
+                  onPress={() => setIncomeIsRecurring(!incomeIsRecurring)}
+                  style={{
+                    width: 50,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: incomeIsRecurring ? colors.schedule : colors.border,
+                    justifyContent: 'center',
+                    padding: 2,
+                  }}
+                >
+                  <View style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: '#fff',
+                    marginLeft: incomeIsRecurring ? 22 : 0,
+                  }} />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleAddIncome}
+                style={{
+                  backgroundColor: colors.schedule,
+                  padding: 16,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  marginTop: 24,
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>추가하기</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* 고정 지출 추가 모달 */}
       <Modal visible={showAddRecurring} animationType="slide" transparent>
@@ -2251,8 +2632,10 @@ export default function App() {
           <ExpenseProvider>
             <ScheduleProvider>
               <RecurringProvider>
-                <AppContent />
-                <UpgradeModal />
+                <IncomeProvider>
+                  <AppContent />
+                  <UpgradeModal />
+                </IncomeProvider>
               </RecurringProvider>
             </ScheduleProvider>
           </ExpenseProvider>
