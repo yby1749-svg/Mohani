@@ -1999,6 +1999,7 @@ function ExpensesScreen() {
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
+  const [showExpenseView, setShowExpenseView] = useState(false);
 
   // 프리미엄 기능 체크
   const handlePDFExport = () => {
@@ -2223,45 +2224,68 @@ function ExpensesScreen() {
   const getExpensesByDate = (date: string) => expenses.filter(e => e.date === date);
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-        <Text style={[styles.title, { color: colors.text }]}>지출보기</Text>
-        <TouchableOpacity activeOpacity={0.6} onPress={handlePDFExport} style={{ padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          {!isPremium && <Ionicons name="lock-closed" size={12} color={colors.textMuted} />}
-          <Ionicons name="document-text-outline" size={24} color={isPremium ? colors.primary : colors.textMuted} />
-        </TouchableOpacity>
+    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>가계부</Text>
       </View>
 
-      {/* View Mode Toggle */}
-      <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
+      {/* 지출 보기 섹션 */}
+      <View style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20 }]}>
         <TouchableOpacity
-          style={[styles.tab, viewMode === 'day' && styles.activeTab]}
-          onPress={() => handleViewModeChange('day')}
+          activeOpacity={0.7}
+          onPress={() => setShowExpenseView(!showExpenseView)}
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <Text style={[styles.tabText, { color: viewMode === 'day' ? colors.primary : colors.textMuted }]}>일간</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'week' && styles.activeTab]}
-          onPress={() => handleViewModeChange('week')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={[styles.tabText, { color: viewMode === 'week' ? colors.primary : colors.textMuted }]}>주간</Text>
-            {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="receipt" size={22} color={colors.expense} />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>지출 보기</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
+                이번달 {totalAmount.toLocaleString()}원
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity activeOpacity={0.6} onPress={handlePDFExport} style={{ padding: 4 }}>
+              {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }} />}
+              <Ionicons name="document-text-outline" size={20} color={isPremium ? colors.primary : colors.textMuted} />
+            </TouchableOpacity>
+            <Ionicons name={showExpenseView ? 'chevron-up' : 'chevron-down'} size={22} color={colors.textMuted} />
           </View>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'month' && styles.activeTab]}
-          onPress={() => handleViewModeChange('month')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={[styles.tabText, { color: viewMode === 'month' ? colors.primary : colors.textMuted }]}>월간</Text>
-            {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
-          </View>
-        </TouchableOpacity>
-      </View>
 
-      {/* Expenses List */}
-      <ScrollView style={{ flex: 1, paddingHorizontal: 20, marginTop: 12 }}>
+        {showExpenseView && (
+          <>
+            {/* View Mode Toggle */}
+            <View style={[styles.tabContainer, { backgroundColor: colors.bg, marginTop: 16 }]}>
+              <TouchableOpacity
+                style={[styles.tab, viewMode === 'day' && styles.activeTab]}
+                onPress={() => handleViewModeChange('day')}
+              >
+                <Text style={[styles.tabText, { color: viewMode === 'day' ? colors.primary : colors.textMuted }]}>일간</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, viewMode === 'week' && styles.activeTab]}
+                onPress={() => handleViewModeChange('week')}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={[styles.tabText, { color: viewMode === 'week' ? colors.primary : colors.textMuted }]}>주간</Text>
+                  {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, viewMode === 'month' && styles.activeTab]}
+                onPress={() => handleViewModeChange('month')}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={[styles.tabText, { color: viewMode === 'month' ? colors.primary : colors.textMuted }]}>월간</Text>
+                  {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Expenses List */}
+            <View style={{ marginTop: 12 }}>
         {viewMode === 'day' && (
           dailyData.length > 0 ? (
             dailyData.map(([date, total]) => {
@@ -2357,8 +2381,12 @@ function ExpensesScreen() {
             </View>
           )
         )}
-        <View style={{ height: 20 }} />
-      </ScrollView>
+            </View>
+          </>
+        )}
+      </View>
+
+      <View style={{ height: 40 }} />
 
       {/* PDF 미리보기 모달 */}
       <Modal visible={showPDFPreview} animationType="slide" presentationStyle="pageSheet">
@@ -2436,7 +2464,7 @@ function ExpensesScreen() {
           </ScrollView>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -2463,7 +2491,7 @@ function AppContent() {
         },
       })}>
         <Tab.Screen name="Calendar" component={CalendarScreen} options={{ tabBarLabel: '달력' }} />
-        <Tab.Screen name="Expenses" component={ExpensesScreen} options={{ tabBarLabel: '지출' }} />
+        <Tab.Screen name="Expenses" component={ExpensesScreen} options={{ tabBarLabel: '가계부' }} />
         <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: '설정' }} />
       </Tab.Navigator>
     </NavigationContainer>
