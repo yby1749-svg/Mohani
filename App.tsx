@@ -91,6 +91,65 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 const useTheme = () => useContext(ThemeContext);
 
+// ============ PREMIUM CONTEXT ============
+const PremiumContext = createContext<{
+  isPremium: boolean;
+  showUpgradeModal: boolean;
+  setShowUpgradeModal: (show: boolean) => void;
+  purchasePremium: () => void;
+  restorePurchase: () => void;
+}>({ isPremium: false, showUpgradeModal: false, setShowUpgradeModal: () => {}, purchasePremium: () => {}, restorePurchase: () => {} });
+
+function PremiumProvider({ children }: { children: React.ReactNode }) {
+  const [isPremium, setIsPremium] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  useEffect(() => { loadPremiumStatus(); }, []);
+
+  const loadPremiumStatus = async () => {
+    try {
+      const status = await AsyncStorage.getItem('@mohani_premium');
+      if (status === 'true') setIsPremium(true);
+    } catch (e) {}
+  };
+
+  const purchasePremium = async () => {
+    // TODO: 실제 인앱 결제 연동 (react-native-iap 또는 RevenueCat)
+    // 지금은 테스트용으로 바로 프리미엄 활성화
+    try {
+      await AsyncStorage.setItem('@mohani_premium', 'true');
+      setIsPremium(true);
+      setShowUpgradeModal(false);
+      Alert.alert('🎉 프리미엄 활성화', '모든 프리미엄 기능을 사용할 수 있습니다!');
+    } catch (e) {
+      Alert.alert('오류', '결제 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const restorePurchase = async () => {
+    // TODO: 실제 구매 복원 로직
+    try {
+      const status = await AsyncStorage.getItem('@mohani_premium');
+      if (status === 'true') {
+        setIsPremium(true);
+        Alert.alert('복원 완료', '프리미엄 구매가 복원되었습니다.');
+      } else {
+        Alert.alert('알림', '복원할 구매 내역이 없습니다.');
+      }
+    } catch (e) {
+      Alert.alert('오류', '복원 중 오류가 발생했습니다.');
+    }
+  };
+
+  return (
+    <PremiumContext.Provider value={{ isPremium, showUpgradeModal, setShowUpgradeModal, purchasePremium, restorePurchase }}>
+      {children}
+    </PremiumContext.Provider>
+  );
+}
+
+const usePremium = () => useContext(PremiumContext);
+
 // ============ EXPENSE CONTEXT ============
 const ExpenseContext = createContext<{
   expenses: Expense[];
@@ -232,9 +291,14 @@ function CalendarScreen() {
   const { expenses, addExpense, deleteExpense, getExpensesByDate, getDatesWithExpenses } = useExpenses();
   const { schedules, addSchedule, getSchedulesByDate, getDatesWithSchedules, deleteSchedule } = useSchedules();
   const { colors } = useTheme();
+  const { isPremium, setShowUpgradeModal } = usePremium();
 
-  // Month navigation
+  // Month navigation (프리미엄 기능)
   const goToPrevMonth = () => {
+    if (!isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (viewMonth === 0) {
       setViewMonth(11);
       setViewYear(viewYear - 1);
@@ -245,6 +309,10 @@ function CalendarScreen() {
   };
 
   const goToNextMonth = () => {
+    if (!isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (viewMonth === 11) {
       setViewMonth(0);
       setViewYear(viewYear + 1);
@@ -442,13 +510,16 @@ function CalendarScreen() {
       >
         <View style={styles.calendarHeaderContent}>
           <View>
-            <Text style={styles.calendarYear}>{viewYear}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.calendarYear}>{viewYear}</Text>
+              {!isPremium && <Ionicons name="lock-closed" size={12} color="rgba(255,255,255,0.6)" />}
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <TouchableOpacity activeOpacity={0.7} onPress={goToPrevMonth} style={styles.navButton}>
+              <TouchableOpacity activeOpacity={0.7} onPress={goToPrevMonth} style={[styles.navButton, !isPremium && { opacity: 0.6 }]}>
                 <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.9)" />
               </TouchableOpacity>
               <Text style={styles.calendarMonth}>{viewMonth + 1}월</Text>
-              <TouchableOpacity activeOpacity={0.7} onPress={goToNextMonth} style={styles.navButton}>
+              <TouchableOpacity activeOpacity={0.7} onPress={goToNextMonth} style={[styles.navButton, !isPremium && { opacity: 0.6 }]}>
                 <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.9)" />
               </TouchableOpacity>
             </View>
@@ -750,6 +821,13 @@ function CalendarScreen() {
               </View>
               <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.expense, marginBottom: 20 }]} onPress={() => {
                 if (expenseTotal > 0) {
+                  // 무료 사용자 월 10건 제한 체크
+                  const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                  const thisMonthCount = expenses.filter(e => e.date.startsWith(thisMonth)).length;
+                  if (!isPremium && thisMonthCount >= 10) {
+                    setShowUpgradeModal(true);
+                    return;
+                  }
                   addExpense({
                     date: selectedDateStr,
                     category: '구매',
@@ -1118,6 +1196,13 @@ function AddScreen() {
 // ============ SETTINGS SCREEN ============
 function SettingsScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
+  const { isPremium, setShowUpgradeModal } = usePremium();
+  const { expenses } = useExpenses();
+
+  // 이번달 지출 건수
+  const today = new Date();
+  const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const thisMonthCount = expenses.filter(e => e.date.startsWith(thisMonth)).length;
 
   const clearData = () => {
     Alert.alert('데이터 초기화', '모든 데이터를 삭제하시겠습니까?', [
@@ -1133,6 +1218,42 @@ function SettingsScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>설정</Text></View>
+
+      {/* 프리미엄 카드 */}
+      {isPremium ? (
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ fontSize: 24 }}>👑</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.appName, { color: colors.text }]}>프리미엄 사용자</Text>
+              <Text style={[styles.appDesc, { color: colors.textMuted }]}>모든 기능을 사용 중입니다</Text>
+            </View>
+            <Ionicons name="checkmark-circle" size={24} color="#22c55e" />
+          </View>
+        </View>
+      ) : (
+        <TouchableOpacity activeOpacity={0.8} onPress={() => setShowUpgradeModal(true)}>
+          <LinearGradient
+            colors={['#7c3aed', '#a855f7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.card, { padding: 16 }]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 32 }}>👑</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 17, fontWeight: 'bold' }}>프리미엄으로 업그레이드</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 }}>
+                  이번 달 {thisMonthCount}/10건 기록 · 무제한으로 사용하기
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.8)" />
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.appInfo}>
@@ -1164,9 +1285,27 @@ function SettingsScreen() {
 function ExpensesScreen() {
   const { expenses } = useExpenses();
   const { colors } = useTheme();
+  const { isPremium, setShowUpgradeModal } = usePremium();
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
+
+  // 프리미엄 기능 체크
+  const handlePDFExport = () => {
+    if (!isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setShowPDFPreview(true);
+  };
+
+  const handleViewModeChange = (mode: 'day' | 'week' | 'month') => {
+    if ((mode === 'week' || mode === 'month') && !isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setViewMode(mode);
+  };
 
   const today = new Date();
   const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1377,8 +1516,9 @@ function ExpensesScreen() {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
         <Text style={[styles.title, { color: colors.text }]}>지출보기</Text>
-        <TouchableOpacity activeOpacity={0.6} onPress={() => setShowPDFPreview(true)} style={{ padding: 8 }}>
-          <Ionicons name="document-text-outline" size={24} color={colors.primary} />
+        <TouchableOpacity activeOpacity={0.6} onPress={handlePDFExport} style={{ padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {!isPremium && <Ionicons name="lock-closed" size={12} color={colors.textMuted} />}
+          <Ionicons name="document-text-outline" size={24} color={isPremium ? colors.primary : colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -1386,21 +1526,27 @@ function ExpensesScreen() {
       <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
         <TouchableOpacity
           style={[styles.tab, viewMode === 'day' && styles.activeTab]}
-          onPress={() => setViewMode('day')}
+          onPress={() => handleViewModeChange('day')}
         >
           <Text style={[styles.tabText, { color: viewMode === 'day' ? colors.primary : colors.textMuted }]}>일간</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, viewMode === 'week' && styles.activeTab]}
-          onPress={() => setViewMode('week')}
+          onPress={() => handleViewModeChange('week')}
         >
-          <Text style={[styles.tabText, { color: viewMode === 'week' ? colors.primary : colors.textMuted }]}>주간</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={[styles.tabText, { color: viewMode === 'week' ? colors.primary : colors.textMuted }]}>주간</Text>
+            {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, viewMode === 'month' && styles.activeTab]}
-          onPress={() => setViewMode('month')}
+          onPress={() => handleViewModeChange('month')}
         >
-          <Text style={[styles.tabText, { color: viewMode === 'month' ? colors.primary : colors.textMuted }]}>월간</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={[styles.tabText, { color: viewMode === 'month' ? colors.primary : colors.textMuted }]}>월간</Text>
+            {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -1614,6 +1760,100 @@ function AppContent() {
   );
 }
 
+// ============ UPGRADE MODAL ============
+function UpgradeModal() {
+  const { showUpgradeModal, setShowUpgradeModal, purchasePremium, restorePurchase } = usePremium();
+  const { colors } = useTheme();
+
+  const features = [
+    { icon: 'document-text', title: 'PDF 내보내기', desc: '지출 리포트를 PDF로 저장' },
+    { icon: 'calendar', title: '월 이동', desc: '전달/다음달 자유롭게 탐색' },
+    { icon: 'infinite', title: '무제한 기록', desc: '월 10건 제한 없이 무제한 기록' },
+    { icon: 'stats-chart', title: '주간/월간 통계', desc: '상세한 지출 통계 확인' },
+  ];
+
+  return (
+    <Modal visible={showUpgradeModal} animationType="slide" transparent>
+      <View style={upgradeStyles.overlay}>
+        <View style={[upgradeStyles.content, { backgroundColor: colors.card }]}>
+          <TouchableOpacity style={upgradeStyles.closeBtn} onPress={() => setShowUpgradeModal(false)}>
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+
+          <LinearGradient
+            colors={['#7c3aed', '#a855f7']}
+            style={upgradeStyles.header}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={upgradeStyles.crown}>👑</Text>
+            <Text style={upgradeStyles.title}>프리미엄으로 업그레이드</Text>
+            <Text style={upgradeStyles.subtitle}>모든 기능을 제한 없이 사용하세요</Text>
+          </LinearGradient>
+
+          <View style={upgradeStyles.features}>
+            {features.map((feature, index) => (
+              <View key={index} style={upgradeStyles.featureRow}>
+                <View style={[upgradeStyles.featureIcon, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name={feature.icon as any} size={22} color={colors.primary} />
+                </View>
+                <View style={upgradeStyles.featureText}>
+                  <Text style={[upgradeStyles.featureTitle, { color: colors.text }]}>{feature.title}</Text>
+                  <Text style={[upgradeStyles.featureDesc, { color: colors.textMuted }]}>{feature.desc}</Text>
+                </View>
+                <Ionicons name="checkmark-circle" size={22} color="#22c55e" />
+              </View>
+            ))}
+          </View>
+
+          <View style={upgradeStyles.priceContainer}>
+            <Text style={[upgradeStyles.price, { color: colors.text }]}>₩4,900</Text>
+            <Text style={[upgradeStyles.priceDesc, { color: colors.textMuted }]}>평생 이용권 (1회 결제)</Text>
+          </View>
+
+          <TouchableOpacity activeOpacity={0.8} onPress={purchasePremium}>
+            <LinearGradient
+              colors={['#7c3aed', '#a855f7']}
+              style={upgradeStyles.purchaseBtn}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={upgradeStyles.purchaseBtnText}>프리미엄 구매하기</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={upgradeStyles.restoreBtn} onPress={restorePurchase}>
+            <Text style={[upgradeStyles.restoreBtnText, { color: colors.textMuted }]}>구매 복원하기</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const upgradeStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  content: { width: '100%', maxWidth: 400, borderRadius: 24, overflow: 'hidden' },
+  closeBtn: { position: 'absolute', top: 12, right: 12, zIndex: 10, padding: 8 },
+  header: { paddingTop: 40, paddingBottom: 24, alignItems: 'center' },
+  crown: { fontSize: 48, marginBottom: 8 },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
+  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  features: { padding: 20 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  featureIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  featureText: { flex: 1 },
+  featureTitle: { fontSize: 15, fontWeight: '600' },
+  featureDesc: { fontSize: 12, marginTop: 2 },
+  priceContainer: { alignItems: 'center', paddingVertical: 16, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' },
+  price: { fontSize: 32, fontWeight: 'bold' },
+  priceDesc: { fontSize: 13, marginTop: 4 },
+  purchaseBtn: { marginHorizontal: 20, paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
+  purchaseBtnText: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+  restoreBtn: { alignItems: 'center', paddingVertical: 16 },
+  restoreBtnText: { fontSize: 14 },
+});
+
 // ============ SPLASH SCREEN ============
 function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -1674,11 +1914,14 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <ExpenseProvider>
-          <ScheduleProvider>
-            <AppContent />
-          </ScheduleProvider>
-        </ExpenseProvider>
+        <PremiumProvider>
+          <ExpenseProvider>
+            <ScheduleProvider>
+              <AppContent />
+              <UpgradeModal />
+            </ScheduleProvider>
+          </ExpenseProvider>
+        </PremiumProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
