@@ -263,6 +263,8 @@ const translations: Record<string, Record<string, string>> = {
     reduceSpending: '지출을 줄여야 합니다!',
     lowSavings: '저축 여유가 적습니다',
     goodSavingHabit: '좋은 저축 습관입니다!',
+    target: '목표',
+    remaining: '남은 금액',
     // Savings Screen
     newSavingGoal: '새 저축 목표',
     selectIcon: '아이콘 선택',
@@ -309,6 +311,29 @@ const translations: Record<string, Record<string, string>> = {
     medical: '의료',
     leisure: '여가',
     exercise: '운동',
+    // Placeholders
+    titleRequired: '제목 *',
+    timePlaceholder: '시간 (예: 14:00)',
+    locationPlaceholder: '장소',
+    locationExample: '예: 강남역',
+    scheduleTitlePlaceholder: '일정 제목',
+    enterMemoName: '메모 이름을 입력하세요',
+    savedMemos: '저장된 메모',
+    itemsCount: '{count}개 항목',
+    quickExpenseTitle: '{category} 지출',
+    quickExpensePrompt: '금액을 입력하세요',
+    transactions: '건',
+    // Additional keys
+    memoOptional: '메모 (선택)',
+    incomeExample: '예: 12월 급여',
+    expenseNameExample: '예: 넷플릭스, KT 통신비',
+    goalNameExample: '예: 여행 자금, 비상금',
+    nameLabel: '이름',
+    deleteGoalTitle: '목표 삭제',
+    deleteGoalConfirm: '"{name}" 목표를 삭제하시겠습니까?',
+    savingTip: '목표를 탭하면 저축할 수 있어요.\n삭제는 휴지통 아이콘을 눌러주세요.',
+    quickAmountWan: '+{amount}만',
+    milestoneDone: '달성!',
   },
   en: {
     // Navigation
@@ -486,6 +511,8 @@ const translations: Record<string, Record<string, string>> = {
     reduceSpending: 'Reduce spending!',
     lowSavings: 'Low savings margin',
     goodSavingHabit: 'Good saving habit!',
+    target: 'Target',
+    remaining: 'Remaining',
     // Savings Screen
     newSavingGoal: 'New Saving Goal',
     selectIcon: 'Select Icon',
@@ -532,6 +559,29 @@ const translations: Record<string, Record<string, string>> = {
     medical: 'Medical',
     leisure: 'Leisure',
     exercise: 'Exercise',
+    // Placeholders
+    titleRequired: 'Title *',
+    timePlaceholder: 'Time (e.g. 14:00)',
+    locationPlaceholder: 'Location',
+    locationExample: 'e.g. Downtown',
+    scheduleTitlePlaceholder: 'Schedule title',
+    enterMemoName: 'Enter memo name',
+    savedMemos: 'Saved Memos',
+    itemsCount: '{count} items',
+    quickExpenseTitle: '{category} Expense',
+    quickExpensePrompt: 'Enter amount',
+    transactions: '',
+    // Additional keys
+    memoOptional: 'Memo (optional)',
+    incomeExample: 'e.g. December salary',
+    expenseNameExample: 'e.g. Netflix, Phone bill',
+    goalNameExample: 'e.g. Travel fund, Emergency',
+    nameLabel: 'Name',
+    deleteGoalTitle: 'Delete Goal',
+    deleteGoalConfirm: 'Delete "{name}" goal?',
+    savingTip: 'Tap a goal to save money.\nTap trash icon to delete.',
+    quickAmountWan: '+{amount}0K',
+    milestoneDone: 'Done!',
   },
   ja: {
     // Navigation
@@ -706,6 +756,8 @@ const translations: Record<string, Record<string, string>> = {
     reduceSpending: '支出を減らしましょう！',
     lowSavings: '貯蓄余裕が少ない',
     goodSavingHabit: '良い貯蓄習慣です！',
+    target: '目標',
+    remaining: '残り',
     newSavingGoal: '新規貯金目標',
     selectIcon: 'アイコン選択',
     selectColor: '色選択',
@@ -746,6 +798,29 @@ const translations: Record<string, Record<string, string>> = {
     medical: '医療',
     leisure: 'レジャー',
     exercise: '運動',
+    // Placeholders
+    titleRequired: 'タイトル *',
+    timePlaceholder: '時間 (例: 14:00)',
+    locationPlaceholder: '場所',
+    locationExample: '例: 渋谷駅',
+    scheduleTitlePlaceholder: '予定のタイトル',
+    enterMemoName: 'メモ名を入力してください',
+    savedMemos: '保存されたメモ',
+    itemsCount: '{count}件',
+    quickExpenseTitle: '{category}支出',
+    quickExpensePrompt: '金額を入力してください',
+    transactions: '件',
+    // Additional keys
+    memoOptional: 'メモ (任意)',
+    incomeExample: '例: 12月給与',
+    expenseNameExample: '例: Netflix、通信費',
+    goalNameExample: '例: 旅行資金、緊急資金',
+    nameLabel: '名前',
+    deleteGoalTitle: '目標削除',
+    deleteGoalConfirm: '「{name}」目標を削除しますか？',
+    savingTip: '目標をタップして貯金できます。\nゴミ箱アイコンで削除できます。',
+    quickAmountWan: '+{amount}万',
+    milestoneDone: '達成！',
   },
   zh: {
     // Navigation
@@ -920,6 +995,8 @@ const translations: Record<string, Record<string, string>> = {
     reduceSpending: '需要减少支出！',
     lowSavings: '储蓄余地较少',
     goodSavingHabit: '良好的储蓄习惯！',
+    target: '目标',
+    remaining: '剩余',
     newSavingGoal: '新储蓄目标',
     selectIcon: '选择图标',
     selectColor: '选择颜色',
@@ -960,6 +1037,29 @@ const translations: Record<string, Record<string, string>> = {
     medical: '医疗',
     leisure: '休闲',
     exercise: '运动',
+    // Placeholders
+    titleRequired: '标题 *',
+    timePlaceholder: '时间 (例: 14:00)',
+    locationPlaceholder: '地点',
+    locationExample: '例: 市中心',
+    scheduleTitlePlaceholder: '日程标题',
+    enterMemoName: '请输入备忘名称',
+    savedMemos: '已保存的备忘',
+    itemsCount: '{count}个项目',
+    quickExpenseTitle: '{category}支出',
+    quickExpensePrompt: '请输入金额',
+    transactions: '笔',
+    // Additional keys
+    memoOptional: '备注（可选）',
+    incomeExample: '例: 12月工资',
+    expenseNameExample: '例: Netflix、话费',
+    goalNameExample: '例: 旅行基金、应急资金',
+    nameLabel: '名称',
+    deleteGoalTitle: '删除目标',
+    deleteGoalConfirm: '删除"{name}"目标？',
+    savingTip: '点击目标可以存钱。\n点击垃圾桶图标删除。',
+    quickAmountWan: '+{amount}万',
+    milestoneDone: '完成！',
   },
 };
 
@@ -1506,6 +1606,7 @@ function CalendarScreen() {
   const { settings } = useSettings();
   const t = (key: string) => getTranslation(settings.language, key);
   const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
 
   // 오늘 날짜의 고정 지출 자동 처리
   useEffect(() => {
@@ -1926,17 +2027,17 @@ function CalendarScreen() {
                       >
                         <View style={styles.expenseHeader}>
                           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={[styles.expenseCategory, { color: colors.text }]}>구매</Text>
+                            <Text style={[styles.expenseCategory, { color: colors.text }]}>{t('purchase')}</Text>
                             <Text style={[styles.expenseMemo, { color: colors.textMuted }]}>({expense.memo})</Text>
                             {expense.items && (
                               <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} style={{ marginLeft: 4 }} />
                             )}
                           </View>
-                          <Text style={[styles.expenseAmount, { color: colors.expense }]}>{expense.amount.toLocaleString()}원</Text>
+                          <Text style={[styles.expenseAmount, { color: colors.expense }]}>{currencySymbol}{expense.amount.toLocaleString()}</Text>
                           <TouchableOpacity activeOpacity={0.5} style={{ padding: 8, marginLeft: 8 }} onPress={() => {
-                            Alert.alert('삭제', '이 지출을 삭제하시겠습니까?', [
-                              { text: '취소', style: 'cancel' },
-                              { text: '삭제', style: 'destructive', onPress: () => deleteExpense(expense.id) },
+                            Alert.alert(t('delete'), t('deleteExpenseConfirm'), [
+                              { text: t('cancel'), style: 'cancel' },
+                              { text: t('delete'), style: 'destructive', onPress: () => deleteExpense(expense.id) },
                             ]);
                           }}>
                             <Ionicons name="trash-outline" size={20} color="#ef4444" />
@@ -1948,7 +2049,7 @@ function CalendarScreen() {
                               <View key={idx} style={styles.itemDetailRow}>
                                 <Ionicons name={item.checked ? "checkmark-circle" : "ellipse-outline"} size={16} color={item.checked ? colors.schedule : colors.textMuted} />
                                 <Text style={[styles.itemDetailName, { color: colors.text }, item.checked && styles.itemChecked]}>{item.name}</Text>
-                                <Text style={[styles.itemDetailAmount, { color: colors.textMuted }]}>{item.amount.toLocaleString()}원</Text>
+                                <Text style={[styles.itemDetailAmount, { color: colors.textMuted }]}>{currencySymbol}{item.amount.toLocaleString()}</Text>
                               </View>
                             ))}
                           </View>
@@ -1965,7 +2066,7 @@ function CalendarScreen() {
               {dateMemos.length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>메모장</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('purchaseMemo')}</Text>
                   </View>
                   {dateMemos.map(memo => (
                     <TouchableOpacity
@@ -1979,7 +2080,7 @@ function CalendarScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.memoItemName, { color: colors.text }]}>{memo.name}</Text>
                           <Text style={[styles.memoItemDetail, { color: colors.textMuted }]}>
-                            {memo.items.filter(i => i.name).length}개 항목 · {memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}원
+                            {tf('itemsCount', { count: memo.items.filter(i => i.name).length })} · {currencySymbol}{memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}
                           </Text>
                         </View>
                       </View>
@@ -1994,7 +2095,7 @@ function CalendarScreen() {
             </ScrollView>
 
             {totalForDay > 0 && (
-              <View style={[styles.modalFooter, { borderTopColor: colors.border }]}><Text style={[styles.modalTotal, { color: colors.expense }]}>총 {totalForDay.toLocaleString()}원</Text></View>
+              <View style={[styles.modalFooter, { borderTopColor: colors.border }]}><Text style={[styles.modalTotal, { color: colors.expense }]}>{t('total')} {currencySymbol}{totalForDay.toLocaleString()}</Text></View>
             )}
           </View>
         </View>
@@ -2004,12 +2105,12 @@ function CalendarScreen() {
       <Modal visible={showAddSchedule} transparent animationType="fade">
         <View style={styles.memoModalOverlay}>
           <View style={[styles.memoModal, { backgroundColor: colors.card }]}>
-            <Text style={[styles.memoModalTitle, { color: colors.text }]}>일정 추가</Text>
+            <Text style={[styles.memoModalTitle, { color: colors.text }]}>{t('addSchedule')}</Text>
             <TextInput
               style={[styles.memoNameInput, { backgroundColor: colors.bg, color: colors.text }]}
               value={newScheduleTitle}
               onChangeText={setNewScheduleTitle}
-              placeholder="제목 *"
+              placeholder={t('titleRequired')}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />
@@ -2017,19 +2118,19 @@ function CalendarScreen() {
               style={[styles.memoNameInput, { backgroundColor: colors.bg, color: colors.text }]}
               value={newScheduleTime}
               onChangeText={setNewScheduleTime}
-              placeholder="시간 (예: 14:00)"
+              placeholder={t('timePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
             <TextInput
               style={[styles.memoNameInput, { backgroundColor: colors.bg, color: colors.text }]}
               value={newScheduleLocation}
               onChangeText={setNewScheduleLocation}
-              placeholder="장소"
+              placeholder={t('locationPlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
             <View style={styles.memoModalButtons}>
               <TouchableOpacity style={[styles.memoModalCancel, { backgroundColor: colors.bg }]} onPress={() => { setShowAddSchedule(false); setNewScheduleTitle(''); setNewScheduleTime(''); setNewScheduleLocation(''); }}>
-                <Text style={[styles.memoModalCancelText, { color: colors.textMuted }]}>취소</Text>
+                <Text style={[styles.memoModalCancelText, { color: colors.textMuted }]}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.memoModalSave, { backgroundColor: colors.schedule }]} onPress={() => {
                 if (newScheduleTitle.trim()) {
@@ -2038,7 +2139,7 @@ function CalendarScreen() {
                   setShowAddSchedule(false);
                 }
               }}>
-                <Text style={styles.memoModalSaveText}>추가</Text>
+                <Text style={styles.memoModalSaveText}>{t('add')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2050,14 +2151,14 @@ function CalendarScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.expenseModalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>지출 추가</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('addExpense')}</Text>
               <TouchableOpacity onPress={() => { setShowAddExpense(false); setExpenseItems([{ id: 1, name: '', amount: '', checked: false }]); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.expenseModalScroll} keyboardShouldPersistTaps="handled">
-              <Text style={[styles.cardSubtitle, { color: colors.textMuted, marginBottom: 12, marginTop: 8 }]}>구매 항목을 입력하세요</Text>
+              <Text style={[styles.cardSubtitle, { color: colors.textMuted, marginBottom: 12, marginTop: 8 }]}>{t('enterPurchaseItems')}</Text>
 
               {expenseItems.map(item => (
                 <View key={item.id} style={[styles.itemRow, { borderBottomColor: colors.border }]}>
@@ -2068,13 +2169,13 @@ function CalendarScreen() {
                     style={[styles.itemNameInput, { color: colors.text }, item.checked && styles.itemChecked]}
                     value={item.name}
                     onChangeText={(text) => setExpenseItems(expenseItems.map(i => i.id === item.id ? { ...i, name: text } : i))}
-                    placeholder="항목명"
+                    placeholder={t('itemName')}
                     placeholderTextColor={colors.textMuted}
                     autoFocus={item.id === focusedItemId}
                     onFocus={() => { if (focusedItemId === item.id) setFocusedItemId(null); }}
                   />
                   <TextInput style={[styles.itemAmountInput, { color: colors.text }]} value={item.amount ? parseInt(item.amount).toLocaleString() : ''} onChangeText={(text) => setExpenseItems(expenseItems.map(i => i.id === item.id ? { ...i, amount: text.replace(/[^0-9]/g, '').replace(/^0+/, '') || '' } : i))} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-                  <Text style={[styles.won, { color: colors.textMuted }]}>원</Text>
+                  <Text style={[styles.won, { color: colors.textMuted }]}>{currencySymbol}</Text>
                 </View>
               ))}
 
@@ -2084,17 +2185,17 @@ function CalendarScreen() {
                   setExpenseItems([...expenseItems, { id: newId, name: '', amount: '', checked: false }]);
                   setFocusedItemId(newId);
                 }}>
-                  <Ionicons name="add" size={20} color={colors.primary} /><Text style={[styles.memoButtonText, { color: colors.primary }]}>항목 추가</Text>
+                  <Ionicons name="add" size={20} color={colors.primary} /><Text style={[styles.memoButtonText, { color: colors.primary }]}>{t('addItem')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity activeOpacity={0.6} style={[styles.memoButton, { flex: 1 }]} onPress={handleSaveMemo}>
                   <Ionicons name={currentMemoId ? "sync-outline" : "save-outline"} size={20} color={colors.primary} />
-                  <Text style={[styles.memoButtonText, { color: colors.primary }]}>{currentMemoId ? '임시저장 업데이트' : '임시저장'}</Text>
+                  <Text style={[styles.memoButtonText, { color: colors.primary }]}>{currentMemoId ? t('tempSaveUpdate') : t('tempSave')}</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={[styles.totalRow, { borderTopColor: colors.border, marginTop: 16 }]}>
-                <Text style={[styles.totalLabel, { color: colors.text }]}>합계</Text>
-                <Text style={[styles.totalAmount, { color: colors.primary }]}>{expenseTotal.toLocaleString()}원</Text>
+                <Text style={[styles.totalLabel, { color: colors.text }]}>{t('totalAmount')}</Text>
+                <Text style={[styles.totalAmount, { color: colors.primary }]}>{currencySymbol}{expenseTotal.toLocaleString()}</Text>
               </View>
               <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.expense, marginBottom: 20 }]} onPress={() => {
                 if (expenseTotal > 0) {
@@ -2107,9 +2208,9 @@ function CalendarScreen() {
                   }
                   addExpense({
                     date: selectedDateStr,
-                    category: '구매',
+                    category: t('purchase'),
                     amount: expenseTotal,
-                    memo: currentMemoId ? dateMemos.find(m => m.id === currentMemoId)?.name || '장보기' : '장보기',
+                    memo: currentMemoId ? dateMemos.find(m => m.id === currentMemoId)?.name || t('shopping') : t('shopping'),
                     items: expenseItems.filter(i => i.name).map(i => ({ name: i.name, amount: parseInt(i.amount) || 0, checked: i.checked }))
                   });
                   // 메모가 있으면 삭제 (사용 완료)
@@ -2122,7 +2223,7 @@ function CalendarScreen() {
                   setShowAddExpense(false);
                 }
               }}>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" /><Text style={styles.buttonText}>지출 기록하기</Text>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" /><Text style={styles.buttonText}>{t('recordExpense')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -2133,21 +2234,21 @@ function CalendarScreen() {
       <Modal visible={showMemoName} transparent animationType="fade">
         <View style={styles.memoModalOverlay}>
           <View style={[styles.memoModal, { backgroundColor: colors.card }]}>
-            <Text style={[styles.memoModalTitle, { color: colors.text }]}>메모 이름</Text>
+            <Text style={[styles.memoModalTitle, { color: colors.text }]}>{t('memoName')}</Text>
             <TextInput
               style={[styles.memoNameInput, { backgroundColor: colors.bg, color: colors.text }]}
               value={memoName}
               onChangeText={setMemoName}
-              placeholder="메모 이름을 입력하세요"
+              placeholder={t('enterMemoName')}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />
             <View style={styles.memoModalButtons}>
               <TouchableOpacity style={[styles.memoModalCancel, { backgroundColor: colors.bg }]} onPress={() => { setShowMemoName(false); setMemoName(''); }}>
-                <Text style={[styles.memoModalCancelText, { color: colors.textMuted }]}>취소</Text>
+                <Text style={[styles.memoModalCancelText, { color: colors.textMuted }]}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.memoModalSave, { backgroundColor: colors.primary }]} onPress={confirmSaveMemo}>
-                <Text style={styles.memoModalSaveText}>저장</Text>
+                <Text style={styles.memoModalSaveText}>{t('save')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2159,21 +2260,21 @@ function CalendarScreen() {
         <View style={styles.memoModalOverlay}>
           <View style={[styles.savedMemosModal, { backgroundColor: colors.card }]}>
             <View style={styles.savedMemosHeader}>
-              <Text style={[styles.savedMemosTitle, { color: colors.text }]}>{selectedDateStr} 저장된 메모</Text>
+              <Text style={[styles.savedMemosTitle, { color: colors.text }]}>{selectedDateStr} {t('savedMemos')}</Text>
               <TouchableOpacity onPress={() => setShowSavedMemos(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.savedMemosList}>
               {dateMemos.length === 0 ? (
-                <Text style={[styles.noMemosText, { color: colors.textMuted }]}>저장된 메모가 없습니다</Text>
+                <Text style={[styles.noMemosText, { color: colors.textMuted }]}>{t('noSavedMemo')}</Text>
               ) : (
                 dateMemos.map(memo => (
                   <TouchableOpacity key={memo.id} style={[styles.savedMemoItem, { backgroundColor: colors.bg }]} onPress={() => loadMemo(memo)}>
                     <View style={styles.savedMemoInfo}>
                       <Text style={[styles.savedMemoName, { color: colors.text }]}>{memo.name}</Text>
                       <Text style={[styles.savedMemoDetails, { color: colors.textMuted }]}>
-                        {memo.items.filter(i => i.name).length}개 항목 · {memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}원
+                        {memo.items.filter(i => i.name).length}개 항목 · {currencySymbol}{memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}
                       </Text>
                     </View>
                     <TouchableOpacity onPress={() => deleteMemo(memo.id)} style={styles.deleteMemoButton}>
@@ -2185,7 +2286,7 @@ function CalendarScreen() {
             </ScrollView>
             <TouchableOpacity style={[styles.newMemoButton, { borderTopColor: colors.border }]} onPress={() => { setCurrentMemoId(null); setMemoName(''); setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]); setShowSavedMemos(false); }}>
               <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-              <Text style={[styles.newMemoButtonText, { color: colors.primary }]}>새 메모 작성</Text>
+              <Text style={[styles.newMemoButtonText, { color: colors.primary }]}>{t('newMemo')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -2203,6 +2304,7 @@ function AddScreen() {
   const { settings } = useSettings();
   const t = (key: string) => getTranslation(settings.language, key);
   const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
   const [activeTab, setActiveTab] = useState<'expense' | 'schedule'>('expense');
 
   // Expense state
@@ -2269,8 +2371,8 @@ function AddScreen() {
       {activeTab === 'expense' ? (
         <>
           <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>구매 메모장</Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>장보기 항목을 입력하세요</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{t('purchaseMemo')}</Text>
+            <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>{t('enterPurchaseItems')}</Text>
 
             {items.map(item => (
               <View key={item.id} style={[styles.itemRow, { borderBottomColor: colors.border }]}>
@@ -2279,23 +2381,23 @@ function AddScreen() {
                 </TouchableOpacity>
                 <TextInput style={[styles.itemNameInput, { color: colors.text }, item.checked && styles.itemChecked]} value={item.name} onChangeText={(text) => setItems(items.map(i => i.id === item.id ? { ...i, name: text } : i))} placeholder="항목명" placeholderTextColor={colors.textMuted} />
                 <TextInput style={[styles.itemAmountInput, { color: colors.text }]} value={item.amount ? parseInt(item.amount).toLocaleString() : ''} onChangeText={(text) => setItems(items.map(i => i.id === item.id ? { ...i, amount: text.replace(/[^0-9]/g, '').replace(/^0+/, '') || '' } : i))} onFocus={() => { if (item.amount === '0') setItems(items.map(i => i.id === item.id ? { ...i, amount: '' } : i)); }} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-                <Text style={[styles.won, { color: colors.textMuted }]}>원</Text>
+                <Text style={[styles.won, { color: colors.textMuted }]}>{currencySymbol}</Text>
               </View>
             ))}
 
             <TouchableOpacity style={styles.addItemButton} onPress={() => setItems([...items, { id: Date.now(), name: '', amount: '', checked: false }])}>
-              <Ionicons name="add" size={20} color={colors.primary} /><Text style={[styles.addItemText, { color: colors.primary }]}>항목 추가</Text>
+              <Ionicons name="add" size={20} color={colors.primary} /><Text style={[styles.addItemText, { color: colors.primary }]}>{t('addItem')}</Text>
             </TouchableOpacity>
 
-            <View style={[styles.totalRow, { borderTopColor: colors.border }]}><Text style={[styles.totalLabel, { color: colors.text }]}>합계</Text><Text style={[styles.totalAmount, { color: colors.primary }]}>{total.toLocaleString()}원</Text></View>
+            <View style={[styles.totalRow, { borderTopColor: colors.border }]}><Text style={[styles.totalLabel, { color: colors.text }]}>{t('total')}</Text><Text style={[styles.totalAmount, { color: colors.primary }]}>{currencySymbol}{total.toLocaleString()}</Text></View>
 
             <TouchableOpacity style={styles.primaryButton} onPress={saveExpense}>
-              <Ionicons name="checkmark-circle" size={20} color="#fff" /><Text style={styles.buttonText}>지출 기록하기</Text>
+              <Ionicons name="checkmark-circle" size={20} color="#fff" /><Text style={styles.buttonText}>{t('recordExpense')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>빠른 지출</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{t('quickExpense')}</Text>
             <View style={styles.quickGrid}>
               {[{ icon: 'fast-food', label: '식비', color: '#f97316' }, { icon: 'car', label: '교통', color: '#3b82f6' }, { icon: 'cart', label: '쇼핑', color: '#ec4899' }, { icon: 'ellipsis-horizontal', label: '기타', color: '#6b7280' }].map((cat, i) => (
                 <TouchableOpacity key={i} style={[styles.quickButton, { backgroundColor: colors.bg }]} onPress={() => addQuickExpense(cat.label)}>
@@ -2307,8 +2409,8 @@ function AddScreen() {
         </>
       ) : (
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>새 일정</Text>
-          <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>오늘 날짜에 일정을 추가합니다</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{t('newSchedule')}</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>{t('addScheduleToday')}</Text>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.textMuted }]}>제목 *</Text>
@@ -2326,7 +2428,7 @@ function AddScreen() {
           </View>
 
           <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.schedule }]} onPress={saveSchedule}>
-            <Ionicons name="calendar-outline" size={20} color="#fff" /><Text style={styles.buttonText}>일정 추가하기</Text>
+            <Ionicons name="calendar-outline" size={20} color="#fff" /><Text style={styles.buttonText}>{t('addScheduleBtn')}</Text>
           </TouchableOpacity>
 
           {scheduleSaved && (
@@ -2565,7 +2667,7 @@ function SettingsScreen() {
                     </Text>
                   </View>
                   <Text style={{ color: colors.schedule, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
-                    +{item.amount.toLocaleString()}원
+                    +{currencySymbol}{item.amount.toLocaleString()}
                   </Text>
                   <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteIncome(item.id, item.source)} style={{ padding: 4 }}>
                     <Ionicons name="trash-outline" size={20} color="#ef4444" />
@@ -2635,7 +2737,7 @@ function SettingsScreen() {
                     </Text>
                   </View>
                   <Text style={{ color: colors.expense, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
-                    {item.amount.toLocaleString()}원
+                    {currencySymbol}{item.amount.toLocaleString()}
                   </Text>
                   <TouchableOpacity activeOpacity={0.6} onPress={() => handleDeleteRecurring(item.id, item.name)} style={{ padding: 4 }}>
                     <Ionicons name="trash-outline" size={20} color="#ef4444" />
@@ -3120,55 +3222,31 @@ function AnalysisContent() {
         )}
       </View>
 
-      {/* 카테고리별 소비 */}
-      {sortedCategories.length > 0 && (
-        <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <Ionicons name="pie-chart" size={16} color={colors.expense} />
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>카테고리별 소비</Text>
-          </View>
-          {sortedCategories.map(([category, amount]) => (
-            <View key={category} style={{ marginBottom: 8 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Ionicons name={categoryIcons[category] as any || 'ellipsis-horizontal'} size={14} color={categoryColors[category] || '#6b7280'} />
-                  <Text style={{ color: colors.text, fontSize: 13, marginLeft: 6 }}>{category}</Text>
-                </View>
-                <Text style={{ color: colors.text, fontSize: 13 }}>{amount.toLocaleString()}원</Text>
-              </View>
-              <View style={{ height: 6, backgroundColor: colors.bg, borderRadius: 3, overflow: 'hidden' }}>
-                <View style={{ height: '100%', width: `${(amount / maxCategoryAmount) * 100}%`, backgroundColor: categoryColors[category] || '#6b7280', borderRadius: 3 }} />
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
       {/* 월말 예상 */}
       <View style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 16, alignItems: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
           <Ionicons name="trending-up" size={16} color={projectedRemaining >= 0 ? colors.schedule : '#ef4444'} />
-          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>월말 예상 잔액</Text>
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>{t('monthEndProjection')}</Text>
         </View>
         <Text style={{ color: projectedRemaining >= 0 ? colors.schedule : '#ef4444', fontSize: 24, fontWeight: 'bold' }}>
-          {projectedRemaining >= 0 ? '+' : ''}{projectedRemaining.toLocaleString()}원
+          {projectedRemaining >= 0 ? '+' : ''}{currencySymbol}{projectedRemaining.toLocaleString()}
         </Text>
         {projectedRemaining < 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
             <Ionicons name="warning" size={14} color="#ef4444" />
-            <Text style={{ color: '#ef4444', fontSize: 12, marginLeft: 4 }}>지출을 줄여야 합니다!</Text>
+            <Text style={{ color: '#ef4444', fontSize: 12, marginLeft: 4 }}>{t('reduceSpending')}</Text>
           </View>
         )}
         {projectedRemaining >= 0 && projectedRemaining < totalIncome * 0.1 && totalIncome > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(234, 179, 8, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
             <Ionicons name="alert-circle" size={14} color={colors.expense} />
-            <Text style={{ color: colors.expense, fontSize: 12, marginLeft: 4 }}>저축 여유가 적습니다</Text>
+            <Text style={{ color: colors.expense, fontSize: 12, marginLeft: 4 }}>{t('lowSavings')}</Text>
           </View>
         )}
         {projectedRemaining >= totalIncome * 0.2 && totalIncome > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(34, 197, 94, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
             <Ionicons name="checkmark-circle" size={14} color={colors.schedule} />
-            <Text style={{ color: colors.schedule, fontSize: 12, marginLeft: 4 }}>좋은 저축 습관입니다!</Text>
+            <Text style={{ color: colors.schedule, fontSize: 12, marginLeft: 4 }}>{t('goodSavingHabit')}</Text>
           </View>
         )}
       </View>
@@ -3182,6 +3260,7 @@ function SavingsScreen() {
   const { settings } = useSettings();
   const t = (key: string) => getTranslation(settings.language, key);
   const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
   const { goals, addGoal, deleteGoal, addSavings, getTotalSaved, getTotalTarget, getOverallProgress } = useGoals();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -3196,17 +3275,17 @@ function SavingsScreen() {
   const GOAL_ICONS = ['🎯', '✈️', '🏠', '🚗', '💻', '📱', '👗', '💍', '🎓', '💰', '🎁', '🏖️'];
   const GOAL_COLORS = ['#7c3aed', '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
   const MILESTONES = [
-    { percent: 25, icon: '🌱', label: '시작' },
-    { percent: 50, icon: '🌿', label: '중간' },
-    { percent: 75, icon: '🌳', label: '거의' },
-    { percent: 100, icon: '🎉', label: '달성!' },
+    { percent: 25, icon: '🌱', label: t('milestoneStart') },
+    { percent: 50, icon: '🌿', label: t('milestoneMiddle') },
+    { percent: 75, icon: '🌳', label: t('milestoneAlmost') },
+    { percent: 100, icon: '🎉', label: t('milestoneDone') },
   ];
   const QUICK_AMOUNTS = [10000, 50000, 100000, 500000];
   const TUTORIAL_SLIDES = [
-    { emoji: '🎯', title: '목표를 세워요', desc: '여행, 비상금, 선물 등\n나만의 저축 목표를 만들어요' },
-    { emoji: '🎨', title: '꾸며보세요', desc: '아이콘과 색상을 선택해서\n나만의 목표를 만들어요' },
-    { emoji: '💰', title: '저금해요', desc: '저금하기 버튼을 눌러\n조금씩 모아가요' },
-    { emoji: '🌱', title: '성장을 지켜봐요', desc: '🌱→🌿→🌳→🎉\n마일스톤을 달성해가요' },
+    { emoji: '🎯', title: t('tutorialTitle1'), desc: t('tutorialDesc1') },
+    { emoji: '🎨', title: t('tutorialTitle2'), desc: t('tutorialDesc2') },
+    { emoji: '💰', title: t('tutorialTitle3'), desc: t('tutorialDesc3') },
+    { emoji: '🌱', title: t('tutorialTitle4'), desc: t('tutorialDesc4') },
   ];
 
   const [selectedIcon, setSelectedIcon] = useState('🎯');
@@ -3250,9 +3329,9 @@ function SavingsScreen() {
   };
 
   const handleDeleteGoal = (id: string, name: string) => {
-    Alert.alert('목표 삭제', `"${name}" 목표를 삭제하시겠습니까?`, [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => deleteGoal(id) },
+    Alert.alert(t('deleteGoalTitle'), tf('deleteGoalConfirm', { name }), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('delete'), style: 'destructive', onPress: () => deleteGoal(id) },
     ]);
   };
 
@@ -3307,7 +3386,7 @@ function SavingsScreen() {
             onPress={() => { setShowTutorial(false); setShowAddModal(true); }}
             style={{ backgroundColor: colors.primary, marginHorizontal: 16, marginBottom: 16, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
           >
-            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>첫 목표 만들기</Text>
+            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>{t('createFirstGoal')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -3319,7 +3398,7 @@ function SavingsScreen() {
         style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }]}
       >
         <Ionicons name="add-circle" size={22} color={colors.primary} />
-        <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600', marginLeft: 8 }}>새 목표 추가</Text>
+        <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600', marginLeft: 8 }}>{t('newGoalAdd')}</Text>
       </TouchableOpacity>
 
       {/* 목표 리스트 */}
@@ -3336,7 +3415,7 @@ function SavingsScreen() {
                     <View style={{ marginLeft: 12, flex: 1 }}>
                       <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{goal.name}</Text>
                       <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
-                        목표 {goal.targetAmount.toLocaleString()}원
+                        {t('target')} {currencySymbol}{goal.targetAmount.toLocaleString()}
                       </Text>
                     </View>
                   </View>
@@ -3348,7 +3427,7 @@ function SavingsScreen() {
                 <View style={{ marginTop: 16 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                     <Text style={{ color: goal.color || colors.schedule, fontSize: 18, fontWeight: 'bold' }}>
-                      {goal.currentAmount.toLocaleString()}원
+                      {currencySymbol}{goal.currentAmount.toLocaleString()}
                     </Text>
                     <Text style={{ color: goal.color || colors.primary, fontSize: 14, fontWeight: '600' }}>{progress.toFixed(0)}%</Text>
                   </View>
@@ -3373,13 +3452,13 @@ function SavingsScreen() {
 
                   {remaining > 0 && (
                     <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 12 }}>
-                      남은 금액: {remaining.toLocaleString()}원
+                      {t('remaining')}: {currencySymbol}{remaining.toLocaleString()}
                     </Text>
                   )}
                   {goal.isCompleted && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
                       <Ionicons name="checkmark-circle" size={16} color={colors.schedule} />
-                      <Text style={{ color: colors.schedule, fontSize: 13, marginLeft: 4 }}>목표 달성!</Text>
+                      <Text style={{ color: colors.schedule, fontSize: 13, marginLeft: 4 }}>{t('goalAchieved')}</Text>
                     </View>
                   )}
                 </View>
@@ -3390,7 +3469,7 @@ function SavingsScreen() {
                     onPress={() => { setSelectedGoalId(goal.id); setShowSaveModal(true); }}
                     style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 12, marginTop: 16, alignItems: 'center' }}
                   >
-                    <Text style={{ color: 'white', fontSize: 15, fontWeight: '600' }}>저금하기</Text>
+                    <Text style={{ color: 'white', fontSize: 15, fontWeight: '600' }}>{t('deposit')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -3400,8 +3479,8 @@ function SavingsScreen() {
       ) : (
         <View style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, alignItems: 'center', paddingVertical: 40 }]}>
           <Ionicons name="flag-outline" size={48} color={colors.textMuted} />
-          <Text style={{ color: colors.textMuted, marginTop: 12 }}>아직 저축 목표가 없습니다</Text>
-          <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>새 목표를 추가해보세요!</Text>
+          <Text style={{ color: colors.textMuted, marginTop: 12 }}>{t('noSavingGoal')}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{t('addNewGoal')}</Text>
         </View>
       )}
 
@@ -3409,7 +3488,7 @@ function SavingsScreen() {
       <View style={[styles.card, { backgroundColor: colors.primary + '15', marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderLeftWidth: 3, borderLeftColor: colors.primary }]}>
         <Text style={{ fontSize: 20, marginRight: 12 }}>💡</Text>
         <Text style={{ color: colors.textMuted, fontSize: 13, flex: 1, lineHeight: 20 }}>
-          목표를 탭하면 저축할 수 있어요.{'\n'}삭제는 휴지통 아이콘을 눌러주세요.
+          {t('savingTip')}
         </Text>
       </View>
 
@@ -3420,13 +3499,13 @@ function SavingsScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>새 저축 목표</Text>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>{t('newSavingGoal')}</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>아이콘 선택</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>{t('selectIcon')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {GOAL_ICONS.map(icon => (
                 <TouchableOpacity
@@ -3439,16 +3518,16 @@ function SavingsScreen() {
               ))}
             </ScrollView>
 
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>목표 이름</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>{t('goalName')}</Text>
             <TextInput
               value={goalName}
               onChangeText={setGoalName}
-              placeholder="예: 여행 자금, 비상금"
+              placeholder={t('goalNameExample')}
               placeholderTextColor={colors.textMuted}
               style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16, marginBottom: 16 }}
             />
 
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>목표 금액</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>{t('targetAmount')}</Text>
             <TextInput
               value={targetAmount}
               onChangeText={t => setTargetAmount(formatAmount(t))}
@@ -3458,7 +3537,7 @@ function SavingsScreen() {
               style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16, marginBottom: 16 }}
             />
 
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>색상 선택</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>{t('selectColor')}</Text>
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
               {GOAL_COLORS.map(color => (
                 <TouchableOpacity
@@ -3476,7 +3555,7 @@ function SavingsScreen() {
               onPress={handleAddGoal}
               style={{ backgroundColor: selectedColor, borderRadius: 12, paddingVertical: 16, alignItems: 'center' }}
             >
-              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>목표 추가</Text>
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>{t('addGoalBtn')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -3487,13 +3566,13 @@ function SavingsScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>저금하기</Text>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>{t('deposit')}</Text>
               <TouchableOpacity onPress={() => { setShowSaveModal(false); setSaveAmount(''); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>저금할 금액</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>{t('depositAmount')}</Text>
             <TextInput
               value={saveAmount}
               onChangeText={t => setSaveAmount(formatAmount(t))}
@@ -3511,7 +3590,7 @@ function SavingsScreen() {
                   onPress={() => setSaveAmount(amount.toLocaleString())}
                   style={{ flex: 1, backgroundColor: colors.bg, borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
                 >
-                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>+{(amount / 10000).toFixed(0)}만</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>{tf('quickAmountWan', { amount: (amount / 10000).toFixed(0) })}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -3521,7 +3600,7 @@ function SavingsScreen() {
               onPress={handleSave}
               style={{ backgroundColor: colors.schedule, borderRadius: 12, paddingVertical: 16, alignItems: 'center' }}
             >
-              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>저금하기</Text>
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>{t('deposit')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -3538,6 +3617,7 @@ function ExpensesScreen() {
   const { settings } = useSettings();
   const t = (key: string) => getTranslation(settings.language, key);
   const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
@@ -3847,15 +3927,15 @@ function ExpensesScreen() {
                       <Text style={[styles.expenseRowLabel, { color: colors.text }]}>{formatDate(date)}</Text>
                       <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
                     </View>
-                    <Text style={[styles.expenseRowAmount, { color: colors.expense }]}>{total.toLocaleString()}원</Text>
+                    <Text style={[styles.expenseRowAmount, { color: colors.expense }]}>{currencySymbol}{total.toLocaleString()}</Text>
                   </TouchableOpacity>
                   {isExpanded && (
                     <View style={[styles.expandedDetail, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
                       {dateExpenses.map(expense => (
                         <View key={expense.id} style={styles.detailItem}>
                           <View style={styles.detailHeader}>
-                            <Text style={[styles.detailMemo, { color: colors.text }]}>구매 ({expense.memo})</Text>
-                            <Text style={[styles.detailAmount, { color: colors.expense }]}>{expense.amount.toLocaleString()}원</Text>
+                            <Text style={[styles.detailMemo, { color: colors.text }]}>{t('purchase')} ({expense.memo})</Text>
+                            <Text style={[styles.detailAmount, { color: colors.expense }]}>{currencySymbol}{expense.amount.toLocaleString()}</Text>
                           </View>
                           {expense.items && expense.items.length > 0 && (
                             <View style={styles.detailItems}>
@@ -3869,7 +3949,7 @@ function ExpensesScreen() {
                                   <Text style={[styles.detailItemName, { color: colors.text }, item.checked && { textDecorationLine: 'line-through', color: colors.textMuted }]}>
                                     {item.name}
                                   </Text>
-                                  <Text style={[styles.detailItemAmount, { color: colors.textMuted }]}>{item.amount.toLocaleString()}원</Text>
+                                  <Text style={[styles.detailItemAmount, { color: colors.textMuted }]}>{currencySymbol}{item.amount.toLocaleString()}</Text>
                                 </View>
                               ))}
                             </View>
@@ -3897,7 +3977,7 @@ function ExpensesScreen() {
                   <Text style={[styles.expenseRowLabel, { color: colors.text }]}>{week.label}</Text>
                   <Text style={[styles.expenseRowSub, { color: colors.textMuted }]}>{week.dates}</Text>
                 </View>
-                <Text style={[styles.expenseRowAmount, { color: colors.expense }]}>{week.total.toLocaleString()}원</Text>
+                <Text style={[styles.expenseRowAmount, { color: colors.expense }]}>{currencySymbol}{week.total.toLocaleString()}</Text>
               </View>
             ))
           ) : (
@@ -3916,7 +3996,7 @@ function ExpensesScreen() {
                   <Text style={[styles.expenseRowLabel, { color: colors.text }]}>{month.label}</Text>
                   <Text style={[styles.expenseRowSub, { color: colors.textMuted }]}>{month.count}건</Text>
                 </View>
-                <Text style={[styles.expenseRowAmount, { color: colors.expense }]}>{month.total.toLocaleString()}원</Text>
+                <Text style={[styles.expenseRowAmount, { color: colors.expense }]}>{currencySymbol}{month.total.toLocaleString()}</Text>
               </View>
             ))
           ) : (
@@ -4012,7 +4092,7 @@ function ExpensesScreen() {
                             <Text style={[{ fontSize: 13, color: colors.text }, item.checked && { textDecorationLine: 'line-through', color: colors.textMuted }]}>
                               {item.checked ? '✓ ' : ''}{item.name}
                             </Text>
-                            <Text style={{ fontSize: 13, color: colors.textMuted }}>{item.amount.toLocaleString()}원</Text>
+                            <Text style={{ fontSize: 13, color: colors.textMuted }}>{currencySymbol}{item.amount.toLocaleString()}</Text>
                           </View>
                         ))}
                       </View>

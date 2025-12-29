@@ -75,14 +75,17 @@ const STORAGE_KEY = '@mohani_settings';
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     loadSettings();
   }, []);
 
   useEffect(() => {
-    saveSettings();
-  }, [settings]);
+    if (isLoaded) {
+      saveSettings();
+    }
+  }, [settings, isLoaded]);
 
   const loadSettings = async () => {
     try {
@@ -93,6 +96,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
+    } finally {
+      setIsLoaded(true);
     }
   };
 

@@ -32,14 +32,17 @@ const STORAGE_KEY = '@mohani_goals';
 
 export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     loadGoals();
   }, []);
 
   useEffect(() => {
-    saveGoals();
-  }, [goals]);
+    if (isLoaded) {
+      saveGoals();
+    }
+  }, [goals, isLoaded]);
 
   const loadGoals = async () => {
     try {
@@ -55,6 +58,8 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (error) {
       console.error('Failed to load goals:', error);
+    } finally {
+      setIsLoaded(true);
     }
   };
 
