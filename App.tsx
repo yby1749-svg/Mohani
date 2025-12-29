@@ -3,13 +3,15 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Keyboard, Animated, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Keyboard, Animated, Dimensions, Image } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GoalsProvider, useGoals } from './src/context/GoalsContext';
+import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 
 // ============ TYPES ============
 interface Expense {
@@ -54,6 +56,924 @@ const LightColors = {
 
 // Default to dark
 let Colors = DarkColors;
+
+// ============ TRANSLATIONS ============
+const LANGUAGES = [
+  { code: 'ko', label: '한국어', flag: '🇰🇷' },
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'zh', label: '中文', flag: '🇨🇳' },
+];
+
+const CURRENCIES = [
+  { code: 'KRW', symbol: '₩', label: '원 (KRW)', flag: '🇰🇷' },
+  { code: 'USD', symbol: '$', label: 'Dollar (USD)', flag: '🇺🇸' },
+  { code: 'EUR', symbol: '€', label: 'Euro (EUR)', flag: '🇪🇺' },
+  { code: 'JPY', symbol: '¥', label: '円 (JPY)', flag: '🇯🇵' },
+  { code: 'CNY', symbol: '¥', label: '元 (CNY)', flag: '🇨🇳' },
+  { code: 'GBP', symbol: '£', label: 'Pound (GBP)', flag: '🇬🇧' },
+  { code: 'AUD', symbol: 'A$', label: 'Dollar (AUD)', flag: '🇦🇺' },
+  { code: 'CAD', symbol: 'C$', label: 'Dollar (CAD)', flag: '🇨🇦' },
+  { code: 'CHF', symbol: 'Fr', label: 'Franc (CHF)', flag: '🇨🇭' },
+  { code: 'HKD', symbol: 'HK$', label: 'Dollar (HKD)', flag: '🇭🇰' },
+  { code: 'SGD', symbol: 'S$', label: 'Dollar (SGD)', flag: '🇸🇬' },
+  { code: 'TWD', symbol: 'NT$', label: '元 (TWD)', flag: '🇹🇼' },
+  { code: 'THB', symbol: '฿', label: 'Baht (THB)', flag: '🇹🇭' },
+  { code: 'VND', symbol: '₫', label: 'Dong (VND)', flag: '🇻🇳' },
+  { code: 'PHP', symbol: '₱', label: 'Peso (PHP)', flag: '🇵🇭' },
+  { code: 'INR', symbol: '₹', label: 'Rupee (INR)', flag: '🇮🇳' },
+  { code: 'MYR', symbol: 'RM', label: 'Ringgit (MYR)', flag: '🇲🇾' },
+  { code: 'IDR', symbol: 'Rp', label: 'Rupiah (IDR)', flag: '🇮🇩' },
+];
+
+const translations: Record<string, Record<string, string>> = {
+  ko: {
+    // Navigation
+    calendar: '달력',
+    expenses: '가계부',
+    savings: '저금통',
+    settings: '설정',
+    // Settings
+    settingsTitle: '설정',
+    income: '수입',
+    incomeCount: '개',
+    thisMonth: '이번달',
+    won: '원',
+    fixedExpenses: '고정 지출',
+    monthly: '월',
+    darkMode: '다크 모드',
+    lightMode: '라이트 모드',
+    clearData: '데이터 초기화',
+    language: '언어',
+    currency: '화폐단위',
+    add: '+ 추가',
+    cancel: '취소',
+    delete: '삭제',
+    confirm: '확인',
+    // Income
+    addIncome: '수입 추가',
+    incomeType: '수입 유형',
+    amount: '금액',
+    note: '메모',
+    recurring: '매월 반복',
+    save: '저장',
+    salary: '급여',
+    bonus: '보너스',
+    freelance: '프리랜서',
+    investment: '투자',
+    gift: '선물',
+    other: '기타',
+    noIncome: '등록된 수입이 없습니다',
+    // Fixed Expenses
+    addFixedExpense: '고정 지출 추가',
+    expenseName: '지출명',
+    category: '카테고리',
+    frequency: '결제 주기',
+    monthlyPayment: '매월',
+    yearlyPayment: '매년',
+    paymentDay: '결제일',
+    day: '일',
+    subscription: '구독',
+    telecom: '통신',
+    insurance: '보험',
+    housing: '주거',
+    transport: '교통',
+    noFixedExpense: '등록된 고정 지출이 없습니다',
+    // Alerts
+    clearDataTitle: '데이터 초기화',
+    clearDataMsg: '모든 데이터를 삭제하시겠습니까?',
+    clearDataDone: '데이터가 삭제되었습니다. 앱을 재시작하세요.',
+    done: '완료',
+    alert: '알림',
+    enterNameAmount: '이름과 금액을 입력해주세요',
+    enterAmount: '금액을 입력해주세요',
+    deleteConfirm: '을(를) 삭제하시겠습니까?',
+    // Calendar
+    today: '오늘',
+    sun: '일',
+    mon: '월',
+    tue: '화',
+    wed: '수',
+    thu: '목',
+    fri: '금',
+    sat: '토',
+    schedule: '일정',
+    expense: '지출',
+    // Savings
+    savingsTitle: '저금통',
+    addGoal: '목표 추가',
+    goalName: '목표명',
+    targetAmount: '목표 금액',
+    goalColor: '목표 색상',
+    createGoal: '목표 만들기',
+    deposit: '저금하기',
+    quickAmount: '빠른 입력',
+    tips: '팁',
+    milestone: '마일스톤',
+    // Tutorial
+    tutorialTitle1: '목표를 세워요',
+    tutorialDesc1: '여행, 비상금, 선물 등\n나만의 저축 목표를 만들어요',
+    tutorialTitle2: '꾸며보세요',
+    tutorialDesc2: '아이콘과 색상을 선택해서\n나만의 목표를 만들어요',
+    tutorialTitle3: '저금해요',
+    tutorialDesc3: '저금하기 버튼을 눌러\n조금씩 모아가요',
+    tutorialTitle4: '성장을 지켜봐요',
+    tutorialDesc4: '🌱→🌿→🌳→🎉\n마일스톤을 달성해가요',
+    createFirstGoal: '첫 목표 만들기',
+    // Date formats
+    monthOnly: '{month}월',
+    monthDay: '{month}월 {day}일',
+    yearMonth: '{year}년 {month}월',
+    dayWithWeek: '{month}월 {day}일 ({week})',
+    monthlyOnDay: '매월 {day}일',
+    daysPassed: '{days}일 경과',
+    oneTime: '일회성',
+    yearly: '매년',
+    // PDF Report
+    expenseReport: '지출 리포트',
+    totalExpenseThisMonth: '이번 달 총 지출',
+    expenseCount: '{count}건의 지출',
+    detailedHistory: '상세 내역',
+    purchase: '구매',
+    purchaseItems: '구매 항목',
+    noExpenseRecorded: '기록된 지출이 없습니다',
+    monthlyAnalysis: '월별 분석',
+    totalExpense: '총 지출',
+    averageExpense: '평균 지출',
+    // Additional UI
+    addSchedule: '일정 추가',
+    addExpense: '지출 추가',
+    goToToday: '오늘로',
+    noSchedule: '일정이 없습니다',
+    noExpense: '지출이 없습니다',
+    total: '총',
+    totalAmount: '합계',
+    recordExpense: '지출 기록하기',
+    addScheduleBtn: '일정 추가하기',
+    addItem: '항목 추가',
+    itemName: '항목명',
+    tempSave: '임시저장',
+    tempSaveUpdate: '임시저장 업데이트',
+    tempSaved: '임시저장 되었습니다!',
+    expenseRecorded: '지출이 기록되었습니다!',
+    scheduleAdded: '일정이 추가되었습니다!',
+    memoName: '메모 이름',
+    noSavedMemo: '저장된 메모가 없습니다',
+    newMemo: '새 메모 작성',
+    enterItem: '항목을 입력해주세요',
+    enterScheduleTitle: '일정 제목을 입력해주세요',
+    deleteThis: '삭제',
+    deleteScheduleConfirm: '이 일정을 삭제하시겠습니까?',
+    deleteExpenseConfirm: '이 지출을 삭제하시겠습니까?',
+    deleteMemoConfirm: '이 메모를 삭제하시겠습니까?',
+    deleteIncomeConfirm: '수입을 삭제하시겠습니까?',
+    deleteFixedConfirm: '을(를) 삭제하시겠습니까?',
+    // Add Screen
+    addTitle: '추가',
+    expenseTab: '지출',
+    scheduleTab: '일정',
+    purchaseMemo: '구매 메모장',
+    enterPurchaseItems: '장보기 항목을 입력하세요',
+    quickExpense: '빠른 지출',
+    food: '식비',
+    cafe: '카페',
+    shopping: '쇼핑',
+    newSchedule: '새 일정',
+    addScheduleToday: '오늘 날짜에 일정을 추가합니다',
+    title: '제목',
+    time: '시간',
+    location: '장소',
+    // Settings Screen
+    premiumUser: '프리미엄 사용자',
+    usingAllFeatures: '모든 기능을 사용 중입니다',
+    upgradeToPremium: '프리미엄으로 업그레이드',
+    thisMonthRecord: '이번 달 {count}/{max}건 기록',
+    useUnlimited: '무제한으로 사용하기',
+    monthlyRecurringIncome: '매월 반복 수입',
+    addBtn: '추가하기',
+    cycle: '주기',
+    // Analysis
+    incomeLabel: '수입',
+    fixedExpenseLabel: '고정지출',
+    dailySpending: '일일소비',
+    remainingAmount: '남은 금액',
+    remainingDaysUsage: '남은 {days}일간 하루 사용 가능',
+    categorySpending: '카테고리별 소비',
+    monthEndProjection: '월말 예상 잔액',
+    reduceSpending: '지출을 줄여야 합니다!',
+    lowSavings: '저축 여유가 적습니다',
+    goodSavingHabit: '좋은 저축 습관입니다!',
+    // Savings Screen
+    newSavingGoal: '새 저축 목표',
+    selectIcon: '아이콘 선택',
+    selectColor: '색상 선택',
+    addGoalBtn: '목표 추가',
+    depositAmount: '저금할 금액',
+    goalAchieved: '목표 달성!',
+    remainingAmountLabel: '남은 금액',
+    noSavingGoal: '아직 저축 목표가 없습니다',
+    addNewGoal: '새 목표를 추가해보세요!',
+    newGoalAdd: '새 목표 추가',
+    milestoneStart: '시작',
+    milestoneMiddle: '중간',
+    milestoneAlmost: '거의',
+    // Expenses Screen
+    viewExpenses: '지출 보기',
+    thisMonthAmount: '이번달 {amount}원',
+    daily: '일간',
+    weekly: '주간',
+    monthlyView: '월간',
+    noExpenseHistory: '지출 내역이 없습니다',
+    financialAnalysis: '재정 분석',
+    financialAnalysisSubtitle: '수입·지출·잔액 현황',
+    export: '내보내기',
+    // Week names
+    week1: '첫째주',
+    week2: '둘째주',
+    week3: '셋째주',
+    week4: '넷째주',
+    week5: '다섯째주',
+    // Premium Modal
+    premiumTitle: '프리미엄으로 업그레이드',
+    premiumSubtitle: '모든 기능을 제한 없이 사용하세요',
+    lifetimeLicense: '평생 이용권 (1회 결제)',
+    purchasePremium: '프리미엄 구매하기',
+    restorePurchase: '구매 복원하기',
+    // Errors
+    error: '오류',
+    paymentError: '결제 처리 중 오류가 발생했습니다.',
+    noPurchaseToRestore: '복원할 구매 내역이 없습니다.',
+    restoreError: '복원 중 오류가 발생했습니다.',
+    pdfError: 'PDF 생성에 실패했습니다',
+    // Categories
+    medical: '의료',
+    leisure: '여가',
+    exercise: '운동',
+  },
+  en: {
+    // Navigation
+    calendar: 'Calendar',
+    expenses: 'Expenses',
+    savings: 'Savings',
+    settings: 'Settings',
+    // Settings
+    settingsTitle: 'Settings',
+    income: 'Income',
+    incomeCount: ' items',
+    thisMonth: 'This month',
+    won: '',
+    fixedExpenses: 'Fixed Expenses',
+    monthly: 'Monthly',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    clearData: 'Clear Data',
+    language: 'Language',
+    currency: 'Currency',
+    add: '+ Add',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    confirm: 'Confirm',
+    // Income
+    addIncome: 'Add Income',
+    incomeType: 'Income Type',
+    amount: 'Amount',
+    note: 'Note',
+    recurring: 'Monthly recurring',
+    save: 'Save',
+    salary: 'Salary',
+    bonus: 'Bonus',
+    freelance: 'Freelance',
+    investment: 'Investment',
+    gift: 'Gift',
+    other: 'Other',
+    noIncome: 'No income registered',
+    // Fixed Expenses
+    addFixedExpense: 'Add Fixed Expense',
+    expenseName: 'Expense Name',
+    category: 'Category',
+    frequency: 'Frequency',
+    monthlyPayment: 'Monthly',
+    yearlyPayment: 'Yearly',
+    paymentDay: 'Payment Day',
+    day: '',
+    subscription: 'Subscription',
+    telecom: 'Telecom',
+    insurance: 'Insurance',
+    housing: 'Housing',
+    transport: 'Transport',
+    noFixedExpense: 'No fixed expenses registered',
+    // Alerts
+    clearDataTitle: 'Clear Data',
+    clearDataMsg: 'Delete all data?',
+    clearDataDone: 'Data deleted. Please restart the app.',
+    done: 'Done',
+    alert: 'Alert',
+    enterNameAmount: 'Please enter name and amount',
+    enterAmount: 'Please enter amount',
+    deleteConfirm: 'Delete this item?',
+    // Calendar
+    today: 'Today',
+    sun: 'Sun',
+    mon: 'Mon',
+    tue: 'Tue',
+    wed: 'Wed',
+    thu: 'Thu',
+    fri: 'Fri',
+    sat: 'Sat',
+    schedule: 'Schedule',
+    expense: 'Expense',
+    // Savings
+    savingsTitle: 'Savings',
+    addGoal: 'Add Goal',
+    goalName: 'Goal Name',
+    targetAmount: 'Target Amount',
+    goalColor: 'Goal Color',
+    createGoal: 'Create Goal',
+    deposit: 'Deposit',
+    quickAmount: 'Quick Amount',
+    tips: 'Tips',
+    milestone: 'Milestone',
+    // Tutorial
+    tutorialTitle1: 'Set a Goal',
+    tutorialDesc1: 'Create your own savings goal\nfor travel, emergency, gifts, etc.',
+    tutorialTitle2: 'Customize',
+    tutorialDesc2: 'Choose icons and colors\nto personalize your goal',
+    tutorialTitle3: 'Save Money',
+    tutorialDesc3: 'Tap the deposit button\nto save little by little',
+    tutorialTitle4: 'Watch it Grow',
+    tutorialDesc4: '🌱→🌿→🌳→🎉\nReach your milestones',
+    createFirstGoal: 'Create First Goal',
+    // Date formats
+    monthOnly: '{month}',
+    monthDay: '{month}/{day}',
+    yearMonth: '{month}/{year}',
+    dayWithWeek: '{month}/{day} ({week})',
+    monthlyOnDay: '{day}th monthly',
+    daysPassed: '{days} days passed',
+    oneTime: 'One-time',
+    yearly: 'Yearly',
+    // PDF Report
+    expenseReport: 'Expense Report',
+    totalExpenseThisMonth: 'Total Expenses This Month',
+    expenseCount: '{count} expenses',
+    detailedHistory: 'Detailed History',
+    purchase: 'Purchase',
+    purchaseItems: 'Items Purchased',
+    noExpenseRecorded: 'No expenses recorded',
+    monthlyAnalysis: 'Monthly Analysis',
+    totalExpense: 'Total Expense',
+    averageExpense: 'Average Expense',
+    // Additional UI
+    addSchedule: 'Add Schedule',
+    addExpense: 'Add Expense',
+    goToToday: 'Today',
+    noSchedule: 'No schedules',
+    noExpense: 'No expenses',
+    total: 'Total',
+    totalAmount: 'Total',
+    recordExpense: 'Record Expense',
+    addScheduleBtn: 'Add Schedule',
+    addItem: 'Add Item',
+    itemName: 'Item name',
+    tempSave: 'Save Draft',
+    tempSaveUpdate: 'Update Draft',
+    tempSaved: 'Draft saved!',
+    expenseRecorded: 'Expense recorded!',
+    scheduleAdded: 'Schedule added!',
+    memoName: 'Memo Name',
+    noSavedMemo: 'No saved memos',
+    newMemo: 'New Memo',
+    enterItem: 'Please enter an item',
+    enterScheduleTitle: 'Please enter a schedule title',
+    deleteThis: 'Delete',
+    deleteScheduleConfirm: 'Delete this schedule?',
+    deleteExpenseConfirm: 'Delete this expense?',
+    deleteMemoConfirm: 'Delete this memo?',
+    deleteIncomeConfirm: 'Delete this income?',
+    deleteFixedConfirm: 'Delete this item?',
+    // Add Screen
+    addTitle: 'Add',
+    expenseTab: 'Expense',
+    scheduleTab: 'Schedule',
+    purchaseMemo: 'Shopping Memo',
+    enterPurchaseItems: 'Enter shopping items',
+    quickExpense: 'Quick Expense',
+    food: 'Food',
+    cafe: 'Cafe',
+    shopping: 'Shopping',
+    newSchedule: 'New Schedule',
+    addScheduleToday: 'Add schedule for today',
+    title: 'Title',
+    time: 'Time',
+    location: 'Location',
+    // Settings Screen
+    premiumUser: 'Premium User',
+    usingAllFeatures: 'Using all features',
+    upgradeToPremium: 'Upgrade to Premium',
+    thisMonthRecord: 'This month {count}/{max} records',
+    useUnlimited: 'Use unlimited',
+    monthlyRecurringIncome: 'Monthly recurring income',
+    addBtn: 'Add',
+    cycle: 'Cycle',
+    // Analysis
+    incomeLabel: 'Income',
+    fixedExpenseLabel: 'Fixed',
+    dailySpending: 'Daily',
+    remainingAmount: 'Remaining',
+    remainingDaysUsage: 'Daily budget for {days} days',
+    categorySpending: 'Spending by Category',
+    monthEndProjection: 'Month-end Projection',
+    reduceSpending: 'Reduce spending!',
+    lowSavings: 'Low savings margin',
+    goodSavingHabit: 'Good saving habit!',
+    // Savings Screen
+    newSavingGoal: 'New Saving Goal',
+    selectIcon: 'Select Icon',
+    selectColor: 'Select Color',
+    addGoalBtn: 'Add Goal',
+    depositAmount: 'Deposit Amount',
+    goalAchieved: 'Goal Achieved!',
+    remainingAmountLabel: 'Remaining',
+    noSavingGoal: 'No saving goals yet',
+    addNewGoal: 'Add a new goal!',
+    newGoalAdd: 'Add New Goal',
+    milestoneStart: 'Start',
+    milestoneMiddle: 'Half',
+    milestoneAlmost: 'Almost',
+    // Expenses Screen
+    viewExpenses: 'View Expenses',
+    thisMonthAmount: 'This month {amount}',
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthlyView: 'Monthly',
+    noExpenseHistory: 'No expense history',
+    financialAnalysis: 'Financial Analysis',
+    financialAnalysisSubtitle: 'Income, Expenses & Balance',
+    export: 'Export',
+    // Week names
+    week1: 'Week 1',
+    week2: 'Week 2',
+    week3: 'Week 3',
+    week4: 'Week 4',
+    week5: 'Week 5',
+    // Premium Modal
+    premiumTitle: 'Upgrade to Premium',
+    premiumSubtitle: 'Use all features without limits',
+    lifetimeLicense: 'Lifetime License (One-time)',
+    purchasePremium: 'Purchase Premium',
+    restorePurchase: 'Restore Purchase',
+    // Errors
+    error: 'Error',
+    paymentError: 'Payment processing error.',
+    noPurchaseToRestore: 'No purchase to restore.',
+    restoreError: 'Restore error.',
+    pdfError: 'PDF generation failed',
+    // Categories
+    medical: 'Medical',
+    leisure: 'Leisure',
+    exercise: 'Exercise',
+  },
+  ja: {
+    // Navigation
+    calendar: 'カレンダー',
+    expenses: '家計簿',
+    savings: '貯金箱',
+    settings: '設定',
+    // Settings
+    settingsTitle: '設定',
+    income: '収入',
+    incomeCount: '件',
+    thisMonth: '今月',
+    won: '円',
+    fixedExpenses: '固定支出',
+    monthly: '月',
+    darkMode: 'ダークモード',
+    lightMode: 'ライトモード',
+    clearData: 'データ初期化',
+    language: '言語',
+    currency: '通貨',
+    add: '+ 追加',
+    cancel: 'キャンセル',
+    delete: '削除',
+    confirm: '確認',
+    // Income
+    addIncome: '収入追加',
+    incomeType: '収入タイプ',
+    amount: '金額',
+    note: 'メモ',
+    recurring: '毎月繰り返し',
+    save: '保存',
+    salary: '給与',
+    bonus: 'ボーナス',
+    freelance: 'フリーランス',
+    investment: '投資',
+    gift: 'プレゼント',
+    other: 'その他',
+    noIncome: '登録された収入がありません',
+    // Fixed Expenses
+    addFixedExpense: '固定支出追加',
+    expenseName: '支出名',
+    category: 'カテゴリー',
+    frequency: '支払い周期',
+    monthlyPayment: '毎月',
+    yearlyPayment: '毎年',
+    paymentDay: '支払日',
+    day: '日',
+    subscription: 'サブスク',
+    telecom: '通信',
+    insurance: '保険',
+    housing: '住居',
+    transport: '交通',
+    noFixedExpense: '登録された固定支出がありません',
+    // Alerts
+    clearDataTitle: 'データ初期化',
+    clearDataMsg: 'すべてのデータを削除しますか？',
+    clearDataDone: 'データが削除されました。アプリを再起動してください。',
+    done: '完了',
+    alert: 'お知らせ',
+    enterNameAmount: '名前と金額を入力してください',
+    enterAmount: '金額を入力してください',
+    deleteConfirm: 'を削除しますか？',
+    // Calendar
+    today: '今日',
+    sun: '日',
+    mon: '月',
+    tue: '火',
+    wed: '水',
+    thu: '木',
+    fri: '金',
+    sat: '土',
+    schedule: '予定',
+    expense: '支出',
+    // Savings
+    savingsTitle: '貯金箱',
+    addGoal: '目標追加',
+    goalName: '目標名',
+    targetAmount: '目標金額',
+    goalColor: '目標の色',
+    createGoal: '目標を作る',
+    deposit: '貯金する',
+    quickAmount: 'クイック入力',
+    tips: 'ヒント',
+    milestone: 'マイルストーン',
+    // Tutorial
+    tutorialTitle1: '目標を立てよう',
+    tutorialDesc1: '旅行、緊急資金、プレゼントなど\n自分だけの貯金目標を作ろう',
+    tutorialTitle2: 'カスタマイズ',
+    tutorialDesc2: 'アイコンと色を選んで\n自分だけの目標を作ろう',
+    tutorialTitle3: '貯金しよう',
+    tutorialDesc3: '貯金ボタンを押して\n少しずつ貯めよう',
+    tutorialTitle4: '成長を見守ろう',
+    tutorialDesc4: '🌱→🌿→🌳→🎉\nマイルストーンを達成しよう',
+    createFirstGoal: '最初の目標を作る',
+    // Date formats
+    monthOnly: '{month}月',
+    monthDay: '{month}月{day}日',
+    yearMonth: '{year}年{month}月',
+    dayWithWeek: '{month}月{day}日 ({week})',
+    monthlyOnDay: '毎月{day}日',
+    daysPassed: '{days}日経過',
+    oneTime: '一回',
+    yearly: '毎年',
+    // PDF Report
+    expenseReport: '支出レポート',
+    totalExpenseThisMonth: '今月の総支出',
+    expenseCount: '{count}件の支出',
+    detailedHistory: '詳細履歴',
+    purchase: '購入',
+    purchaseItems: '購入品目',
+    noExpenseRecorded: '記録された支出はありません',
+    monthlyAnalysis: '月別分析',
+    totalExpense: '総支出',
+    averageExpense: '平均支出',
+    // Additional UI
+    addSchedule: '予定追加',
+    addExpense: '支出追加',
+    goToToday: '今日へ',
+    noSchedule: '予定がありません',
+    noExpense: '支出がありません',
+    total: '合計',
+    totalAmount: '合計',
+    recordExpense: '支出を記録',
+    addScheduleBtn: '予定を追加',
+    addItem: '項目追加',
+    itemName: '項目名',
+    tempSave: '一時保存',
+    tempSaveUpdate: '一時保存更新',
+    tempSaved: '一時保存しました！',
+    expenseRecorded: '支出を記録しました！',
+    scheduleAdded: '予定を追加しました！',
+    memoName: 'メモ名',
+    noSavedMemo: '保存されたメモがありません',
+    newMemo: '新規メモ',
+    enterItem: '項目を入力してください',
+    enterScheduleTitle: '予定タイトルを入力してください',
+    deleteThis: '削除',
+    deleteScheduleConfirm: 'この予定を削除しますか？',
+    deleteExpenseConfirm: 'この支出を削除しますか？',
+    deleteMemoConfirm: 'このメモを削除しますか？',
+    deleteIncomeConfirm: 'この収入を削除しますか？',
+    deleteFixedConfirm: 'を削除しますか？',
+    addTitle: '追加',
+    expenseTab: '支出',
+    scheduleTab: '予定',
+    purchaseMemo: '買い物メモ',
+    enterPurchaseItems: '買い物リストを入力',
+    quickExpense: 'クイック支出',
+    food: '食費',
+    cafe: 'カフェ',
+    shopping: '買い物',
+    newSchedule: '新規予定',
+    addScheduleToday: '今日の予定を追加',
+    title: 'タイトル',
+    time: '時間',
+    location: '場所',
+    premiumUser: 'プレミアムユーザー',
+    usingAllFeatures: 'すべての機能を利用中',
+    upgradeToPremium: 'プレミアムにアップグレード',
+    thisMonthRecord: '今月 {count}/{max}件記録',
+    useUnlimited: '無制限で使用',
+    monthlyRecurringIncome: '毎月の繰り返し収入',
+    addBtn: '追加',
+    cycle: '周期',
+    incomeLabel: '収入',
+    fixedExpenseLabel: '固定支出',
+    dailySpending: '日常支出',
+    remainingAmount: '残り',
+    remainingDaysUsage: '残り{days}日の1日予算',
+    categorySpending: 'カテゴリ別支出',
+    monthEndProjection: '月末予想',
+    reduceSpending: '支出を減らしましょう！',
+    lowSavings: '貯蓄余裕が少ない',
+    goodSavingHabit: '良い貯蓄習慣です！',
+    newSavingGoal: '新規貯金目標',
+    selectIcon: 'アイコン選択',
+    selectColor: '色選択',
+    addGoalBtn: '目標追加',
+    depositAmount: '貯金額',
+    goalAchieved: '目標達成！',
+    remainingAmountLabel: '残り',
+    noSavingGoal: 'まだ貯金目標がありません',
+    addNewGoal: '新しい目標を追加しましょう！',
+    newGoalAdd: '新規目標追加',
+    milestoneStart: '開始',
+    milestoneMiddle: '中間',
+    milestoneAlmost: 'もう少し',
+    viewExpenses: '支出を見る',
+    thisMonthAmount: '今月 {amount}円',
+    daily: '日別',
+    weekly: '週別',
+    monthlyView: '月別',
+    noExpenseHistory: '支出履歴がありません',
+    financialAnalysis: '財務分析',
+    financialAnalysisSubtitle: '収入・支出・残高',
+    export: 'エクスポート',
+    week1: '第1週',
+    week2: '第2週',
+    week3: '第3週',
+    week4: '第4週',
+    week5: '第5週',
+    premiumTitle: 'プレミアムにアップグレード',
+    premiumSubtitle: 'すべての機能を制限なく使用',
+    lifetimeLicense: '永久ライセンス（1回払い）',
+    purchasePremium: 'プレミアム購入',
+    restorePurchase: '購入を復元',
+    error: 'エラー',
+    paymentError: '決済処理エラー',
+    noPurchaseToRestore: '復元する購入がありません',
+    restoreError: '復元エラー',
+    pdfError: 'PDF生成に失敗しました',
+    medical: '医療',
+    leisure: 'レジャー',
+    exercise: '運動',
+  },
+  zh: {
+    // Navigation
+    calendar: '日历',
+    expenses: '账本',
+    savings: '储蓄罐',
+    settings: '设置',
+    // Settings
+    settingsTitle: '设置',
+    income: '收入',
+    incomeCount: '个',
+    thisMonth: '本月',
+    won: '元',
+    fixedExpenses: '固定支出',
+    monthly: '月',
+    darkMode: '深色模式',
+    lightMode: '浅色模式',
+    clearData: '清除数据',
+    language: '语言',
+    currency: '货币',
+    add: '+ 添加',
+    cancel: '取消',
+    delete: '删除',
+    confirm: '确认',
+    // Income
+    addIncome: '添加收入',
+    incomeType: '收入类型',
+    amount: '金额',
+    note: '备注',
+    recurring: '每月重复',
+    save: '保存',
+    salary: '工资',
+    bonus: '奖金',
+    freelance: '自由职业',
+    investment: '投资',
+    gift: '礼物',
+    other: '其他',
+    noIncome: '没有登记的收入',
+    // Fixed Expenses
+    addFixedExpense: '添加固定支出',
+    expenseName: '支出名称',
+    category: '类别',
+    frequency: '付款周期',
+    monthlyPayment: '每月',
+    yearlyPayment: '每年',
+    paymentDay: '付款日',
+    day: '日',
+    subscription: '订阅',
+    telecom: '通讯',
+    insurance: '保险',
+    housing: '住房',
+    transport: '交通',
+    noFixedExpense: '没有登记的固定支出',
+    // Alerts
+    clearDataTitle: '清除数据',
+    clearDataMsg: '删除所有数据吗？',
+    clearDataDone: '数据已删除。请重启应用。',
+    done: '完成',
+    alert: '提示',
+    enterNameAmount: '请输入名称和金额',
+    enterAmount: '请输入金额',
+    deleteConfirm: '要删除吗？',
+    // Calendar
+    today: '今天',
+    sun: '日',
+    mon: '一',
+    tue: '二',
+    wed: '三',
+    thu: '四',
+    fri: '五',
+    sat: '六',
+    schedule: '日程',
+    expense: '支出',
+    // Savings
+    savingsTitle: '储蓄罐',
+    addGoal: '添加目标',
+    goalName: '目标名称',
+    targetAmount: '目标金额',
+    goalColor: '目标颜色',
+    createGoal: '创建目标',
+    deposit: '存钱',
+    quickAmount: '快速输入',
+    tips: '提示',
+    milestone: '里程碑',
+    // Tutorial
+    tutorialTitle1: '设立目标',
+    tutorialDesc1: '为旅行、应急资金、礼物等\n创建自己的储蓄目标',
+    tutorialTitle2: '个性化',
+    tutorialDesc2: '选择图标和颜色\n创建专属目标',
+    tutorialTitle3: '存钱',
+    tutorialDesc3: '点击存钱按钮\n一点一点积累',
+    tutorialTitle4: '看着它成长',
+    tutorialDesc4: '🌱→🌿→🌳→🎉\n达成里程碑',
+    createFirstGoal: '创建第一个目标',
+    // Date formats
+    monthOnly: '{month}月',
+    monthDay: '{month}月{day}日',
+    yearMonth: '{year}年{month}月',
+    dayWithWeek: '{month}月{day}日 ({week})',
+    monthlyOnDay: '每月{day}日',
+    daysPassed: '{days}天过去',
+    oneTime: '一次性',
+    yearly: '每年',
+    // PDF Report
+    expenseReport: '支出报告',
+    totalExpenseThisMonth: '本月总支出',
+    expenseCount: '{count}笔支出',
+    detailedHistory: '详细记录',
+    purchase: '购买',
+    purchaseItems: '购买项目',
+    noExpenseRecorded: '没有记录的支出',
+    monthlyAnalysis: '月度分析',
+    totalExpense: '总支出',
+    averageExpense: '平均支出',
+    // Additional UI
+    addSchedule: '添加日程',
+    addExpense: '添加支出',
+    goToToday: '今天',
+    noSchedule: '没有日程',
+    noExpense: '没有支出',
+    total: '总计',
+    totalAmount: '合计',
+    recordExpense: '记录支出',
+    addScheduleBtn: '添加日程',
+    addItem: '添加项目',
+    itemName: '项目名',
+    tempSave: '临时保存',
+    tempSaveUpdate: '更新保存',
+    tempSaved: '临时保存成功！',
+    expenseRecorded: '支出已记录！',
+    scheduleAdded: '日程已添加！',
+    memoName: '备忘录名称',
+    noSavedMemo: '没有保存的备忘录',
+    newMemo: '新建备忘录',
+    enterItem: '请输入项目',
+    enterScheduleTitle: '请输入日程标题',
+    deleteThis: '删除',
+    deleteScheduleConfirm: '删除此日程？',
+    deleteExpenseConfirm: '删除此支出？',
+    deleteMemoConfirm: '删除此备忘录？',
+    deleteIncomeConfirm: '删除此收入？',
+    deleteFixedConfirm: '删除此项目？',
+    addTitle: '添加',
+    expenseTab: '支出',
+    scheduleTab: '日程',
+    purchaseMemo: '购物备忘录',
+    enterPurchaseItems: '输入购物清单',
+    quickExpense: '快速支出',
+    food: '餐饮',
+    cafe: '咖啡',
+    shopping: '购物',
+    newSchedule: '新日程',
+    addScheduleToday: '添加今天的日程',
+    title: '标题',
+    time: '时间',
+    location: '地点',
+    premiumUser: '高级用户',
+    usingAllFeatures: '正在使用所有功能',
+    upgradeToPremium: '升级到高级版',
+    thisMonthRecord: '本月 {count}/{max} 条记录',
+    useUnlimited: '无限使用',
+    monthlyRecurringIncome: '每月重复收入',
+    addBtn: '添加',
+    cycle: '周期',
+    incomeLabel: '收入',
+    fixedExpenseLabel: '固定支出',
+    dailySpending: '日常支出',
+    remainingAmount: '剩余',
+    remainingDaysUsage: '剩余{days}天的日预算',
+    categorySpending: '分类支出',
+    monthEndProjection: '月末预测',
+    reduceSpending: '需要减少支出！',
+    lowSavings: '储蓄余地较少',
+    goodSavingHabit: '良好的储蓄习惯！',
+    newSavingGoal: '新储蓄目标',
+    selectIcon: '选择图标',
+    selectColor: '选择颜色',
+    addGoalBtn: '添加目标',
+    depositAmount: '存款金额',
+    goalAchieved: '目标达成！',
+    remainingAmountLabel: '剩余',
+    noSavingGoal: '还没有储蓄目标',
+    addNewGoal: '添加新目标！',
+    newGoalAdd: '添加新目标',
+    milestoneStart: '开始',
+    milestoneMiddle: '一半',
+    milestoneAlmost: '快了',
+    viewExpenses: '查看支出',
+    thisMonthAmount: '本月 {amount}元',
+    daily: '日',
+    weekly: '周',
+    monthlyView: '月',
+    noExpenseHistory: '没有支出记录',
+    financialAnalysis: '财务分析',
+    financialAnalysisSubtitle: '收入·支出·余额',
+    export: '导出',
+    week1: '第一周',
+    week2: '第二周',
+    week3: '第三周',
+    week4: '第四周',
+    week5: '第五周',
+    premiumTitle: '升级到高级版',
+    premiumSubtitle: '无限制使用所有功能',
+    lifetimeLicense: '终身许可（一次性付款）',
+    purchasePremium: '购买高级版',
+    restorePurchase: '恢复购买',
+    error: '错误',
+    paymentError: '支付处理错误',
+    noPurchaseToRestore: '没有可恢复的购买',
+    restoreError: '恢复错误',
+    pdfError: 'PDF生成失败',
+    medical: '医疗',
+    leisure: '休闲',
+    exercise: '运动',
+  },
+};
+
+const getTranslation = (lang: string, key: string): string => {
+  return translations[lang]?.[key] || translations['ko'][key] || key;
+};
+
+const formatTranslation = (lang: string, key: string, values: Record<string, string | number>): string => {
+  let result = getTranslation(lang, key);
+  Object.entries(values).forEach(([k, v]) => {
+    result = result.replace(`{${k}}`, String(v));
+  });
+  return result;
+};
 
 // ============ THEME CONTEXT ============
 const ThemeContext = createContext<{
@@ -329,7 +1249,19 @@ function RecurringProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await AsyncStorage.getItem('@mohani_recurring');
       const processed = await AsyncStorage.getItem('@mohani_recurring_processed');
-      if (data) setRecurringExpenses(JSON.parse(data));
+      if (data) {
+        setRecurringExpenses(JSON.parse(data));
+      } else {
+        // 샘플 고정지출 데이터
+        const today = new Date().toISOString().split('T')[0];
+        setRecurringExpenses([
+          { id: '1', name: '월세', amount: 500000, category: '주거', frequency: 'monthly', dayOfMonth: 1, isActive: true, createdAt: today },
+          { id: '2', name: '통신비', amount: 55000, category: '통신', frequency: 'monthly', dayOfMonth: 5, isActive: true, createdAt: today },
+          { id: '3', name: '보험료', amount: 100000, category: '보험', frequency: 'monthly', dayOfMonth: 10, isActive: true, createdAt: today },
+          { id: '4', name: '넷플릭스', amount: 17000, category: '구독', frequency: 'monthly', dayOfMonth: 15, isActive: true, createdAt: today },
+          { id: '5', name: '헬스장', amount: 80000, category: '운동', frequency: 'monthly', dayOfMonth: 1, isActive: true, createdAt: today },
+        ]);
+      }
       if (processed) setProcessedEntries(JSON.parse(processed));
       setIsLoaded(true);
     } catch (e) { setIsLoaded(true); }
@@ -498,7 +1430,18 @@ function IncomeProvider({ children }: { children: React.ReactNode }) {
   const loadIncomes = async () => {
     try {
       const data = await AsyncStorage.getItem('@mohani_incomes');
-      if (data) setIncomes(JSON.parse(data));
+      if (data) {
+        setIncomes(JSON.parse(data));
+      } else {
+        // 샘플 수입 데이터
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        setIncomes([
+          { id: '1', amount: 3000000, source: '월급', type: 'salary', date: `${y}-${m}-25`, isRecurring: true, recurringDay: 25 },
+          { id: '2', amount: 500000, source: '부업', type: 'freelance', date: `${y}-${m}-15`, isRecurring: false },
+        ]);
+      }
       setIsLoaded(true);
     } catch (e) { setIsLoaded(true); }
   };
@@ -560,6 +1503,9 @@ function CalendarScreen() {
   const { processRecurringForDate, getRecurringForDate } = useRecurring();
   const { colors } = useTheme();
   const { isPremium, setShowUpgradeModal } = usePremium();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
+  const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
 
   // 오늘 날짜의 고정 지출 자동 처리
   useEffect(() => {
@@ -836,7 +1782,7 @@ function CalendarScreen() {
               >
                 <Ionicons name="chevron-back" size={20} color="#fff" />
               </TouchableOpacity>
-              <Text style={[styles.calendarMonth, { fontSize: 32, fontWeight: '800', letterSpacing: -1 }]}>{viewMonth + 1}월</Text>
+              <Text style={[styles.calendarMonth, { fontSize: 32, fontWeight: '800', letterSpacing: -1 }]}>{tf('monthOnly', { month: viewMonth + 1 })}</Text>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={goToNextMonth}
@@ -853,7 +1799,7 @@ function CalendarScreen() {
               style={[styles.calendarTodayBtn, { backgroundColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]}
             >
               <Ionicons name="today-outline" size={14} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={styles.calendarTodayBtnText}>오늘로</Text>
+              <Text style={styles.calendarTodayBtnText}>{t('goToToday')}</Text>
             </TouchableOpacity>
           ) : (
             <View style={[styles.calendarToday, { backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]}>
@@ -868,7 +1814,7 @@ function CalendarScreen() {
       <View style={[styles.calendarCard, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
         {/* Week Header with gradient underline */}
         <View style={styles.weekHeaderModern}>
-          {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+          {[t('sun'), t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat')].map((d, i) => (
             <View key={i} style={styles.weekDayWrapper}>
               <Text style={[
                 styles.weekDayModern,
@@ -892,11 +1838,11 @@ function CalendarScreen() {
         <View style={[styles.legendModern, { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }]}>
           <View style={[styles.legendItemModern, { backgroundColor: colors.schedule + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
             <View style={[styles.legendDot, { backgroundColor: colors.schedule, width: 8, height: 8 }]} />
-            <Text style={[styles.legendTextModern, { color: colors.schedule, fontWeight: '600' }]}>일정</Text>
+            <Text style={[styles.legendTextModern, { color: colors.schedule, fontWeight: '600' }]}>{t('schedule')}</Text>
           </View>
           <View style={[styles.legendItemModern, { backgroundColor: colors.expense + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
             <View style={[styles.legendDot, { backgroundColor: colors.expense, width: 8, height: 8 }]} />
-            <Text style={[styles.legendTextModern, { color: colors.expense, fontWeight: '600' }]}>지출</Text>
+            <Text style={[styles.legendTextModern, { color: colors.expense, fontWeight: '600' }]}>{t('expense')}</Text>
           </View>
         </View>
       </View>
@@ -906,7 +1852,7 @@ function CalendarScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>{viewMonth + 1}월 {selectedDate}일</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{tf('monthDay', { month: viewMonth + 1, day: selectedDate })}</Text>
               <TouchableOpacity onPress={() => setShowDetail(false)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
             </View>
 
@@ -914,7 +1860,7 @@ function CalendarScreen() {
               {/* Schedules Section */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>일정</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('schedule')}</Text>
                   <TouchableOpacity activeOpacity={0.6} onPress={() => setShowAddSchedule(true)}>
                     <View style={[styles.addBtnSmall, { backgroundColor: colors.schedule }]}>
                       <Ionicons name="add" size={18} color="#fff" />
@@ -946,14 +1892,14 @@ function CalendarScreen() {
                     </View>
                   ))
                 ) : (
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>일정이 없습니다</Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('noSchedule')}</Text>
                 )}
               </View>
 
               {/* Expenses Section */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>지출</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('expense')}</Text>
                   <TouchableOpacity activeOpacity={0.6} onPress={() => setShowAddExpense(true)}>
                     <View style={[styles.addBtnSmall, { backgroundColor: colors.expense }]}>
                       <Ionicons name="add" size={18} color="#fff" />
@@ -1011,7 +1957,7 @@ function CalendarScreen() {
                     );
                   })
                 ) : (
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>지출이 없습니다</Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('noExpense')}</Text>
                 )}
               </View>
 
@@ -1111,7 +2057,7 @@ function CalendarScreen() {
             </View>
 
             <ScrollView style={styles.expenseModalScroll} keyboardShouldPersistTaps="handled">
-              <Text style={[styles.cardSubtitle, { color: colors.textMuted, marginBottom: 12 }]}>구매 항목을 입력하세요</Text>
+              <Text style={[styles.cardSubtitle, { color: colors.textMuted, marginBottom: 12, marginTop: 8 }]}>구매 항목을 입력하세요</Text>
 
               {expenseItems.map(item => (
                 <View key={item.id} style={[styles.itemRow, { borderBottomColor: colors.border }]}>
@@ -1254,6 +2200,9 @@ function AddScreen() {
   const { addExpense } = useExpenses();
   const { addSchedule } = useSchedules();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
+  const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
   const [activeTab, setActiveTab] = useState<'expense' | 'schedule'>('expense');
 
   // Expense state
@@ -1303,17 +2252,17 @@ function AddScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>추가</Text></View>
+      <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>{t('addTitle')}</Text></View>
 
       {/* Tab Selector */}
       <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
         <TouchableOpacity style={[styles.tab, activeTab === 'expense' && styles.activeTab]} onPress={() => setActiveTab('expense')}>
           <Ionicons name="card-outline" size={20} color={activeTab === 'expense' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'expense' && styles.activeTabText]}>지출</Text>
+          <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'expense' && styles.activeTabText]}>{t('expenseTab')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === 'schedule' && styles.activeTab]} onPress={() => setActiveTab('schedule')}>
           <Ionicons name="calendar-outline" size={20} color={activeTab === 'schedule' ? colors.schedule : colors.textMuted} />
-          <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'schedule' && styles.activeTabText]}>일정</Text>
+          <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'schedule' && styles.activeTabText]}>{t('scheduleTab')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -1400,11 +2349,20 @@ function SettingsScreen() {
   const { expenses } = useExpenses();
   const { recurringExpenses, addRecurring, deleteRecurring, getTotalMonthly } = useRecurring();
   const { incomes, addIncome, deleteIncome, getMonthlyIncome, getTotalIncomeThisMonth } = useIncome();
+  const { settings, updateSettings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
+  const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
 
   // 이번달 지출 건수
   const today = new Date();
   const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const thisMonthCount = expenses.filter(e => e.date.startsWith(thisMonth)).length;
+
+  // 언어 선택 모달
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  // 화폐단위 선택 모달
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
 
   // 수입 추가 모달
   const [showAddIncome, setShowAddIncome] = useState(false);
@@ -1511,7 +2469,7 @@ function SettingsScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>설정</Text></View>
+      <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>{t('settings')}</Text></View>
 
       {/* 프리미엄 카드 - TODO: 출시 시 주석 해제 */}
       {/* {isPremium ? (
@@ -1521,8 +2479,8 @@ function SettingsScreen() {
               <Text style={{ fontSize: 24 }}>👑</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.appName, { color: colors.text }]}>프리미엄 사용자</Text>
-              <Text style={[styles.appDesc, { color: colors.textMuted }]}>모든 기능을 사용 중입니다</Text>
+              <Text style={[styles.appName, { color: colors.text }]}>{t('premiumUser')}</Text>
+              <Text style={[styles.appDesc, { color: colors.textMuted }]}>{t('usingAllFeatures')}</Text>
             </View>
             <Ionicons name="checkmark-circle" size={24} color="#22c55e" />
           </View>
@@ -1538,7 +2496,7 @@ function SettingsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Text style={{ fontSize: 32 }}>👑</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontSize: 17, fontWeight: 'bold' }}>프리미엄으로 업그레이드</Text>
+                <Text style={{ color: '#fff', fontSize: 17, fontWeight: 'bold' }}>{t('upgradeToPremium')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 }}>
                   이번 달 {thisMonthCount}/10건 기록 · 무제한으로 사용하기
                 </Text>
@@ -1559,9 +2517,9 @@ function SettingsScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Ionicons name="wallet" size={22} color={colors.schedule} />
             <View style={{ marginLeft: 12 }}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>수입</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('income')}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
-                {incomes.length}개 · 이번달 {getTotalIncomeThisMonth().toLocaleString()}원
+                {incomes.length}{t('incomeCount')} · {t('thisMonth')} {currencySymbol}{getTotalIncomeThisMonth().toLocaleString()}
               </Text>
             </View>
           </View>
@@ -1583,7 +2541,7 @@ function SettingsScreen() {
             {incomes.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 24 }}>
                 <Ionicons name="wallet-outline" size={40} color={colors.textMuted} />
-                <Text style={{ color: colors.textMuted, marginTop: 8 }}>등록된 수입이 없습니다</Text>
+                <Text style={{ color: colors.textMuted, marginTop: 8 }}>{t('noIncome')}</Text>
               </View>
             ) : (
               incomes.map(item => (
@@ -1603,7 +2561,7 @@ function SettingsScreen() {
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{item.source}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                      {item.note || (item.isRecurring ? '매월 반복' : '일회성')}
+                      {item.note || (item.isRecurring ? t('recurring') : t('oneTime'))}
                     </Text>
                   </View>
                   <Text style={{ color: colors.schedule, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
@@ -1629,9 +2587,9 @@ function SettingsScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Ionicons name="repeat" size={22} color={colors.primary} />
             <View style={{ marginLeft: 12 }}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>고정 지출</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('fixedExpenses')}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
-                {recurringExpenses.length}개 · 월 {getTotalMonthly().toLocaleString()}원
+                {recurringExpenses.length}{t('incomeCount')} · {t('monthly')} {currencySymbol}{getTotalMonthly().toLocaleString()}
               </Text>
             </View>
           </View>
@@ -1653,7 +2611,7 @@ function SettingsScreen() {
             {recurringExpenses.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 24 }}>
                 <Ionicons name="repeat-outline" size={40} color={colors.textMuted} />
-                <Text style={{ color: colors.textMuted, marginTop: 8 }}>등록된 고정 지출이 없습니다</Text>
+                <Text style={{ color: colors.textMuted, marginTop: 8 }}>{t('noFixedExpense')}</Text>
               </View>
             ) : (
               recurringExpenses.map(item => (
@@ -1673,7 +2631,7 @@ function SettingsScreen() {
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{item.name}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                      {item.frequency === 'monthly' ? `매월 ${item.dayOfMonth}일` : '매년'} · {item.category}
+                      {item.frequency === 'monthly' ? tf('monthlyOnDay', { day: item.dayOfMonth }) : t('yearly')} · {item.category}
                     </Text>
                   </View>
                   <Text style={{ color: colors.expense, fontSize: 15, fontWeight: '600', marginRight: 12 }}>
@@ -1692,19 +2650,123 @@ function SettingsScreen() {
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <TouchableOpacity style={[styles.settingRow, { borderBottomColor: colors.border }]} onPress={toggleTheme}>
           <Ionicons name={isDark ? 'moon' : 'sunny'} size={22} color={colors.primary} />
-          <Text style={[styles.settingLabel, { color: colors.text }]}>{isDark ? '다크 모드' : '라이트 모드'}</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{isDark ? t('darkMode') : t('lightMode')}</Text>
           <View style={[styles.themeToggle, { backgroundColor: isDark ? colors.primary : colors.border }]}>
             <View style={[styles.themeToggleKnob, { marginLeft: isDark ? 20 : 2 }]} />
           </View>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.settingRow, { borderBottomColor: colors.border }]} onPress={() => setShowLanguageModal(true)}>
+          <Ionicons name="language" size={22} color={colors.primary} />
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('language')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 14 }}>
+              {LANGUAGES.find(l => l.code === settings.language)?.flag} {LANGUAGES.find(l => l.code === settings.language)?.label}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.settingRow, { borderBottomColor: colors.border }]} onPress={() => setShowCurrencyModal(true)}>
+          <Ionicons name="cash-outline" size={22} color={colors.primary} />
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('currency')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 14 }}>
+              {CURRENCIES.find(c => c.code === settings.currency)?.flag} {CURRENCIES.find(c => c.code === settings.currency)?.symbol}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </View>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={clearData}>
           <Ionicons name="trash-outline" size={22} color="#ef4444" />
-          <Text style={[styles.settingLabel, { color: colors.text }]}>데이터 초기화</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('clearData')}</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
       <View style={{ height: 40 }} />
+
+      {/* 언어 선택 모달 */}
+      <Modal visible={showLanguageModal} animationType="fade" transparent>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.card, maxHeight: 400 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('language')}</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ padding: 20 }}>
+              {LANGUAGES.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  onPress={() => {
+                    updateSettings({ language: lang.code });
+                    setShowLanguageModal(false);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 24, marginRight: 12 }}>{lang.flag}</Text>
+                  <Text style={{ flex: 1, color: colors.text, fontSize: 16 }}>{lang.label}</Text>
+                  {settings.language === lang.code && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* 화폐단위 선택 모달 */}
+      <Modal visible={showCurrencyModal} animationType="fade" transparent>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCurrencyModal(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.card, maxHeight: '70%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('currency')}</Text>
+              <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+              {CURRENCIES.map((curr) => (
+                <TouchableOpacity
+                  key={curr.code}
+                  onPress={() => {
+                    updateSettings({ currency: curr.code });
+                    setShowCurrencyModal(false);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 24, marginRight: 12 }}>{curr.flag}</Text>
+                  <Text style={{ flex: 1, color: colors.text, fontSize: 16 }}>{curr.symbol} {curr.label}</Text>
+                  {settings.currency === curr.code && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* 수입 추가 모달 */}
       <Modal visible={showAddIncome} animationType="slide" transparent>
@@ -1919,16 +2981,568 @@ function SettingsScreen() {
   );
 }
 
+// ============ ANALYSIS SCREEN ============
+function AnalysisContent() {
+  const { expenses } = useExpenses();
+  const { incomes } = useIncome();
+  const { recurringExpenses } = useRecurring();
+  const { colors } = useTheme();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
+  const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
+
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const daysPassed = today.getDate();
+  const daysRemaining = daysInMonth - daysPassed;
+
+  // 수입 계산
+  const recurringIncome = incomes
+    .filter(inc => inc.isRecurring)
+    .reduce((sum, inc) => sum + inc.amount, 0);
+
+  const monthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+  const oneTimeIncome = incomes
+    .filter(inc => !inc.isRecurring && inc.date.startsWith(monthStr))
+    .reduce((sum, inc) => sum + inc.amount, 0);
+
+  const totalIncome = recurringIncome + oneTimeIncome;
+
+  // 고정지출 계산
+  const fixedExpenses = recurringExpenses.filter(r => r.isActive);
+  const totalFixedExpense = fixedExpenses.reduce((sum, r) => sum + r.amount, 0);
+
+  // 일일 소비 계산
+  const thisMonthExpenses = expenses.filter(e => {
+    const [y, m] = e.date.split('-').map(Number);
+    return y === currentYear && m === currentMonth;
+  });
+  const totalDailySpending = thisMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  // 남은 금액 계산
+  const remaining = totalIncome - totalFixedExpense - totalDailySpending;
+  const remainingPerDay = daysRemaining > 0 ? Math.round(remaining / daysRemaining) : remaining;
+
+  // 일평균 소비
+  const dailyAverage = daysPassed > 0 ? Math.round(totalDailySpending / daysPassed) : 0;
+  const projectedSpending = dailyAverage * daysInMonth;
+  const projectedRemaining = totalIncome - totalFixedExpense - projectedSpending;
+
+  // 카테고리별 분석
+  const categoryData = thisMonthExpenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const sortedCategories = Object.entries(categoryData)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const maxCategoryAmount = sortedCategories.length > 0 ? sortedCategories[0][1] : 1;
+
+  const categoryColors: Record<string, string> = {
+    '식비': '#ef4444', '카페': '#f97316', '교통': '#3b82f6', '구매': '#8b5cf6',
+    '통신': '#06b6d4', '구독': '#ec4899', '의료': '#10b981', '여가': '#f59e0b', '기타': '#6b7280',
+  };
+
+  const categoryIcons: Record<string, string> = {
+    '식비': 'restaurant', '카페': 'cafe', '교통': 'bus', '구매': 'cart',
+    '통신': 'phone-portrait', '구독': 'play-circle', '의료': 'medical', '여가': 'game-controller', '기타': 'ellipsis-horizontal',
+  };
+
+  return (
+    <View style={{ marginTop: 20 }}>
+      {/* 월 정보 */}
+      <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>{tf('yearMonth', { year: currentYear, month: currentMonth })} · {tf('daysPassed', { days: daysPassed })}</Text>
+
+      {/* 재정 흐름 요약 */}
+      <View style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        {/* 수입 */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(34, 197, 94, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="arrow-down" size={16} color={colors.schedule} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 14, marginLeft: 10 }}>{t('incomeLabel')}</Text>
+          </View>
+          <Text style={{ color: colors.schedule, fontSize: 16, fontWeight: 'bold' }}>+{currencySymbol}{totalIncome.toLocaleString()}</Text>
+        </View>
+
+        {/* 고정지출 */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(124, 58, 237, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="lock-closed" size={16} color={colors.primary} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 14, marginLeft: 10 }}>{t('fixedExpenseLabel')}</Text>
+          </View>
+          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>-{currencySymbol}{totalFixedExpense.toLocaleString()}</Text>
+        </View>
+
+        {/* 일일소비 */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(234, 179, 8, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="cart" size={16} color={colors.expense} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 14, marginLeft: 10 }}>{t('dailySpending')}</Text>
+          </View>
+          <Text style={{ color: colors.expense, fontSize: 16, fontWeight: 'bold' }}>-{currencySymbol}{totalDailySpending.toLocaleString()}</Text>
+        </View>
+
+        {/* 구분선 */}
+        <View style={{ height: 2, backgroundColor: colors.border, marginVertical: 8 }} />
+
+        {/* 남은 금액 */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: remaining >= 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="wallet" size={16} color={remaining >= 0 ? colors.schedule : '#ef4444'} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 10 }}>{t('remainingAmount')}</Text>
+          </View>
+          <Text style={{ color: remaining >= 0 ? colors.schedule : '#ef4444', fontSize: 20, fontWeight: 'bold' }}>
+            {currencySymbol}{remaining.toLocaleString()}
+          </Text>
+        </View>
+
+        {/* 하루 사용가능 금액 */}
+        {remaining > 0 && daysRemaining > 0 && (
+          <View style={{ backgroundColor: colors.card, borderRadius: 10, padding: 12, marginTop: 8, alignItems: 'center' }}>
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{tf('remainingDaysUsage', { days: daysRemaining })}</Text>
+            <Text style={{ color: colors.schedule, fontSize: 20, fontWeight: 'bold', marginTop: 4 }}>
+              {currencySymbol}{remainingPerDay.toLocaleString()}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* 카테고리별 소비 */}
+      {sortedCategories.length > 0 && (
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Ionicons name="pie-chart" size={16} color={colors.expense} />
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>카테고리별 소비</Text>
+          </View>
+          {sortedCategories.map(([category, amount]) => (
+            <View key={category} style={{ marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name={categoryIcons[category] as any || 'ellipsis-horizontal'} size={14} color={categoryColors[category] || '#6b7280'} />
+                  <Text style={{ color: colors.text, fontSize: 13, marginLeft: 6 }}>{category}</Text>
+                </View>
+                <Text style={{ color: colors.text, fontSize: 13 }}>{amount.toLocaleString()}원</Text>
+              </View>
+              <View style={{ height: 6, backgroundColor: colors.bg, borderRadius: 3, overflow: 'hidden' }}>
+                <View style={{ height: '100%', width: `${(amount / maxCategoryAmount) * 100}%`, backgroundColor: categoryColors[category] || '#6b7280', borderRadius: 3 }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* 월말 예상 */}
+      <View style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 16, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <Ionicons name="trending-up" size={16} color={projectedRemaining >= 0 ? colors.schedule : '#ef4444'} />
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>월말 예상 잔액</Text>
+        </View>
+        <Text style={{ color: projectedRemaining >= 0 ? colors.schedule : '#ef4444', fontSize: 24, fontWeight: 'bold' }}>
+          {projectedRemaining >= 0 ? '+' : ''}{projectedRemaining.toLocaleString()}원
+        </Text>
+        {projectedRemaining < 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+            <Ionicons name="warning" size={14} color="#ef4444" />
+            <Text style={{ color: '#ef4444', fontSize: 12, marginLeft: 4 }}>지출을 줄여야 합니다!</Text>
+          </View>
+        )}
+        {projectedRemaining >= 0 && projectedRemaining < totalIncome * 0.1 && totalIncome > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(234, 179, 8, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+            <Ionicons name="alert-circle" size={14} color={colors.expense} />
+            <Text style={{ color: colors.expense, fontSize: 12, marginLeft: 4 }}>저축 여유가 적습니다</Text>
+          </View>
+        )}
+        {projectedRemaining >= totalIncome * 0.2 && totalIncome > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(34, 197, 94, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.schedule} />
+            <Text style={{ color: colors.schedule, fontSize: 12, marginLeft: 4 }}>좋은 저축 습관입니다!</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ============ SAVINGS SCREEN ============
+function SavingsScreen() {
+  const { colors } = useTheme();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
+  const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
+  const { goals, addGoal, deleteGoal, addSavings, getTotalSaved, getTotalTarget, getOverallProgress } = useGoals();
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+  const [goalName, setGoalName] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [saveAmount, setSaveAmount] = useState('');
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(true);
+
+  const GOAL_ICONS = ['🎯', '✈️', '🏠', '🚗', '💻', '📱', '👗', '💍', '🎓', '💰', '🎁', '🏖️'];
+  const GOAL_COLORS = ['#7c3aed', '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
+  const MILESTONES = [
+    { percent: 25, icon: '🌱', label: '시작' },
+    { percent: 50, icon: '🌿', label: '중간' },
+    { percent: 75, icon: '🌳', label: '거의' },
+    { percent: 100, icon: '🎉', label: '달성!' },
+  ];
+  const QUICK_AMOUNTS = [10000, 50000, 100000, 500000];
+  const TUTORIAL_SLIDES = [
+    { emoji: '🎯', title: '목표를 세워요', desc: '여행, 비상금, 선물 등\n나만의 저축 목표를 만들어요' },
+    { emoji: '🎨', title: '꾸며보세요', desc: '아이콘과 색상을 선택해서\n나만의 목표를 만들어요' },
+    { emoji: '💰', title: '저금해요', desc: '저금하기 버튼을 눌러\n조금씩 모아가요' },
+    { emoji: '🌱', title: '성장을 지켜봐요', desc: '🌱→🌿→🌳→🎉\n마일스톤을 달성해가요' },
+  ];
+
+  const [selectedIcon, setSelectedIcon] = useState('🎯');
+  const [selectedColor, setSelectedColor] = useState('#7c3aed');
+
+  // 자동 슬라이드
+  useEffect(() => {
+    if (goals.length > 0 || !showTutorial) return;
+    const timer = setInterval(() => {
+      setTutorialStep(prev => (prev + 1) % TUTORIAL_SLIDES.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [goals.length, showTutorial]);
+
+  const formatAmount = (text: string) => {
+    const numbers = text.replace(/[^0-9]/g, '');
+    return numbers ? parseInt(numbers, 10).toLocaleString() : '';
+  };
+
+  const handleAddGoal = () => {
+    if (!goalName.trim() || !targetAmount) return;
+    addGoal({
+      name: goalName.trim(),
+      targetAmount: parseInt(targetAmount.replace(/,/g, ''), 10),
+      icon: selectedIcon,
+      color: selectedColor,
+    });
+    setGoalName('');
+    setTargetAmount('');
+    setSelectedIcon('🎯');
+    setSelectedColor('#7c3aed');
+    setShowAddModal(false);
+  };
+
+  const handleSave = () => {
+    if (!saveAmount || !selectedGoalId) return;
+    addSavings(selectedGoalId, parseInt(saveAmount.replace(/,/g, ''), 10));
+    setSaveAmount('');
+    setSelectedGoalId(null);
+    setShowSaveModal(false);
+  };
+
+  const handleDeleteGoal = (id: string, name: string) => {
+    Alert.alert('목표 삭제', `"${name}" 목표를 삭제하시겠습니까?`, [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => deleteGoal(id) },
+    ]);
+  };
+
+  const totalSaved = getTotalSaved();
+  const totalTarget = getTotalTarget();
+  const overallProgress = getOverallProgress();
+
+  return (
+    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>{t('savings')}</Text>
+      </View>
+
+      {/* 자동 슬라이드 튜토리얼 */}
+      {goals.length === 0 && showTutorial && (
+        <View style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, overflow: 'hidden' }]}>
+          {/* 닫기 버튼 */}
+          <TouchableOpacity
+            onPress={() => setShowTutorial(false)}
+            style={{ position: 'absolute', top: 12, right: 12, zIndex: 1, padding: 4 }}
+          >
+            <Ionicons name="close" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          {/* 슬라이드 콘텐츠 */}
+          <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 16 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 40 }}>{TUTORIAL_SLIDES[tutorialStep].emoji}</Text>
+            </View>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>
+              {TUTORIAL_SLIDES[tutorialStep].title}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 22 }}>
+              {TUTORIAL_SLIDES[tutorialStep].desc}
+            </Text>
+          </View>
+
+          {/* 인디케이터 */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', paddingBottom: 16, gap: 8 }}>
+            {TUTORIAL_SLIDES.map((_, idx) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => setTutorialStep(idx)}
+                style={{ width: idx === tutorialStep ? 24 : 8, height: 8, borderRadius: 4, backgroundColor: idx === tutorialStep ? colors.primary : colors.border }}
+              />
+            ))}
+          </View>
+
+          {/* 시작하기 버튼 */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => { setShowTutorial(false); setShowAddModal(true); }}
+            style={{ backgroundColor: colors.primary, marginHorizontal: 16, marginBottom: 16, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+          >
+            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>첫 목표 만들기</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 목표 추가 버튼 */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => setShowAddModal(true)}
+        style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14 }]}
+      >
+        <Ionicons name="add-circle" size={22} color={colors.primary} />
+        <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600', marginLeft: 8 }}>새 목표 추가</Text>
+      </TouchableOpacity>
+
+      {/* 목표 리스트 */}
+      {goals.length > 0 ? (
+        <View style={{ marginHorizontal: 20 }}>
+          {goals.map(goal => {
+            const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
+            const remaining = goal.targetAmount - goal.currentAmount;
+            return (
+              <View key={goal.id} style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 0 }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <Text style={{ fontSize: 28 }}>{goal.icon}</Text>
+                    <View style={{ marginLeft: 12, flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{goal.name}</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
+                        목표 {goal.targetAmount.toLocaleString()}원
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => handleDeleteGoal(goal.id, goal.name)} style={{ padding: 4 }}>
+                    <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ marginTop: 16 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={{ color: goal.color || colors.schedule, fontSize: 18, fontWeight: 'bold' }}>
+                      {goal.currentAmount.toLocaleString()}원
+                    </Text>
+                    <Text style={{ color: goal.color || colors.primary, fontSize: 14, fontWeight: '600' }}>{progress.toFixed(0)}%</Text>
+                  </View>
+                  <View style={{ height: 8, backgroundColor: colors.bg, borderRadius: 4, overflow: 'hidden' }}>
+                    <View style={{ width: `${Math.min(progress, 100)}%`, height: '100%', backgroundColor: goal.isCompleted ? colors.schedule : (goal.color || colors.primary), borderRadius: 4 }} />
+                  </View>
+
+                  {/* 마일스톤 */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingHorizontal: 4 }}>
+                    {MILESTONES.map(milestone => {
+                      const achieved = progress >= milestone.percent;
+                      return (
+                        <View key={milestone.percent} style={{ alignItems: 'center' }}>
+                          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: achieved ? (goal.color || colors.primary) + '30' : colors.bg, borderWidth: achieved ? 2 : 1, borderColor: achieved ? (goal.color || colors.primary) : colors.border, justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={{ fontSize: 12 }}>{achieved ? milestone.icon : '○'}</Text>
+                          </View>
+                          <Text style={{ fontSize: 10, color: achieved ? (goal.color || colors.primary) : colors.textMuted }}>{milestone.percent}%</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {remaining > 0 && (
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 12 }}>
+                      남은 금액: {remaining.toLocaleString()}원
+                    </Text>
+                  )}
+                  {goal.isCompleted && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.schedule} />
+                      <Text style={{ color: colors.schedule, fontSize: 13, marginLeft: 4 }}>목표 달성!</Text>
+                    </View>
+                  )}
+                </View>
+
+                {!goal.isCompleted && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => { setSelectedGoalId(goal.id); setShowSaveModal(true); }}
+                    style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 12, marginTop: 16, alignItems: 'center' }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 15, fontWeight: '600' }}>저금하기</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, alignItems: 'center', paddingVertical: 40 }]}>
+          <Ionicons name="flag-outline" size={48} color={colors.textMuted} />
+          <Text style={{ color: colors.textMuted, marginTop: 12 }}>아직 저축 목표가 없습니다</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>새 목표를 추가해보세요!</Text>
+        </View>
+      )}
+
+      {/* 팁 */}
+      <View style={[styles.card, { backgroundColor: colors.primary + '15', marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderLeftWidth: 3, borderLeftColor: colors.primary }]}>
+        <Text style={{ fontSize: 20, marginRight: 12 }}>💡</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 13, flex: 1, lineHeight: 20 }}>
+          목표를 탭하면 저축할 수 있어요.{'\n'}삭제는 휴지통 아이콘을 눌러주세요.
+        </Text>
+      </View>
+
+      <View style={{ height: 100 }} />
+
+      {/* 목표 추가 모달 */}
+      <Modal visible={showAddModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>새 저축 목표</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>아이콘 선택</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {GOAL_ICONS.map(icon => (
+                <TouchableOpacity
+                  key={icon}
+                  onPress={() => setSelectedIcon(icon)}
+                  style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: selectedIcon === icon ? colors.primary + '30' : colors.bg, justifyContent: 'center', alignItems: 'center', marginRight: 8, borderWidth: selectedIcon === icon ? 2 : 0, borderColor: colors.primary }}
+                >
+                  <Text style={{ fontSize: 22 }}>{icon}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>목표 이름</Text>
+            <TextInput
+              value={goalName}
+              onChangeText={setGoalName}
+              placeholder="예: 여행 자금, 비상금"
+              placeholderTextColor={colors.textMuted}
+              style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16, marginBottom: 16 }}
+            />
+
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>목표 금액</Text>
+            <TextInput
+              value={targetAmount}
+              onChangeText={t => setTargetAmount(formatAmount(t))}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+              style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16, marginBottom: 16 }}
+            />
+
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>색상 선택</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+              {GOAL_COLORS.map(color => (
+                <TouchableOpacity
+                  key={color}
+                  onPress={() => setSelectedColor(color)}
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: color, justifyContent: 'center', alignItems: 'center', borderWidth: selectedColor === color ? 3 : 0, borderColor: 'white' }}
+                >
+                  {selectedColor === color && <Ionicons name="checkmark" size={18} color="white" />}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleAddGoal}
+              style={{ backgroundColor: selectedColor, borderRadius: 12, paddingVertical: 16, alignItems: 'center' }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>목표 추가</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 저금 모달 */}
+      <Modal visible={showSaveModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>저금하기</Text>
+              <TouchableOpacity onPress={() => { setShowSaveModal(false); setSaveAmount(''); }}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>저금할 금액</Text>
+            <TextInput
+              value={saveAmount}
+              onChangeText={t => setSaveAmount(formatAmount(t))}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+              style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16, marginBottom: 16 }}
+            />
+
+            {/* 빠른 금액 버튼 */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
+              {QUICK_AMOUNTS.map(amount => (
+                <TouchableOpacity
+                  key={amount}
+                  onPress={() => setSaveAmount(amount.toLocaleString())}
+                  style={{ flex: 1, backgroundColor: colors.bg, borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
+                >
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>+{(amount / 10000).toFixed(0)}만</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSave}
+              style={{ backgroundColor: colors.schedule, borderRadius: 12, paddingVertical: 16, alignItems: 'center' }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>저금하기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
+  );
+}
+
 // ============ EXPENSES SCREEN ============
 function ExpensesScreen() {
   const { expenses } = useExpenses();
   const { colors } = useTheme();
   const { isPremium, setShowUpgradeModal } = usePremium();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
+  const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [showExpenseView, setShowExpenseView] = useState(false);
-  const [showStatsView, setShowStatsView] = useState(false);
+  const [showAnalysisView, setShowAnalysisView] = useState(false);
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -1950,7 +3564,7 @@ function ExpensesScreen() {
   };
 
   const today = new Date();
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const days = [t('sun'), t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat')];
 
   const currentMonth = today.getMonth() + 1;
   const currentYear = today.getFullYear();
@@ -2001,18 +3615,18 @@ function ExpensesScreen() {
       <body>
         <div class="container">
           <div class="header">
-            <h1>📊 지출 리포트</h1>
-            <p>${currentYear}년 ${currentMonth}월</p>
+            <h1>📊 ${t('expenseReport')}</h1>
+            <p>${tf('yearMonth', { year: currentYear, month: currentMonth })}</p>
           </div>
 
           <div class="summary">
-            <div class="summary-title">이번 달 총 지출</div>
-            <div class="summary-amount">${totalAmount.toLocaleString()}원</div>
-            <div class="summary-count">${thisMonthExpenses.length}건의 지출</div>
+            <div class="summary-title">${t('totalExpenseThisMonth')}</div>
+            <div class="summary-amount">${totalAmount.toLocaleString()}${t('won')}</div>
+            <div class="summary-count">${tf('expenseCount', { count: thisMonthExpenses.length })}</div>
           </div>
 
           <div class="section">
-            <div class="section-title">상세 내역</div>
+            <div class="section-title">${t('detailedHistory')}</div>
             ${thisMonthExpenses.length > 0 ? thisMonthExpenses.map(expense => {
               const [y, m, d] = expense.date.split('-').map(Number);
               const date = new Date(y, m - 1, d);
@@ -2021,25 +3635,25 @@ function ExpensesScreen() {
                 <div class="expense-item">
                   <div class="expense-header">
                     <div>
-                      <div class="expense-date">${m}월 ${d}일 (${dayName})</div>
-                      <div class="expense-memo">구매 (${expense.memo})</div>
+                      <div class="expense-date">${tf('dayWithWeek', { month: m, day: d, week: dayName })}</div>
+                      <div class="expense-memo">${t('purchase')} (${expense.memo})</div>
                     </div>
-                    <div class="expense-amount">${expense.amount.toLocaleString()}원</div>
+                    <div class="expense-amount">${expense.amount.toLocaleString()}${t('won')}</div>
                   </div>
                   ${expense.items && expense.items.length > 0 ? `
                     <div class="expense-items">
-                      <div class="expense-items-title">구매 항목</div>
+                      <div class="expense-items-title">${t('purchaseItems')}</div>
                       ${expense.items.map(item => `
                         <div class="item-row">
                           <span class="item-name ${item.checked ? 'item-checked' : ''}">${item.checked ? '✓ ' : ''}${item.name}</span>
-                          <span class="item-amount">${item.amount.toLocaleString()}원</span>
+                          <span class="item-amount">${item.amount.toLocaleString()}${t('won')}</span>
                         </div>
                       `).join('')}
                     </div>
                   ` : ''}
                 </div>
               `;
-            }).join('') : '<div class="no-items">이번 달 지출 내역이 없습니다</div>'}
+            }).join('') : `<div class="no-items">${t('noExpenseRecorded')}</div>`}
           </div>
 
           <div class="footer">
@@ -2135,7 +3749,7 @@ function ExpensesScreen() {
         }
       });
 
-      months.push({ label: `${m}월`, total, count });
+      months.push({ label: tf('monthOnly', { month: m }), total, count });
     }
 
     return months;
@@ -2145,33 +3759,10 @@ function ExpensesScreen() {
   const weeklyData = getWeeklyData();
   const monthlyData = getMonthlyData();
 
-  // 월별 지출 차트 데이터 (최근 6개월)
-  const getChartData = () => {
-    const months: { label: string; total: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const y = targetDate.getFullYear();
-      const m = targetDate.getMonth() + 1;
-      let total = 0;
-      expenses.forEach(e => {
-        const [ey, em] = e.date.split('-').map(Number);
-        if (ey === y && em === m) total += e.amount;
-      });
-      months.push({ label: `${m}월`, total });
-    }
-    return months;
-  };
-
-  const chartData = getChartData();
-  const chartLabels = chartData.map(d => d.label);
-  const chartValues = chartData.map(d => d.total);
-  const maxChartValue = Math.max(...chartValues, 1);
-  const avgSpending = Math.round(chartValues.reduce((a, b) => a + b, 0) / chartValues.length);
-
   const formatDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
-    return `${m}월 ${d}일 (${days[date.getDay()]})`;
+    return tf('dayWithWeek', { month: m, day: d, week: days[date.getDay()] });
   };
 
   // 날짜별 지출 상세 가져오기
@@ -2180,7 +3771,7 @@ function ExpensesScreen() {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>가계부</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('expenses')}</Text>
       </View>
 
       {/* 지출 보기 섹션 */}
@@ -2193,9 +3784,9 @@ function ExpensesScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Ionicons name="receipt" size={22} color={colors.expense} />
             <View style={{ marginLeft: 12 }}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>지출 보기</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('viewExpenses')}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
-                이번달 {totalAmount.toLocaleString()}원
+                {tf('thisMonthAmount', { amount: totalAmount.toLocaleString() })}
               </Text>
             </View>
           </View>
@@ -2216,14 +3807,14 @@ function ExpensesScreen() {
                 style={[styles.tab, viewMode === 'day' && styles.activeTab]}
                 onPress={() => handleViewModeChange('day')}
               >
-                <Text style={[styles.tabText, { color: viewMode === 'day' ? colors.primary : colors.textMuted }]}>일간</Text>
+                <Text style={[styles.tabText, { color: viewMode === 'day' ? colors.primary : colors.textMuted }]}>{t('daily')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tab, viewMode === 'week' && styles.activeTab]}
                 onPress={() => handleViewModeChange('week')}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={[styles.tabText, { color: viewMode === 'week' ? colors.primary : colors.textMuted }]}>주간</Text>
+                  <Text style={[styles.tabText, { color: viewMode === 'week' ? colors.primary : colors.textMuted }]}>{t('weekly')}</Text>
                   {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
                 </View>
               </TouchableOpacity>
@@ -2232,7 +3823,7 @@ function ExpensesScreen() {
                 onPress={() => handleViewModeChange('month')}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={[styles.tabText, { color: viewMode === 'month' ? colors.primary : colors.textMuted }]}>월간</Text>
+                  <Text style={[styles.tabText, { color: viewMode === 'month' ? colors.primary : colors.textMuted }]}>{t('monthlyView')}</Text>
                   {!isPremium && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
                 </View>
               </TouchableOpacity>
@@ -2293,7 +3884,7 @@ function ExpensesScreen() {
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>지출 내역이 없습니다</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('noExpenseHistory')}</Text>
             </View>
           )
         )}
@@ -2312,7 +3903,7 @@ function ExpensesScreen() {
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>지출 내역이 없습니다</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('noExpenseHistory')}</Text>
             </View>
           )
         )}
@@ -2331,7 +3922,7 @@ function ExpensesScreen() {
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>지출 내역이 없습니다</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('noExpenseHistory')}</Text>
             </View>
           )
         )}
@@ -2340,95 +3931,27 @@ function ExpensesScreen() {
         )}
       </View>
 
-      {/* 통계 보기 섹션 */}
+      {/* 재정 분석 섹션 */}
       <View style={[styles.card, { backgroundColor: colors.card, marginHorizontal: 20, marginTop: 16 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => setShowStatsView(!showStatsView)}
+          onPress={() => setShowAnalysisView(!showAnalysisView)}
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <Ionicons name="stats-chart" size={22} color={colors.primary} />
+            <Ionicons name="pie-chart" size={22} color={colors.primary} />
             <View style={{ marginLeft: 12 }}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>통계 보기</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('financialAnalysis')}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
-                월 평균 {avgSpending.toLocaleString()}원
+                {t('financialAnalysisSubtitle')}
               </Text>
             </View>
           </View>
-          <Ionicons name={showStatsView ? 'chevron-up' : 'chevron-down'} size={22} color={colors.textMuted} />
+          <Ionicons name={showAnalysisView ? 'chevron-up' : 'chevron-down'} size={22} color={colors.textMuted} />
         </TouchableOpacity>
 
-        {showStatsView && (
-          <View style={{ marginTop: 20 }}>
-            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', marginBottom: 16 }}>월별 지출 추이 (최근 6개월)</Text>
-
-            {chartValues.some(v => v > 0) ? (
-              <View style={{ alignItems: 'center' }}>
-                <LineChart
-                  data={{
-                    labels: chartLabels,
-                    datasets: [{ data: chartValues.map(v => v || 0) }],
-                  }}
-                  width={screenWidth - 80}
-                  height={200}
-                  chartConfig={{
-                    backgroundColor: colors.card,
-                    backgroundGradientFrom: colors.card,
-                    backgroundGradientTo: colors.card,
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(124, 58, 237, ${opacity})`,
-                    labelColor: () => colors.textMuted,
-                    style: { borderRadius: 16 },
-                    propsForDots: {
-                      r: '5',
-                      strokeWidth: '2',
-                      stroke: colors.primary,
-                    },
-                    propsForBackgroundLines: {
-                      strokeDasharray: '',
-                      stroke: colors.border,
-                    },
-                    formatYLabel: (value) => {
-                      const num = parseInt(value);
-                      if (num >= 10000) return `${Math.round(num / 10000)}만`;
-                      if (num >= 1000) return `${Math.round(num / 1000)}천`;
-                      return `${num}`;
-                    },
-                  }}
-                  bezier
-                  style={{ borderRadius: 12 }}
-                  withInnerLines={true}
-                  withOuterLines={false}
-                  withVerticalLines={false}
-                  withHorizontalLines={true}
-                  fromZero={true}
-                />
-
-                {/* 월별 상세 */}
-                <View style={{ width: '100%', marginTop: 20 }}>
-                  {chartData.map((item, idx) => (
-                    <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: colors.border }}>
-                      <Text style={{ color: colors.text, fontSize: 14 }}>{item.label}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <View style={{ width: 100, height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' }}>
-                          <View style={{ width: `${(item.total / maxChartValue) * 100}%`, height: '100%', backgroundColor: colors.primary, borderRadius: 3 }} />
-                        </View>
-                        <Text style={{ color: colors.expense, fontSize: 14, fontWeight: '500', minWidth: 80, textAlign: 'right' }}>
-                          {item.total.toLocaleString()}원
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : (
-              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                <Ionicons name="analytics-outline" size={48} color={colors.textMuted} />
-                <Text style={{ color: colors.textMuted, marginTop: 12 }}>지출 데이터가 없습니다</Text>
-              </View>
-            )}
-          </View>
+        {showAnalysisView && (
+          <AnalysisContent />
         )}
       </View>
 
@@ -2455,18 +3978,18 @@ function ExpensesScreen() {
           <ScrollView style={{ flex: 1 }}>
             {/* PDF 미리보기 내용 */}
             <LinearGradient colors={['#7c3aed', '#a855f7']} style={{ padding: 24, alignItems: 'center' }}>
-              <Text style={{ fontSize: 22, fontWeight: 'bold', color: 'white', marginBottom: 4 }}>📊 지출 리포트</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14 }}>{currentYear}년 {currentMonth}월</Text>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: 'white', marginBottom: 4 }}>📊 {t('expenseReport')}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14 }}>{tf('yearMonth', { year: currentYear, month: currentMonth })}</Text>
             </LinearGradient>
 
             <View style={{ padding: 20, backgroundColor: colors.card, marginHorizontal: 16, marginTop: -12, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 1, marginBottom: 4 }}>이번 달 총 지출</Text>
-              <Text style={{ color: colors.expense, fontSize: 28, fontWeight: 'bold' }}>{totalAmount.toLocaleString()}원</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{thisMonthExpenses.length}건의 지출</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 1, marginBottom: 4 }}>{t('totalExpenseThisMonth')}</Text>
+              <Text style={{ color: colors.expense, fontSize: 28, fontWeight: 'bold' }}>{totalAmount.toLocaleString()}{t('won')}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{tf('expenseCount', { count: thisMonthExpenses.length })}</Text>
             </View>
 
             <View style={{ padding: 16, marginTop: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 12, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primary, alignSelf: 'flex-start' }}>상세 내역</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 12, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primary, alignSelf: 'flex-start' }}>{t('detailedHistory')}</Text>
 
               {thisMonthExpenses.length > 0 ? thisMonthExpenses.map(expense => {
                 const [y, m, d] = expense.date.split('-').map(Number);
@@ -2476,14 +3999,14 @@ function ExpensesScreen() {
                   <View key={expense.id} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <View>
-                        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{m}월 {d}일 ({dayName})</Text>
-                        <Text style={{ fontWeight: '600', color: colors.text, fontSize: 15, marginTop: 2 }}>구매 ({expense.memo})</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{tf('dayWithWeek', { month: m, day: d, week: dayName })}</Text>
+                        <Text style={{ fontWeight: '600', color: colors.text, fontSize: 15, marginTop: 2 }}>{t('purchase')} ({expense.memo})</Text>
                       </View>
-                      <Text style={{ color: colors.expense, fontWeight: 'bold', fontSize: 16 }}>{expense.amount.toLocaleString()}원</Text>
+                      <Text style={{ color: colors.expense, fontWeight: 'bold', fontSize: 16 }}>{expense.amount.toLocaleString()}{t('won')}</Text>
                     </View>
                     {expense.items && expense.items.length > 0 && (
                       <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, borderStyle: 'dashed' }}>
-                        <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>구매 항목</Text>
+                        <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>{t('purchaseItems')}</Text>
                         {expense.items.map((item, idx) => (
                           <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                             <Text style={[{ fontSize: 13, color: colors.text }, item.checked && { textDecorationLine: 'line-through', color: colors.textMuted }]}>
@@ -2499,7 +4022,7 @@ function ExpensesScreen() {
               }) : (
                 <View style={{ alignItems: 'center', padding: 40 }}>
                   <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-                  <Text style={{ color: colors.textMuted, marginTop: 12 }}>이번 달 지출 내역이 없습니다</Text>
+                  <Text style={{ color: colors.textMuted, marginTop: 12 }}>{t('noExpenseRecorded')}</Text>
                 </View>
               )}
             </View>
@@ -2519,6 +4042,8 @@ const Tab = createBottomTabNavigator();
 
 function AppContent() {
   const { isDark, colors } = useTheme();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
 
   return (
     <NavigationContainer>
@@ -2529,6 +4054,9 @@ function AppContent() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarIcon: ({ focused, color, size }) => {
+          if (route.name === 'Savings') {
+            return <Image source={require('./assets/saving.png')} style={{ width: 24, height: 24, opacity: focused ? 1 : 0.6 }} resizeMode="contain" />;
+          }
           let icon: keyof typeof Ionicons.glyphMap = 'calendar';
           if (route.name === 'Calendar') icon = focused ? 'calendar' : 'calendar-outline';
           if (route.name === 'Expenses') icon = focused ? 'wallet' : 'wallet-outline';
@@ -2536,9 +4064,10 @@ function AppContent() {
           return <Ionicons name={icon} size={size} color={color} />;
         },
       })}>
-        <Tab.Screen name="Calendar" component={CalendarScreen} options={{ tabBarLabel: '달력' }} />
-        <Tab.Screen name="Expenses" component={ExpensesScreen} options={{ tabBarLabel: '가계부' }} />
-        <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: '설정' }} />
+        <Tab.Screen name="Calendar" component={CalendarScreen} options={{ tabBarLabel: t('calendar') }} />
+        <Tab.Screen name="Expenses" component={ExpensesScreen} options={{ tabBarLabel: t('expenses') }} />
+        <Tab.Screen name="Savings" component={SavingsScreen} options={{ tabBarLabel: t('savings') }} />
+        <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: t('settings') }} />
       </Tab.Navigator>
     </NavigationContainer>
   );
@@ -2548,6 +4077,8 @@ function AppContent() {
 function UpgradeModal() {
   const { showUpgradeModal, setShowUpgradeModal, purchasePremium, restorePurchase } = usePremium();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const t = (key: string) => getTranslation(settings.language, key);
 
   const features = [
     { icon: 'document-text', title: 'PDF 내보내기', desc: '지출 리포트를 PDF로 저장' },
@@ -2571,8 +4102,8 @@ function UpgradeModal() {
             end={{ x: 1, y: 1 }}
           >
             <Text style={upgradeStyles.crown}>👑</Text>
-            <Text style={upgradeStyles.title}>프리미엄으로 업그레이드</Text>
-            <Text style={upgradeStyles.subtitle}>모든 기능을 제한 없이 사용하세요</Text>
+            <Text style={upgradeStyles.title}>{t('premiumTitle')}</Text>
+            <Text style={upgradeStyles.subtitle}>{t('premiumSubtitle')}</Text>
           </LinearGradient>
 
           <View style={upgradeStyles.features}>
@@ -2602,12 +4133,12 @@ function UpgradeModal() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={upgradeStyles.purchaseBtnText}>프리미엄 구매하기</Text>
+              <Text style={upgradeStyles.purchaseBtnText}>{t('purchasePremium')}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity style={upgradeStyles.restoreBtn} onPress={restorePurchase}>
-            <Text style={[upgradeStyles.restoreBtnText, { color: colors.textMuted }]}>구매 복원하기</Text>
+            <Text style={[upgradeStyles.restoreBtnText, { color: colors.textMuted }]}>{t('restorePurchase')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -2638,63 +4169,7 @@ const upgradeStyles = StyleSheet.create({
   restoreBtnText: { fontSize: 14 },
 });
 
-// ============ SPLASH SCREEN ============
-function SplashScreen({ onFinish }: { onFinish: () => void }) {
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const scaleAnim = useState(new Animated.Value(0.8))[0];
-
-  useEffect(() => {
-    // 로고 페이드인
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
-    ]).start();
-
-    // 스플래시 종료
-    setTimeout(() => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
-        onFinish();
-      });
-    }, 1500);
-  }, []);
-
-  return (
-    <View style={splashStyles.container}>
-      <LinearGradient
-        colors={['#7c3aed', '#a855f7', '#c084fc']}
-        style={splashStyles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <Animated.View style={[splashStyles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-          <View style={splashStyles.logoCircle}>
-            <Text style={splashStyles.logoEmoji}>💰</Text>
-          </View>
-          <Text style={splashStyles.logoText}>뭐하니</Text>
-          <Text style={splashStyles.logoSubtext}>간편 가계부</Text>
-        </Animated.View>
-      </LinearGradient>
-    </View>
-  );
-}
-
-const splashStyles = StyleSheet.create({
-  container: { flex: 1 },
-  gradient: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  logoCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  logoEmoji: { fontSize: 56 },
-  logoText: { fontSize: 48, fontWeight: 'bold', color: '#fff', letterSpacing: 4 },
-  logoSubtext: { fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 8 },
-});
-
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
-
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
@@ -2703,8 +4178,12 @@ export default function App() {
             <ScheduleProvider>
               <RecurringProvider>
                 <IncomeProvider>
-                  <AppContent />
-                  <UpgradeModal />
+                  <GoalsProvider>
+                    <SettingsProvider>
+                      <AppContent />
+                      <UpgradeModal />
+                    </SettingsProvider>
+                  </GoalsProvider>
                 </IncomeProvider>
               </RecurringProvider>
             </ScheduleProvider>
