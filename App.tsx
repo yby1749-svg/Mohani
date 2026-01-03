@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Updates from 'expo-updates';
 import { GoalsProvider, useGoals } from './src/context/GoalsContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 
@@ -103,6 +104,19 @@ const translations: Record<string, Record<string, string>> = {
     monthly: '월',
     darkMode: '다크 모드',
     lightMode: '라이트 모드',
+    themeCustomization: '테마 커스터마이징',
+    useCustomTheme: '커스텀 테마 사용',
+    primaryColor: '메인 색상',
+    backgroundColor: '배경 색상',
+    cardColor: '카드 색상',
+    textColor: '텍스트 색상',
+    resetTheme: '테마 초기화',
+    backgroundDesign: '배경 디자인',
+    bgDefault: '기본',
+    bgPurpleNight: '보라 밤',
+    bgOceanDeep: '깊은 바다',
+    bgSunsetGlow: '노을빛',
+    bgForestMist: '숲안개',
     clearData: '데이터 초기화',
     language: '언어',
     currency: '화폐단위',
@@ -159,6 +173,7 @@ const translations: Record<string, Record<string, string>> = {
     sat: '토',
     schedule: '일정',
     expense: '지출',
+    calendarHint: '날짜를 탭해서 일정과 지출을 입력하세요',
     // Savings
     savingsTitle: '저금통',
     addGoal: '목표 추가',
@@ -351,6 +366,19 @@ const translations: Record<string, Record<string, string>> = {
     monthly: 'Monthly',
     darkMode: 'Dark Mode',
     lightMode: 'Light Mode',
+    themeCustomization: 'Theme Customization',
+    useCustomTheme: 'Use Custom Theme',
+    primaryColor: 'Primary Color',
+    backgroundColor: 'Background Color',
+    cardColor: 'Card Color',
+    textColor: 'Text Color',
+    resetTheme: 'Reset Theme',
+    backgroundDesign: 'Background Design',
+    bgDefault: 'Default',
+    bgPurpleNight: 'Purple Night',
+    bgOceanDeep: 'Ocean Deep',
+    bgSunsetGlow: 'Sunset Glow',
+    bgForestMist: 'Forest Mist',
     clearData: 'Clear Data',
     language: 'Language',
     currency: 'Currency',
@@ -407,6 +435,7 @@ const translations: Record<string, Record<string, string>> = {
     sat: 'Sat',
     schedule: 'Schedule',
     expense: 'Expense',
+    calendarHint: 'Tap a date to add schedule and expense',
     // Savings
     savingsTitle: 'Savings',
     addGoal: 'Add Goal',
@@ -1084,6 +1113,7 @@ const ThemeContext = createContext<{
 
 function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(true);
+  const { settings } = useSettings();
 
   useEffect(() => { loadTheme(); }, []);
 
@@ -1100,7 +1130,18 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
     try { await AsyncStorage.setItem('@mohani_theme', newTheme ? 'dark' : 'light'); } catch (e) {}
   };
 
-  const colors = isDark ? DarkColors : LightColors;
+  // 기본 테마 색상
+  const baseColors = isDark ? DarkColors : LightColors;
+
+  // 커스텀 테마 적용
+  const colors = settings.useCustomTheme ? {
+    ...baseColors,
+    primary: settings.customTheme.primaryColor,
+    bg: settings.customTheme.backgroundColor,
+    card: settings.customTheme.cardColor,
+    text: settings.customTheme.textColor,
+  } : baseColors;
+
   Colors = colors; // Update global Colors
 
   return (
@@ -1179,7 +1220,8 @@ const ExpenseContext = createContext<{
   deleteExpense: (id: string) => void;
   getExpensesByDate: (date: string) => Expense[];
   getDatesWithExpenses: () => string[];
-}>({ expenses: [], addExpense: () => {}, deleteExpense: () => {}, getExpensesByDate: () => [], getDatesWithExpenses: () => [] });
+  reloadExpenses: () => void;
+}>({ expenses: [], addExpense: () => {}, deleteExpense: () => {}, getExpensesByDate: () => [], getDatesWithExpenses: () => [], reloadExpenses: () => {} });
 
 function ExpenseProvider({ children }: { children: React.ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -1194,23 +1236,7 @@ function ExpenseProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         setExpenses(JSON.parse(data));
       } else {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, '0');
-        const d = today.getDate();
-        setExpenses([
-          { id: '1', date: `${y}-${m}-${String(d).padStart(2, '0')}`, category: '식비', amount: 12000, memo: '점심 - 김치찌개' },
-          { id: '2', date: `${y}-${m}-${String(d).padStart(2, '0')}`, category: '카페', amount: 5500, memo: '아메리카노' },
-          { id: '3', date: `${y}-${m}-${String(Math.max(1, d-1)).padStart(2, '0')}`, category: '교통', amount: 3000, memo: '버스' },
-          { id: '4', date: `${y}-${m}-${String(Math.max(1, d-2)).padStart(2, '0')}`, category: '구매', amount: 67000, memo: '이마트', items: [
-            { name: '삼겹살 600g', amount: 18000, checked: true },
-            { name: '쌀 10kg', amount: 32000, checked: true },
-            { name: '계란 30구', amount: 8500, checked: true },
-          ]},
-          { id: '5', date: `${y}-${m}-05`, category: '통신', amount: 55000, memo: 'KT 요금' },
-          { id: '6', date: `${y}-${m}-10`, category: '구독', amount: 17000, memo: '넷플릭스' },
-          { id: '7', date: `${y}-${m}-15`, category: '의료', amount: 25000, memo: '병원' },
-        ]);
+        setExpenses([]);
       }
       setIsLoaded(true);
     } catch (e) { console.log('Failed to load expenses'); setIsLoaded(true); }
@@ -1230,9 +1256,10 @@ function ExpenseProvider({ children }: { children: React.ReactNode }) {
 
   const getExpensesByDate = (date: string) => expenses.filter(e => e.date === date);
   const getDatesWithExpenses = () => [...new Set(expenses.map(e => e.date))];
+  const reloadExpenses = () => loadExpenses();
 
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, deleteExpense, getExpensesByDate, getDatesWithExpenses }}>
+    <ExpenseContext.Provider value={{ expenses, addExpense, deleteExpense, getExpensesByDate, getDatesWithExpenses, reloadExpenses }}>
       {children}
     </ExpenseContext.Provider>
   );
@@ -1247,7 +1274,8 @@ const ScheduleContext = createContext<{
   getSchedulesByDate: (date: string) => Schedule[];
   getDatesWithSchedules: () => string[];
   deleteSchedule: (id: string) => void;
-}>({ schedules: [], addSchedule: () => {}, getSchedulesByDate: () => [], getDatesWithSchedules: () => [], deleteSchedule: () => {} });
+  reloadSchedules: () => void;
+}>({ schedules: [], addSchedule: () => {}, getSchedulesByDate: () => [], getDatesWithSchedules: () => [], deleteSchedule: () => {}, reloadSchedules: () => {} });
 
 function ScheduleProvider({ children }: { children: React.ReactNode }) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -1261,20 +1289,7 @@ function ScheduleProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         setSchedules(JSON.parse(data));
       } else {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, '0');
-        const d = today.getDate();
-        setSchedules([
-          { id: '1', date: `${y}-${m}-${String(d).padStart(2, '0')}`, title: '팀 미팅', time: '10:00', location: '회의실 A' },
-          { id: '2', date: `${y}-${m}-${String(Math.min(31, d+1)).padStart(2, '0')}`, title: '치과 예약', time: '14:00', location: '서울치과' },
-          { id: '3', date: `${y}-${m}-${String(Math.min(31, d+3)).padStart(2, '0')}`, title: '친구 만남', time: '18:00', location: '강남역' },
-          { id: '4', date: `${y}-${m}-05`, title: '월급날', time: '', location: '' },
-          { id: '5', date: `${y}-${m}-10`, title: '카드 결제일', time: '', location: '' },
-          { id: '6', date: `${y}-${m}-15`, title: '정기 회의', time: '09:00', location: '본사' },
-          { id: '7', date: `${y}-${m}-20`, title: '생일파티', time: '19:00', location: '집' },
-          { id: '8', date: `${y}-${m}-25`, title: '여행 출발', time: '08:00', location: '인천공항' },
-        ]);
+        setSchedules([]);
       }
     } catch (e) { console.log('Failed to load schedules'); }
   };
@@ -1293,9 +1308,10 @@ function ScheduleProvider({ children }: { children: React.ReactNode }) {
 
   const getSchedulesByDate = (date: string) => schedules.filter(s => s.date === date);
   const getDatesWithSchedules = () => [...new Set(schedules.map(s => s.date))];
+  const reloadSchedules = () => loadSchedules();
 
   return (
-    <ScheduleContext.Provider value={{ schedules, addSchedule, getSchedulesByDate, getDatesWithSchedules, deleteSchedule }}>
+    <ScheduleContext.Provider value={{ schedules, addSchedule, getSchedulesByDate, getDatesWithSchedules, deleteSchedule, reloadSchedules }}>
       {children}
     </ScheduleContext.Provider>
   );
@@ -1352,15 +1368,7 @@ function RecurringProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         setRecurringExpenses(JSON.parse(data));
       } else {
-        // 샘플 고정지출 데이터
-        const today = new Date().toISOString().split('T')[0];
-        setRecurringExpenses([
-          { id: '1', name: '월세', amount: 500000, category: '주거', frequency: 'monthly', dayOfMonth: 1, isActive: true, createdAt: today },
-          { id: '2', name: '통신비', amount: 55000, category: '통신', frequency: 'monthly', dayOfMonth: 5, isActive: true, createdAt: today },
-          { id: '3', name: '보험료', amount: 100000, category: '보험', frequency: 'monthly', dayOfMonth: 10, isActive: true, createdAt: today },
-          { id: '4', name: '넷플릭스', amount: 17000, category: '구독', frequency: 'monthly', dayOfMonth: 15, isActive: true, createdAt: today },
-          { id: '5', name: '헬스장', amount: 80000, category: '운동', frequency: 'monthly', dayOfMonth: 1, isActive: true, createdAt: today },
-        ]);
+        setRecurringExpenses([]);
       }
       if (processed) setProcessedEntries(JSON.parse(processed));
       setIsLoaded(true);
@@ -1533,14 +1541,7 @@ function IncomeProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         setIncomes(JSON.parse(data));
       } else {
-        // 샘플 수입 데이터
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, '0');
-        setIncomes([
-          { id: '1', amount: 3000000, source: '월급', type: 'salary', date: `${y}-${m}-25`, isRecurring: true, recurringDay: 25 },
-          { id: '2', amount: 500000, source: '부업', type: 'freelance', date: `${y}-${m}-15`, isRecurring: false },
-        ]);
+        setIncomes([]);
       }
       setIsLoaded(true);
     } catch (e) { setIsLoaded(true); }
@@ -1593,33 +1594,22 @@ const useIncome = () => useContext(IncomeContext);
 
 // ============ CALENDAR SCREEN ============
 function CalendarScreen() {
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(today.getDate());
   const [showDetail, setShowDetail] = useState(false);
-  const { expenses, addExpense, deleteExpense, getExpensesByDate, getDatesWithExpenses } = useExpenses();
-  const { schedules, addSchedule, getSchedulesByDate, getDatesWithSchedules, deleteSchedule } = useSchedules();
-  const { processRecurringForDate, getRecurringForDate } = useRecurring();
-  const { colors } = useTheme();
-  const { isPremium, setShowUpgradeModal } = usePremium();
+  const { expenses, addExpense, deleteExpense, getExpensesByDate, getDatesWithExpenses, reloadExpenses } = useExpenses();
+  const { schedules, addSchedule, getSchedulesByDate, getDatesWithSchedules, deleteSchedule, reloadSchedules } = useSchedules();
+  const { colors, isDark } = useTheme();
   const { settings } = useSettings();
   const t = (key: string) => getTranslation(settings.language, key);
   const tf = (key: string, values: Record<string, string | number>) => formatTranslation(settings.language, key, values);
   const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || '₩';
+  const { isPremium, setShowUpgradeModal } = usePremium();
 
-  // 오늘 날짜의 고정 지출 자동 처리
-  useEffect(() => {
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    processRecurringForDate(todayStr, addExpense);
-  }, []);
-
-  // Month navigation (프리미엄 기능)
+  // Month navigation
   const goToPrevMonth = () => {
-    if (!isPremium) {
-      setShowUpgradeModal(true);
-      return;
-    }
     if (viewMonth === 0) {
       setViewMonth(11);
       setViewYear(viewYear - 1);
@@ -1630,10 +1620,6 @@ function CalendarScreen() {
   };
 
   const goToNextMonth = () => {
-    if (!isPremium) {
-      setShowUpgradeModal(true);
-      return;
-    }
     if (viewMonth === 11) {
       setViewMonth(0);
       setViewYear(viewYear + 1);
@@ -1666,12 +1652,109 @@ function CalendarScreen() {
   // Focus state for new items
   const [focusedItemId, setFocusedItemId] = useState<number | null>(null);
 
-  // 날짜별 메모 state
-  const [dateMemos, setDateMemos] = useState<{id: number; name: string; items: typeof expenseItems}[]>([]);
-  const [showSavedMemos, setShowSavedMemos] = useState(false);
-  const [showMemoName, setShowMemoName] = useState(false);
-  const [memoName, setMemoName] = useState('');
+  // Memo (temp save) state
+  interface MemoItem { id: number; name: string; amount: string; checked: boolean; }
+  interface DateMemo { id: number; name: string; items: MemoItem[]; createdAt: string; }
+  const [dateMemos, setDateMemos] = useState<DateMemo[]>([]);
   const [currentMemoId, setCurrentMemoId] = useState<number | null>(null);
+  const [memoName, setMemoName] = useState('');
+  const [showMemoName, setShowMemoName] = useState(false);
+  const [showSavedMemos, setShowSavedMemos] = useState(false);
+
+  // Load memos for selected date
+  const loadDateMemos = async (dateStr: string) => {
+    try {
+      const data = await AsyncStorage.getItem(`@mohani_memos_${dateStr}`);
+      setDateMemos(data ? JSON.parse(data) : []);
+    } catch (e) {
+      setDateMemos([]);
+    }
+  };
+
+  // Save memos for selected date
+  const saveDateMemos = async (dateStr: string, memos: DateMemo[]) => {
+    try {
+      await AsyncStorage.setItem(`@mohani_memos_${dateStr}`, JSON.stringify(memos));
+      setDateMemos(memos);
+    } catch (e) {
+      console.error('Failed to save memos:', e);
+    }
+  };
+
+  // Handle temp save button press
+  const handleSaveMemo = () => {
+    if (expenseItems.filter(i => i.name).length === 0) {
+      Alert.alert(t('alert'), t('enterAtLeastOneItem') || 'Please enter at least one item');
+      return;
+    }
+    if (currentMemoId) {
+      // Update existing memo
+      const updatedMemos = dateMemos.map(m =>
+        m.id === currentMemoId ? { ...m, items: expenseItems, createdAt: new Date().toISOString() } : m
+      );
+      saveDateMemos(selectedDateStr, updatedMemos);
+      Alert.alert(t('saved') || 'Saved', t('memoUpdated') || 'Memo updated');
+    } else {
+      // Use Alert.prompt for memo name input (iOS native)
+      Alert.prompt(
+        t('memoName') || 'Memo Name',
+        t('enterMemoName') || 'Enter memo name',
+        [
+          { text: t('cancel'), style: 'cancel' },
+          {
+            text: t('save'),
+            onPress: (name) => {
+              if (name && name.trim()) {
+                const newMemo: DateMemo = {
+                  id: Date.now(),
+                  name: name.trim(),
+                  items: [...expenseItems],
+                  createdAt: new Date().toISOString(),
+                };
+                saveDateMemos(selectedDateStr, [...dateMemos, newMemo]);
+                setCurrentMemoId(newMemo.id);
+                setMemoName(name.trim());
+                Alert.alert(t('saved') || 'Saved', t('memoSaved') || 'Memo saved');
+              }
+            }
+          },
+        ],
+        'plain-text',
+        '',
+        'default'
+      );
+    }
+  };
+
+  // Load memo into expense items
+  const loadMemo = (memo: DateMemo) => {
+    setExpenseItems(memo.items.map((item, idx) => ({ ...item, id: Date.now() + idx })));
+    setCurrentMemoId(memo.id);
+    setMemoName(memo.name);
+    setShowSavedMemos(false);
+    // Open Add Expense modal after loading memo
+    setTimeout(() => setShowAddExpense(true), 300);
+  };
+
+  // Delete memo
+  const deleteMemo = (id: number) => {
+    Alert.alert(t('delete'), t('deleteMemoConfirm') || 'Delete this memo?', [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('delete'), style: 'destructive', onPress: () => {
+        const filtered = dateMemos.filter(m => m.id !== id);
+        saveDateMemos(selectedDateStr, filtered);
+        if (currentMemoId === id) {
+          setCurrentMemoId(null);
+          setMemoName('');
+        }
+      }},
+    ]);
+  };
+
+  // Load memos when date changes
+  useEffect(() => {
+    loadDateMemos(selectedDateStr);
+  }, [selectedDateStr]);
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
@@ -1685,96 +1768,14 @@ function CalendarScreen() {
   const selectedExpenses = getExpensesByDate(selectedDateStr);
   const selectedSchedules = getSchedulesByDate(selectedDateStr);
   const totalForDay = selectedExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const hasData = selectedExpenses.length > 0 || selectedSchedules.length > 0;
-
-  // 날짜별 메모 로드/저장 함수
-  const loadDateMemos = useCallback(async (dateStr: string) => {
-    try {
-      const data = await AsyncStorage.getItem(`@mohani_memo_${dateStr}`);
-      if (data) {
-        setDateMemos(JSON.parse(data));
-      } else {
-        setDateMemos([]);
-      }
-    } catch (e) {
-      setDateMemos([]);
-    }
-  }, []);
-
-  const saveDateMemos = useCallback(async (dateStr: string, memos: typeof dateMemos) => {
-    try {
-      await AsyncStorage.setItem(`@mohani_memo_${dateStr}`, JSON.stringify(memos));
-      setDateMemos(memos);
-    } catch (e) {}
-  }, []);
-
-  // 날짜 변경시 메모 로드 (showDetail이 true일 때만)
-  const prevDateRef = useRef<string>('');
-  useEffect(() => {
-    if (showDetail && selectedDateStr !== prevDateRef.current) {
-      prevDateRef.current = selectedDateStr;
-      loadDateMemos(selectedDateStr);
-      setCurrentMemoId(null);
-      setMemoName('');
-    }
-  }, [showDetail, selectedDateStr, loadDateMemos]);
-
-  const handleSaveMemo = () => {
-    if (expenseItems.every(i => !i.name.trim())) {
-      Alert.alert('알림', '항목을 입력해주세요');
-      return;
-    }
-    if (currentMemoId) {
-      const updated = dateMemos.map(m => m.id === currentMemoId ? { ...m, items: expenseItems } : m);
-      saveDateMemos(selectedDateStr, updated);
-      Alert.alert('완료', '임시저장 되었습니다!');
-      // 날짜 상세 화면으로 돌아가기
-      setShowAddExpense(false);
-      setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
-      setCurrentMemoId(null);
-      setMemoName('');
-    } else {
-      setShowMemoName(true);
-    }
-  };
-
-  const confirmSaveMemo = () => {
-    const name = memoName.trim() || `메모 ${dateMemos.length + 1}`;
-    const newMemo = { id: Date.now(), name, items: expenseItems };
-    saveDateMemos(selectedDateStr, [...dateMemos, newMemo]);
-    Alert.alert('완료', '임시저장 되었습니다!');
-    setShowMemoName(false);
-    setMemoName('');
-    // 날짜 상세 화면으로 돌아가기
-    setShowAddExpense(false);
-    setExpenseItems([{ id: Date.now(), name: '', amount: '', checked: false }]);
-    setCurrentMemoId(null);
-  };
-
-  const loadMemo = (memo: typeof dateMemos[0]) => {
-    setExpenseItems(memo.items.map(i => ({ ...i, id: Date.now() + Math.random() })));
-    setCurrentMemoId(memo.id);
-    setMemoName(memo.name);
-    setShowSavedMemos(false);
-  };
-
-  const deleteMemo = (id: number) => {
-    Alert.alert('삭제', '이 메모를 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => {
-        saveDateMemos(selectedDateStr, dateMemos.filter(m => m.id !== id));
-        if (currentMemoId === id) {
-          setCurrentMemoId(null);
-          setMemoName('');
-        }
-      }}
-    ]);
-  };
 
   const handleDayPress = (day: number) => {
     setSelectedDate(day);
     setShowDetail(true);
   };
+
+  // Premium background design - moved here for use in renderCalendar
+  const isGradientBg = settings.backgroundDesign !== 'default';
 
   const renderCalendar = () => {
     const cells = [];
@@ -1800,7 +1801,7 @@ function CalendarScreen() {
         >
           {isSelected ? (
             <LinearGradient
-              colors={['#667eea', '#764ba2']}
+              colors={isDark ? ['#667eea', '#764ba2'] : ['#60a5fa', '#38bdf8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.selectedCellGradient}
@@ -1817,19 +1818,23 @@ function CalendarScreen() {
             <View style={[
               styles.dayCellInner,
               isToday && styles.todayCellModern,
-              hasData && !isToday && { backgroundColor: colors.bg },
+              hasData && !isToday && {
+                backgroundColor: isGradientBg
+                  ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)')
+                  : colors.bg
+              },
             ]}>
               <Text style={[
                 styles.dayTextModern,
-                { color: colors.text },
+                { color: isGradientBg ? (isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)') : colors.text },
                 isSunday && { color: '#ef4444' },
                 isSaturday && { color: '#3b82f6' },
                 isToday && styles.todayTextModern,
               ]}>{day}</Text>
               {hasData && (
                 <View style={styles.dotsModern}>
-                  {hasSchedule && <View style={[styles.dotModern, { backgroundColor: colors.schedule }]} />}
-                  {hasExpense && <View style={[styles.dotModern, { backgroundColor: colors.expense }]} />}
+                  {hasSchedule && <View style={[styles.dotModern, { backgroundColor: isGradientBg ? (isDark ? '#4ade80' : '#16a34a') : colors.schedule }]} />}
+                  {hasExpense && <View style={[styles.dotModern, { backgroundColor: isGradientBg ? (isDark ? '#facc15' : '#ca8a04') : colors.expense }]} />}
                 </View>
               )}
             </View>
@@ -1851,18 +1856,134 @@ function CalendarScreen() {
     return weeks;
   };
 
+  // Premium background design - supports both dark and light modes
+  const getBackgroundDesign = () => {
+    const darkDesigns: Record<string, { colors: string[]; orbs: { color: string; size: number; x: number; y: number; blur: number }[] }> = {
+      default: { colors: [colors.bg, colors.bg], orbs: [] },
+      gradient1: {
+        colors: ['#0f0520', '#1a0a35', '#0a0515'],
+        orbs: [
+          { color: 'rgba(139, 92, 246, 0.4)', size: 200, x: -50, y: 100, blur: 80 },
+          { color: 'rgba(236, 72, 153, 0.3)', size: 180, x: 280, y: 300, blur: 90 },
+          { color: 'rgba(99, 102, 241, 0.35)', size: 150, x: 50, y: 500, blur: 70 },
+        ],
+      },
+      gradient2: {
+        colors: ['#020617', '#0c1929', '#051525'],
+        orbs: [
+          { color: 'rgba(14, 165, 233, 0.4)', size: 220, x: -30, y: 150, blur: 90 },
+          { color: 'rgba(6, 182, 212, 0.35)', size: 160, x: 250, y: 400, blur: 80 },
+          { color: 'rgba(59, 130, 246, 0.3)', size: 180, x: 100, y: 650, blur: 85 },
+        ],
+      },
+      gradient3: {
+        colors: ['#1a0a0a', '#200f15', '#0f0808'],
+        orbs: [
+          { color: 'rgba(251, 146, 60, 0.4)', size: 200, x: -40, y: 120, blur: 85 },
+          { color: 'rgba(244, 63, 94, 0.35)', size: 170, x: 260, y: 350, blur: 90 },
+          { color: 'rgba(234, 179, 8, 0.3)', size: 150, x: 80, y: 580, blur: 75 },
+        ],
+      },
+      gradient4: {
+        colors: ['#051a0f', '#0a2818', '#030f08'],
+        orbs: [
+          { color: 'rgba(16, 185, 129, 0.4)', size: 190, x: -30, y: 130, blur: 85 },
+          { color: 'rgba(34, 197, 94, 0.3)', size: 160, x: 270, y: 380, blur: 80 },
+          { color: 'rgba(20, 184, 166, 0.35)', size: 170, x: 60, y: 600, blur: 90 },
+        ],
+      },
+    };
+
+    const lightDesigns: Record<string, { colors: string[]; orbs: { color: string; size: number; x: number; y: number; blur: number }[] }> = {
+      default: { colors: [colors.bg, colors.bg], orbs: [] },
+      gradient1: {
+        colors: ['#faf5ff', '#f3e8ff', '#ede9fe'],
+        orbs: [
+          { color: 'rgba(139, 92, 246, 0.25)', size: 200, x: -50, y: 100, blur: 80 },
+          { color: 'rgba(236, 72, 153, 0.2)', size: 180, x: 280, y: 300, blur: 90 },
+          { color: 'rgba(99, 102, 241, 0.22)', size: 150, x: 50, y: 500, blur: 70 },
+        ],
+      },
+      gradient2: {
+        colors: ['#f0f9ff', '#e0f2fe', '#ecfeff'],
+        orbs: [
+          { color: 'rgba(14, 165, 233, 0.25)', size: 220, x: -30, y: 150, blur: 90 },
+          { color: 'rgba(6, 182, 212, 0.2)', size: 160, x: 250, y: 400, blur: 80 },
+          { color: 'rgba(59, 130, 246, 0.22)', size: 180, x: 100, y: 650, blur: 85 },
+        ],
+      },
+      gradient3: {
+        colors: ['#fff7ed', '#ffedd5', '#fef2f2'],
+        orbs: [
+          { color: 'rgba(251, 146, 60, 0.25)', size: 200, x: -40, y: 120, blur: 85 },
+          { color: 'rgba(244, 63, 94, 0.2)', size: 170, x: 260, y: 350, blur: 90 },
+          { color: 'rgba(234, 179, 8, 0.22)', size: 150, x: 80, y: 580, blur: 75 },
+        ],
+      },
+      gradient4: {
+        colors: ['#f0fdf4', '#dcfce7', '#ecfdf5'],
+        orbs: [
+          { color: 'rgba(16, 185, 129, 0.25)', size: 190, x: -30, y: 130, blur: 85 },
+          { color: 'rgba(34, 197, 94, 0.2)', size: 160, x: 270, y: 380, blur: 80 },
+          { color: 'rgba(20, 184, 166, 0.22)', size: 170, x: 60, y: 600, blur: 90 },
+        ],
+      },
+    };
+
+    const designs = isDark ? darkDesigns : lightDesigns;
+    return designs[settings.backgroundDesign] || designs.default;
+  };
+
+  const bgDesign = getBackgroundDesign();
+  // Use isGradientBg defined earlier
+  const isGradientBackground = isGradientBg;
+
+  // Render floating orb effect
+  const renderBackgroundOrbs = () => {
+    if (!isGradientBackground) return null;
+    return bgDesign.orbs.map((orb, index) => (
+      <View
+        key={index}
+        style={{
+          position: 'absolute',
+          left: orb.x,
+          top: orb.y,
+          width: orb.size,
+          height: orb.size,
+          borderRadius: orb.size / 2,
+          backgroundColor: orb.color,
+          shadowColor: orb.color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: orb.blur,
+        }}
+      />
+    ));
+  };
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      {isGradientBackground && (
+        <>
+          <LinearGradient
+            colors={bgDesign.colors}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          {renderBackgroundOrbs()}
+        </>
+      )}
       {/* Premium Glass Header */}
       <LinearGradient
-        colors={['#667eea', '#764ba2', '#f093fb']}
+        colors={isDark ? ['#667eea', '#764ba2', '#f093fb'] : ['#60a5fa', '#38bdf8', '#22d3ee']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.calendarHeader}
       >
         {/* Decorative circles */}
-        <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-        <View style={{ position: 'absolute', bottom: -40, left: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+        <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.3)' }} />
+        <View style={{ position: 'absolute', bottom: -40, left: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.25)' }} />
 
         <View style={styles.calendarHeaderContent}>
           <View>
@@ -1912,14 +2033,31 @@ function CalendarScreen() {
       </LinearGradient>
 
       {/* Glass Calendar Card */}
-      <View style={[styles.calendarCard, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
+      <View style={[
+        styles.calendarCard,
+        {
+          backgroundColor: isGradientBackground
+            ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)')
+            : colors.card,
+          borderWidth: 1,
+          borderColor: isGradientBackground
+            ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)')
+            : colors.border,
+          ...(isGradientBackground && {
+            shadowColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.3 : 0.15,
+            shadowRadius: 16,
+          }),
+        }
+      ]}>
         {/* Week Header with gradient underline */}
         <View style={styles.weekHeaderModern}>
           {[t('sun'), t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat')].map((d, i) => (
             <View key={i} style={styles.weekDayWrapper}>
               <Text style={[
                 styles.weekDayModern,
-                { color: colors.textMuted, fontWeight: '700', fontSize: 13 },
+                { color: isGradientBackground ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)') : colors.textMuted, fontWeight: '700', fontSize: 13 },
                 i === 0 && { color: '#ef4444' },
                 i === 6 && { color: '#3b82f6' }
               ]}>{d}</Text>
@@ -1927,24 +2065,30 @@ function CalendarScreen() {
           ))}
         </View>
         <LinearGradient
-          colors={['#667eea', '#764ba2', '#f093fb']}
+          colors={isDark ? ['#667eea', '#764ba2', '#f093fb'] : ['#60a5fa', '#38bdf8', '#22d3ee']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={{ height: 2, marginHorizontal: 8, borderRadius: 1, marginBottom: 8, opacity: 0.3 }}
+          style={{ height: 2, marginHorizontal: 8, borderRadius: 1, marginBottom: 8, opacity: isGradientBackground ? 0.5 : (isDark ? 0.3 : 0.6) }}
         />
 
         <View style={styles.calendarGrid}>{renderCalendar()}</View>
 
-        {/* Modern Legend */}
-        <View style={[styles.legendModern, { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }]}>
-          <View style={[styles.legendItemModern, { backgroundColor: colors.schedule + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
-            <View style={[styles.legendDot, { backgroundColor: colors.schedule, width: 8, height: 8 }]} />
-            <Text style={[styles.legendTextModern, { color: colors.schedule, fontWeight: '600' }]}>{t('schedule')}</Text>
-          </View>
-          <View style={[styles.legendItemModern, { backgroundColor: colors.expense + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
-            <View style={[styles.legendDot, { backgroundColor: colors.expense, width: 8, height: 8 }]} />
-            <Text style={[styles.legendTextModern, { color: colors.expense, fontWeight: '600' }]}>{t('expense')}</Text>
-          </View>
+        {/* Calendar Hint */}
+        <View style={{
+          marginTop: 16,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: isGradientBackground
+            ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)')
+            : colors.border,
+          alignItems: 'center'
+        }}>
+          <Text style={{
+            color: isGradientBackground
+              ? (isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)')
+              : colors.textMuted,
+            fontSize: 13
+          }}>{t('calendarHint')}</Text>
         </View>
       </View>
 
@@ -1962,7 +2106,7 @@ function CalendarScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('schedule')}</Text>
-                  <TouchableOpacity activeOpacity={0.6} onPress={() => setShowAddSchedule(true)}>
+                  <TouchableOpacity activeOpacity={0.6} onPress={() => { setShowDetail(false); setTimeout(() => setShowAddSchedule(true), 300); }}>
                     <View style={[styles.addBtnSmall, { backgroundColor: colors.schedule }]}>
                       <Ionicons name="add" size={18} color="#fff" />
                     </View>
@@ -2001,7 +2145,7 @@ function CalendarScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('expense')}</Text>
-                  <TouchableOpacity activeOpacity={0.6} onPress={() => setShowAddExpense(true)}>
+                  <TouchableOpacity activeOpacity={0.6} onPress={() => { setShowDetail(false); setTimeout(() => setShowAddExpense(true), 300); }}>
                     <View style={[styles.addBtnSmall, { backgroundColor: colors.expense }]}>
                       <Ionicons name="add" size={18} color="#fff" />
                     </View>
@@ -2062,34 +2206,16 @@ function CalendarScreen() {
                 )}
               </View>
 
-              {/* 메모장 Section - 메모가 있을 때만 표시 */}
+              {/* Saved Memos Button - only show if there are saved memos */}
               {dateMemos.length > 0 && (
-                <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('purchaseMemo')}</Text>
-                  </View>
-                  {dateMemos.map(memo => (
-                    <TouchableOpacity
-                      key={memo.id}
-                      style={[styles.memoItem, { backgroundColor: colors.bg }]}
-                      activeOpacity={0.7}
-                      onPress={() => { loadMemo(memo); setShowAddExpense(true); }}
-                    >
-                      <View style={styles.memoItemLeft}>
-                        <Ionicons name="document-text" size={20} color={colors.primary} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.memoItemName, { color: colors.text }]}>{memo.name}</Text>
-                          <Text style={[styles.memoItemDetail, { color: colors.textMuted }]}>
-                            {tf('itemsCount', { count: memo.items.filter(i => i.name).length })} · {currencySymbol}{memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}
-                          </Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity onPress={() => deleteMemo(memo.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                      </TouchableOpacity>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={[styles.tempSaveDetailBtn, { backgroundColor: colors.bg, borderColor: colors.border }]}
+                  onPress={() => { setShowDetail(false); setTimeout(() => setShowSavedMemos(true), 300); }}
+                >
+                  <Ionicons name="bookmark" size={20} color={colors.primary} />
+                  <Text style={[styles.tempSaveDetailText, { color: colors.primary }]}>{t('loadSavedMemo') || '저장된 메모 불러오기'} ({dateMemos.length})</Text>
+                </TouchableOpacity>
               )}
 
             </ScrollView>
@@ -2192,6 +2318,12 @@ function CalendarScreen() {
                   <Text style={[styles.memoButtonText, { color: colors.primary }]}>{currentMemoId ? t('tempSaveUpdate') : t('tempSave')}</Text>
                 </TouchableOpacity>
               </View>
+              {dateMemos.length > 0 && (
+                <TouchableOpacity activeOpacity={0.6} style={[styles.loadMemoButton, { borderColor: colors.border }]} onPress={() => { setShowAddExpense(false); setTimeout(() => setShowSavedMemos(true), 300); }}>
+                  <Ionicons name="folder-open-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.loadMemoButtonText, { color: colors.primary }]}>{t('loadSavedMemo') || '저장된 메모 불러오기'} ({dateMemos.length})</Text>
+                </TouchableOpacity>
+              )}
 
               <View style={[styles.totalRow, { borderTopColor: colors.border, marginTop: 16 }]}>
                 <Text style={[styles.totalLabel, { color: colors.text }]}>{t('totalAmount')}</Text>
@@ -2210,12 +2342,13 @@ function CalendarScreen() {
                     date: selectedDateStr,
                     category: t('purchase'),
                     amount: expenseTotal,
-                    memo: currentMemoId ? dateMemos.find(m => m.id === currentMemoId)?.name || t('shopping') : t('shopping'),
+                    memo: t('shopping'),
                     items: expenseItems.filter(i => i.name).map(i => ({ name: i.name, amount: parseInt(i.amount) || 0, checked: i.checked }))
                   });
-                  // 메모가 있으면 삭제 (사용 완료)
+                  // Delete memo after recording expense
                   if (currentMemoId) {
-                    saveDateMemos(selectedDateStr, dateMemos.filter(m => m.id !== currentMemoId));
+                    const filtered = dateMemos.filter(m => m.id !== currentMemoId);
+                    saveDateMemos(selectedDateStr, filtered);
                     setCurrentMemoId(null);
                     setMemoName('');
                   }
@@ -2230,32 +2363,8 @@ function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* 메모 이름 입력 모달 */}
-      <Modal visible={showMemoName} transparent animationType="fade">
-        <View style={styles.memoModalOverlay}>
-          <View style={[styles.memoModal, { backgroundColor: colors.card }]}>
-            <Text style={[styles.memoModalTitle, { color: colors.text }]}>{t('memoName')}</Text>
-            <TextInput
-              style={[styles.memoNameInput, { backgroundColor: colors.bg, color: colors.text }]}
-              value={memoName}
-              onChangeText={setMemoName}
-              placeholder={t('enterMemoName')}
-              placeholderTextColor={colors.textMuted}
-              autoFocus
-            />
-            <View style={styles.memoModalButtons}>
-              <TouchableOpacity style={[styles.memoModalCancel, { backgroundColor: colors.bg }]} onPress={() => { setShowMemoName(false); setMemoName(''); }}>
-                <Text style={[styles.memoModalCancelText, { color: colors.textMuted }]}>{t('cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.memoModalSave, { backgroundColor: colors.primary }]} onPress={confirmSaveMemo}>
-                <Text style={styles.memoModalSaveText}>{t('save')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
-      {/* 저장된 메모 목록 모달 */}
+      {/* Saved Memos List Modal */}
       <Modal visible={showSavedMemos} transparent animationType="slide">
         <View style={styles.memoModalOverlay}>
           <View style={[styles.savedMemosModal, { backgroundColor: colors.card }]}>
@@ -2274,7 +2383,7 @@ function CalendarScreen() {
                     <View style={styles.savedMemoInfo}>
                       <Text style={[styles.savedMemoName, { color: colors.text }]}>{memo.name}</Text>
                       <Text style={[styles.savedMemoDetails, { color: colors.textMuted }]}>
-                        {memo.items.filter(i => i.name).length}개 항목 · {currencySymbol}{memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}
+                        {memo.items.filter(i => i.name).length}{t('items')} · {currencySymbol}{memo.items.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}
                       </Text>
                     </View>
                     <TouchableOpacity onPress={() => deleteMemo(memo.id)} style={styles.deleteMemoButton}>
@@ -2445,10 +2554,11 @@ function AddScreen() {
 }
 
 // ============ SETTINGS SCREEN ============
-function SettingsScreen() {
+function SettingsScreen({ navigation }: any) {
   const { isDark, toggleTheme, colors } = useTheme();
   const { isPremium, setShowUpgradeModal } = usePremium();
-  const { expenses } = useExpenses();
+  const { expenses, reloadExpenses } = useExpenses();
+  const { reloadSchedules } = useSchedules();
   const { recurringExpenses, addRecurring, deleteRecurring, getTotalMonthly } = useRecurring();
   const { incomes, addIncome, deleteIncome, getMonthlyIncome, getTotalIncomeThisMonth } = useIncome();
   const { settings, updateSettings } = useSettings();
@@ -2465,6 +2575,156 @@ function SettingsScreen() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   // 화폐단위 선택 모달
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+
+  // 테마 커스터마이징
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPickerTarget, setColorPickerTarget] = useState<'primary' | 'background' | 'card' | 'text'>('primary');
+
+  const PRESET_COLORS = [
+    '#8b5cf6', '#7c3aed', '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4',
+    '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b',
+    '#f97316', '#ef4444', '#ec4899', '#d946ef', '#a855f7', '#6b7280',
+    '#0a0a0f', '#1a1a2e', '#2a2a4e', '#1f2937', '#374151', '#4b5563',
+    '#f5f5f7', '#e5e7eb', '#d1d5db', '#ffffff', '#fef3c7', '#fce7f3',
+  ];
+
+  // Background designs - changes based on dark/light mode
+  const BACKGROUND_DESIGNS = isDark ? [
+    {
+      id: 'default',
+      name: t('bgDefault'),
+      colors: ['#0a0a0f', '#0a0a0f'],
+      orbs: [] as { color: string; size: number; x: number; y: number; blur: number }[],
+    },
+    {
+      id: 'gradient1',
+      name: t('bgPurpleNight'),
+      colors: ['#0f0520', '#1a0a35', '#0a0515'],
+      orbs: [
+        { color: 'rgba(139, 92, 246, 0.4)', size: 200, x: -50, y: 100, blur: 80 },
+        { color: 'rgba(236, 72, 153, 0.3)', size: 180, x: 280, y: 300, blur: 90 },
+        { color: 'rgba(99, 102, 241, 0.35)', size: 150, x: 50, y: 500, blur: 70 },
+      ],
+    },
+    {
+      id: 'gradient2',
+      name: t('bgOceanDeep'),
+      colors: ['#020617', '#0c1929', '#051525'],
+      orbs: [
+        { color: 'rgba(14, 165, 233, 0.4)', size: 220, x: -30, y: 150, blur: 90 },
+        { color: 'rgba(6, 182, 212, 0.35)', size: 160, x: 250, y: 400, blur: 80 },
+        { color: 'rgba(59, 130, 246, 0.3)', size: 180, x: 100, y: 650, blur: 85 },
+      ],
+    },
+    {
+      id: 'gradient3',
+      name: t('bgSunsetGlow'),
+      colors: ['#1a0a0a', '#200f15', '#0f0808'],
+      orbs: [
+        { color: 'rgba(251, 146, 60, 0.4)', size: 200, x: -40, y: 120, blur: 85 },
+        { color: 'rgba(244, 63, 94, 0.35)', size: 170, x: 260, y: 350, blur: 90 },
+        { color: 'rgba(234, 179, 8, 0.3)', size: 150, x: 80, y: 580, blur: 75 },
+      ],
+    },
+    {
+      id: 'gradient4',
+      name: t('bgForestMist'),
+      colors: ['#051a0f', '#0a2818', '#030f08'],
+      orbs: [
+        { color: 'rgba(16, 185, 129, 0.4)', size: 190, x: -30, y: 130, blur: 85 },
+        { color: 'rgba(34, 197, 94, 0.3)', size: 160, x: 270, y: 380, blur: 80 },
+        { color: 'rgba(20, 184, 166, 0.35)', size: 170, x: 60, y: 600, blur: 90 },
+      ],
+    },
+  ] : [
+    {
+      id: 'default',
+      name: t('bgDefault'),
+      colors: ['#f5f5f7', '#f5f5f7'],
+      orbs: [] as { color: string; size: number; x: number; y: number; blur: number }[],
+    },
+    {
+      id: 'gradient1',
+      name: t('bgPurpleNight'),
+      colors: ['#faf5ff', '#f3e8ff', '#ede9fe'],
+      orbs: [
+        { color: 'rgba(139, 92, 246, 0.25)', size: 200, x: -50, y: 100, blur: 80 },
+        { color: 'rgba(236, 72, 153, 0.2)', size: 180, x: 280, y: 300, blur: 90 },
+        { color: 'rgba(99, 102, 241, 0.22)', size: 150, x: 50, y: 500, blur: 70 },
+      ],
+    },
+    {
+      id: 'gradient2',
+      name: t('bgOceanDeep'),
+      colors: ['#f0f9ff', '#e0f2fe', '#ecfeff'],
+      orbs: [
+        { color: 'rgba(14, 165, 233, 0.25)', size: 220, x: -30, y: 150, blur: 90 },
+        { color: 'rgba(6, 182, 212, 0.2)', size: 160, x: 250, y: 400, blur: 80 },
+        { color: 'rgba(59, 130, 246, 0.22)', size: 180, x: 100, y: 650, blur: 85 },
+      ],
+    },
+    {
+      id: 'gradient3',
+      name: t('bgSunsetGlow'),
+      colors: ['#fff7ed', '#ffedd5', '#fef2f2'],
+      orbs: [
+        { color: 'rgba(251, 146, 60, 0.25)', size: 200, x: -40, y: 120, blur: 85 },
+        { color: 'rgba(244, 63, 94, 0.2)', size: 170, x: 260, y: 350, blur: 90 },
+        { color: 'rgba(234, 179, 8, 0.22)', size: 150, x: 80, y: 580, blur: 75 },
+      ],
+    },
+    {
+      id: 'gradient4',
+      name: t('bgForestMist'),
+      colors: ['#f0fdf4', '#dcfce7', '#ecfdf5'],
+      orbs: [
+        { color: 'rgba(16, 185, 129, 0.25)', size: 190, x: -30, y: 130, blur: 85 },
+        { color: 'rgba(34, 197, 94, 0.2)', size: 160, x: 270, y: 380, blur: 80 },
+        { color: 'rgba(20, 184, 166, 0.22)', size: 170, x: 60, y: 600, blur: 90 },
+      ],
+    },
+  ];
+
+  const handleColorSelect = (color: string) => {
+    const updatedTheme = { ...settings.customTheme };
+    switch (colorPickerTarget) {
+      case 'primary':
+        updatedTheme.primaryColor = color;
+        break;
+      case 'background':
+        updatedTheme.backgroundColor = color;
+        break;
+      case 'card':
+        updatedTheme.cardColor = color;
+        break;
+      case 'text':
+        updatedTheme.textColor = color;
+        break;
+    }
+    updateSettings({ customTheme: updatedTheme });
+    setShowColorPicker(false);
+  };
+
+  const resetCustomTheme = () => {
+    updateSettings({
+      useCustomTheme: false,
+      customTheme: {
+        primaryColor: '#8b5cf6',
+        backgroundColor: '#0a0a0f',
+        cardColor: '#1a1a2e',
+        textColor: '#ffffff',
+      },
+    });
+  };
+
+  // 커스텀 테마 적용된 색상
+  const themeColors = settings.useCustomTheme ? {
+    ...colors,
+    primary: settings.customTheme.primaryColor,
+    bg: settings.customTheme.backgroundColor,
+    card: settings.customTheme.cardColor,
+    text: settings.customTheme.textColor,
+  } : colors;
 
   // 수입 추가 모달
   const [showAddIncome, setShowAddIncome] = useState(false);
@@ -2484,13 +2744,59 @@ function SettingsScreen() {
   const [recurringDay, setRecurringDay] = useState(today.getDate().toString());
 
   const clearData = () => {
-    Alert.alert('데이터 초기화', '모든 데이터를 삭제하시겠습니까?', [
+    Alert.alert('데이터 초기화', '모든 데이터를 삭제하시겠습니까?\n\n삭제 후 앱이 자동으로 종료됩니다.', [
       { text: '취소', style: 'cancel' },
       { text: '삭제', style: 'destructive', onPress: async () => {
-        await AsyncStorage.removeItem('@mohani_expenses');
-        await AsyncStorage.removeItem('@mohani_schedules');
-        await AsyncStorage.removeItem('@mohani_recurring');
-        Alert.alert('완료', '데이터가 삭제되었습니다. 앱을 재시작하세요.');
+        try {
+          // 모든 데이터 키 삭제
+          const keysToRemove = [
+            '@mohani_expenses',
+            '@mohani_schedules',
+            '@mohani_recurring',
+            '@mohani_recurring_processed',
+            '@mohani_incomes',
+            '@mohani_settings',
+            '@mohani_theme',
+            '@mohani_wallets',
+            '@mohani_shopping',
+            '@mohani_diary',
+            '@mohani_goals',
+            '@mohani_debts',
+            '@mohani_bills',
+            '@mohani_subscriptions',
+            '@mohani_tags',
+            '@mohani_custom_categories',
+            '@mohani_expense_templates',
+            '@mohani_category_budgets',
+            '@mohani_budget_alerts',
+            '@mohani_budget_alert_settings',
+            '@mohani_spending_alerts',
+            '@mohani_achievements',
+            '@mohani_streaks',
+            '@mohani_streak_milestones',
+            '@mohani_streak_points',
+            '@mohani_challenges',
+            '@mohani_challenge_points',
+            '@mohani_assets',
+            '@mohani_liabilities',
+            '@mohani_networth_snapshots',
+            '@mohani_split_expenses',
+            '@mohani_friends',
+            '@mohani_recent_note_searches',
+          ];
+          await AsyncStorage.multiRemove(keysToRemove);
+
+          // 앱 재시작
+          try {
+            await Updates.reloadAsync();
+          } catch (e) {
+            // Expo Go에서는 reloadAsync가 작동하지 않음
+            Alert.alert('완료', '모든 데이터가 삭제되었습니다.\n앱을 완전히 종료 후 다시 실행해주세요.');
+          }
+        } catch (error: any) {
+          console.error('Clear data error:', error);
+          Alert.alert('오류', `데이터 삭제 중 오류가 발생했습니다.\n${error?.message || error}`);
+        }
       }},
     ]);
   };
@@ -2784,7 +3090,215 @@ function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* 테마 커스터마이징 */}
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 16 }}>{t('themeCustomization')}</Text>
+
+        {/* 배경 디자인 선택 - Premium Style */}
+        <View style={{ marginBottom: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <Ionicons name="sparkles" size={18} color={colors.primary} />
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginLeft: 8 }}>{t('backgroundDesign')}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {BACKGROUND_DESIGNS.map((bg) => {
+              const isSelected = settings.backgroundDesign === bg.id;
+              return (
+                <TouchableOpacity
+                  key={bg.id}
+                  activeOpacity={0.8}
+                  onPress={() => updateSettings({ backgroundDesign: bg.id as any })}
+                  style={{
+                    flex: 1,
+                    aspectRatio: 0.65,
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    borderWidth: isSelected ? 2 : 1,
+                    borderColor: isSelected ? colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                    shadowColor: isSelected ? colors.primary : (isDark ? '#000' : 'rgba(0,0,0,0.15)'),
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: isSelected ? 0.4 : (isDark ? 0.2 : 0.1),
+                    shadowRadius: 8,
+                    elevation: isSelected ? 8 : 2,
+                  }}
+                >
+                  <LinearGradient
+                    colors={bg.colors as unknown as string[]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ flex: 1, position: 'relative' }}
+                  >
+                    {/* Mini orbs preview */}
+                    {bg.orbs.map((orb, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          position: 'absolute',
+                          left: (orb.x + 50) * 0.15,
+                          top: (orb.y) * 0.12,
+                          width: orb.size * 0.15,
+                          height: orb.size * 0.15,
+                          borderRadius: orb.size * 0.075,
+                          backgroundColor: orb.color,
+                        }}
+                      />
+                    ))}
+                    {/* Selected indicator */}
+                    {isSelected && (
+                      <View style={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        backgroundColor: colors.primary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Ionicons name="checkmark" size={14} color="#fff" />
+                      </View>
+                    )}
+                    {/* Name label */}
+                    <View style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      paddingVertical: 8,
+                      paddingHorizontal: 4,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                    }}>
+                      <Text style={{
+                        color: '#fff',
+                        fontSize: 9,
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        textShadowColor: 'rgba(0,0,0,0.5)',
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 2,
+                      }}>{bg.name}</Text>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 커스텀 테마 토글 */}
+        <TouchableOpacity
+          style={[styles.settingRow, { borderBottomColor: colors.border }]}
+          onPress={() => updateSettings({ useCustomTheme: !settings.useCustomTheme })}
+        >
+          <Ionicons name="color-palette-outline" size={22} color={colors.primary} />
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('useCustomTheme')}</Text>
+          <View style={[styles.themeToggle, { backgroundColor: settings.useCustomTheme ? colors.primary : colors.border }]}>
+            <View style={[styles.themeToggleKnob, { marginLeft: settings.useCustomTheme ? 20 : 2 }]} />
+          </View>
+        </TouchableOpacity>
+
+        {settings.useCustomTheme && (
+          <>
+            {/* 메인 색상 */}
+            <TouchableOpacity
+              style={[styles.settingRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setColorPickerTarget('primary'); setShowColorPicker(true); }}
+            >
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: settings.customTheme.primaryColor }} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{t('primaryColor')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* 배경 색상 */}
+            <TouchableOpacity
+              style={[styles.settingRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setColorPickerTarget('background'); setShowColorPicker(true); }}
+            >
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: settings.customTheme.backgroundColor, borderWidth: 1, borderColor: colors.border }} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{t('backgroundColor')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* 카드 색상 */}
+            <TouchableOpacity
+              style={[styles.settingRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setColorPickerTarget('card'); setShowColorPicker(true); }}
+            >
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: settings.customTheme.cardColor, borderWidth: 1, borderColor: colors.border }} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{t('cardColor')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* 텍스트 색상 */}
+            <TouchableOpacity
+              style={[styles.settingRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setColorPickerTarget('text'); setShowColorPicker(true); }}
+            >
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: settings.customTheme.textColor, borderWidth: 1, borderColor: colors.border }} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{t('textColor')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* 테마 초기화 */}
+            <TouchableOpacity
+              style={[styles.settingRow, { borderBottomWidth: 0 }]}
+              onPress={resetCustomTheme}
+            >
+              <Ionicons name="refresh-outline" size={22} color="#ef4444" />
+              <Text style={[styles.settingLabel, { color: '#ef4444' }]}>{t('resetTheme')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+
       <View style={{ height: 40 }} />
+
+      {/* 색상 선택 모달 */}
+      <Modal visible={showColorPicker} animationType="fade" transparent>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowColorPicker(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {colorPickerTarget === 'primary' ? t('primaryColor') :
+                 colorPickerTarget === 'background' ? t('backgroundColor') :
+                 colorPickerTarget === 'card' ? t('cardColor') : t('textColor')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowColorPicker(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ padding: 20 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                {PRESET_COLORS.map((color) => (
+                  <TouchableOpacity
+                    key={color}
+                    onPress={() => handleColorSelect(color)}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: color,
+                      borderWidth: 3,
+                      borderColor: (
+                        (colorPickerTarget === 'primary' && settings.customTheme.primaryColor === color) ||
+                        (colorPickerTarget === 'background' && settings.customTheme.backgroundColor === color) ||
+                        (colorPickerTarget === 'card' && settings.customTheme.cardColor === color) ||
+                        (colorPickerTarget === 'text' && settings.customTheme.textColor === color)
+                      ) ? colors.primary : 'transparent',
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* 언어 선택 모달 */}
       <Modal visible={showLanguageModal} animationType="fade" transparent>
@@ -4252,24 +4766,24 @@ const upgradeStyles = StyleSheet.create({
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <PremiumProvider>
-          <ExpenseProvider>
-            <ScheduleProvider>
-              <RecurringProvider>
-                <IncomeProvider>
-                  <GoalsProvider>
-                    <SettingsProvider>
+      <SettingsProvider>
+        <ThemeProvider>
+          <PremiumProvider>
+            <ExpenseProvider>
+              <ScheduleProvider>
+                <RecurringProvider>
+                  <IncomeProvider>
+                    <GoalsProvider>
                       <AppContent />
                       <UpgradeModal />
-                    </SettingsProvider>
-                  </GoalsProvider>
-                </IncomeProvider>
-              </RecurringProvider>
-            </ScheduleProvider>
-          </ExpenseProvider>
-        </PremiumProvider>
-      </ThemeProvider>
+                    </GoalsProvider>
+                  </IncomeProvider>
+                </RecurringProvider>
+              </ScheduleProvider>
+            </ExpenseProvider>
+          </PremiumProvider>
+        </ThemeProvider>
+      </SettingsProvider>
     </GestureHandlerRootView>
   );
 }
@@ -4349,6 +4863,13 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   addBtnSmall: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   emptyText: { textAlign: 'center', paddingVertical: 20, fontSize: 14 },
+
+  // Temp Save Button in Day Detail
+  tempSaveDetailBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginTop: 12, borderRadius: 12, borderWidth: 1 },
+  tempSaveDetailText: { fontSize: 15, fontWeight: '500' },
+  // Load Memo Button in Add Expense
+  loadMemoButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, marginTop: 8, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
+  loadMemoButtonText: { fontSize: 13, fontWeight: '500' },
 
   // Quick Add in Modal
   quickAddSection: { padding: 16, borderTopWidth: 1 },

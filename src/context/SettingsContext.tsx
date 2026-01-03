@@ -7,6 +7,15 @@ export interface CategoryLimit {
   enabled: boolean;
 }
 
+export interface CustomTheme {
+  primaryColor: string;    // 메인 강조 색상
+  backgroundColor: string; // 배경색
+  cardColor: string;       // 카드 색상
+  textColor: string;       // 텍스트 색상
+}
+
+export type BackgroundDesign = 'default' | 'gradient1' | 'gradient2' | 'gradient3' | 'gradient4';
+
 export interface UserSettings {
   // User Profile
   userName: string;
@@ -29,6 +38,11 @@ export interface UserSettings {
   hapticFeedback: boolean;
   darkMode: boolean;
 
+  // Theme Customization
+  useCustomTheme: boolean;
+  customTheme: CustomTheme;
+  backgroundDesign: BackgroundDesign;
+
   // Privacy
   useBiometrics: boolean;
 }
@@ -44,6 +58,13 @@ const DEFAULT_CATEGORY_LIMITS: CategoryLimit[] = [
   { category: 'other', limit: 200000, enabled: false },
 ];
 
+const DEFAULT_CUSTOM_THEME: CustomTheme = {
+  primaryColor: '#8b5cf6',    // 보라색 (기본)
+  backgroundColor: '#0a0a0f', // 다크 배경
+  cardColor: '#1a1a2e',       // 카드 색상
+  textColor: '#ffffff',       // 텍스트 색상
+};
+
 const DEFAULT_SETTINGS: UserSettings = {
   userName: 'User',
   profileEmoji: '😊',
@@ -54,10 +75,13 @@ const DEFAULT_SETTINGS: UserSettings = {
   dailyReminder: true,
   reminderTime: '21:00',
   weeklyReport: true,
-  currency: 'KRW',
-  language: 'ko',
+  currency: 'USD',
+  language: 'en',
   hapticFeedback: true,
   darkMode: true,
+  useCustomTheme: false,
+  customTheme: DEFAULT_CUSTOM_THEME,
+  backgroundDesign: 'default',
   useBiometrics: false,
 };
 
