@@ -174,6 +174,14 @@ const translations: Record<string, Record<string, string>> = {
     schedule: '일정',
     expense: '지출',
     calendarHint: '날짜를 탭해서 일정과 지출을 입력하세요',
+    // Quick Memo
+    quickMemo: '빠른 메모',
+    newMemo: '새 메모',
+    memoPlaceholder: '메모를 입력하세요...',
+    noMemos: '메모가 없습니다',
+    deleteMemo: '메모 삭제',
+    deleteMemoConfirm: '이 메모를 삭제하시겠습니까?',
+    tapToEdit: '탭하여 편집',
     // Savings
     savingsTitle: '저금통',
     addGoal: '목표 추가',
@@ -436,6 +444,14 @@ const translations: Record<string, Record<string, string>> = {
     schedule: 'Schedule',
     expense: 'Expense',
     calendarHint: 'Tap a date to add schedule and expense',
+    // Quick Memo
+    quickMemo: 'Quick Memo',
+    newMemo: 'New Memo',
+    memoPlaceholder: 'Enter your memo...',
+    noMemos: 'No memos yet',
+    deleteMemo: 'Delete Memo',
+    deleteMemoConfirm: 'Delete this memo?',
+    tapToEdit: 'Tap to edit',
     // Savings
     savingsTitle: 'Savings',
     addGoal: 'Add Goal',
@@ -1661,6 +1677,72 @@ function CalendarScreen() {
   const [showMemoName, setShowMemoName] = useState(false);
   const [showSavedMemos, setShowSavedMemos] = useState(false);
 
+  // Quick Memo state (iPhone Notes style)
+  interface QuickMemo { id: string; title: string; content: string; createdAt: string; updatedAt: string; }
+  const [quickMemos, setQuickMemos] = useState<QuickMemo[]>([]);
+  const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
+  const [expandedMemoId, setExpandedMemoId] = useState<string | null>(null);
+  const [newMemoTitle, setNewMemoTitle] = useState('');
+  const [newMemoText, setNewMemoText] = useState('');
+
+  // Load quick memos
+  useEffect(() => {
+    const loadQuickMemos = async () => {
+      try {
+        const data = await AsyncStorage.getItem('@mohani_quick_memos');
+        if (data) setQuickMemos(JSON.parse(data));
+      } catch (e) {
+        console.error('Failed to load quick memos:', e);
+      }
+    };
+    loadQuickMemos();
+  }, []);
+
+  // Save quick memos
+  const saveQuickMemos = async (memos: QuickMemo[]) => {
+    try {
+      await AsyncStorage.setItem('@mohani_quick_memos', JSON.stringify(memos));
+      setQuickMemos(memos);
+    } catch (e) {
+      console.error('Failed to save quick memos:', e);
+    }
+  };
+
+  // Add new quick memo
+  const addQuickMemo = () => {
+    const newMemo: QuickMemo = {
+      id: Date.now().toString(),
+      title: '',
+      content: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    saveQuickMemos([newMemo, ...quickMemos]);
+    setEditingMemoId(newMemo.id);
+    setExpandedMemoId(newMemo.id);
+    setNewMemoTitle('');
+    setNewMemoText('');
+  };
+
+  // Update quick memo
+  const updateQuickMemo = (id: string, title: string, content: string) => {
+    const updatedMemos = quickMemos.map(m =>
+      m.id === id ? { ...m, title, content, updatedAt: new Date().toISOString() } : m
+    );
+    saveQuickMemos(updatedMemos);
+    setEditingMemoId(null);
+  };
+
+  // Delete quick memo
+  const deleteQuickMemo = (id: string) => {
+    Alert.alert(t('deleteMemo'), t('deleteMemoConfirm'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('delete'), style: 'destructive', onPress: () => {
+        saveQuickMemos(quickMemos.filter(m => m.id !== id));
+      }},
+    ]);
+  };
+
   // Load memos for selected date
   const loadDateMemos = async (dateStr: string) => {
     try {
@@ -1974,6 +2056,7 @@ function CalendarScreen() {
           {renderBackgroundOrbs()}
         </>
       )}
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
       {/* Premium Glass Header */}
       <LinearGradient
         colors={isDark ? ['#667eea', '#764ba2', '#f093fb'] : ['#60a5fa', '#38bdf8', '#22d3ee']}
@@ -2091,6 +2174,196 @@ function CalendarScreen() {
           }}>{t('calendarHint')}</Text>
         </View>
       </View>
+
+      {/* Quick Memo Section */}
+      <View style={[
+        styles.calendarCard,
+        {
+          backgroundColor: isGradientBackground
+            ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)')
+            : colors.card,
+          borderWidth: 1,
+          borderColor: isGradientBackground
+            ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)')
+            : colors.border,
+          marginTop: 16,
+          marginBottom: 100,
+        }
+      ]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="document-text-outline" size={20} color={isDark ? '#60a5fa' : '#3b82f6'} />
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{t('quickMemo')}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={addQuickMemo}
+            style={{
+              backgroundColor: isDark ? '#60a5fa' : '#3b82f6',
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {quickMemos.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+            <Ionicons name="document-text-outline" size={40} color={colors.textMuted} style={{ opacity: 0.5 }} />
+            <Text style={{ color: colors.textMuted, marginTop: 8 }}>{t('noMemos')}</Text>
+          </View>
+        ) : (
+          quickMemos.map((memo, index) => {
+            const isExpanded = expandedMemoId === memo.id;
+            const isEditing = editingMemoId === memo.id;
+            const displayTitle = memo.title || memo.content.split('\n')[0] || t('newMemo');
+
+            return (
+              <View
+                key={memo.id}
+                style={{
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  borderRadius: 12,
+                  marginBottom: index < quickMemos.length - 1 ? 10 : 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Header - Always visible */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (isEditing) return;
+                    setExpandedMemoId(isExpanded ? null : memo.id);
+                  }}
+                  onLongPress={() => deleteQuickMemo(memo.id)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 14,
+                  }}
+                >
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Ionicons
+                      name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 15,
+                        fontWeight: '500',
+                        flex: 1,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {displayTitle.substring(0, 30)}{displayTitle.length > 30 ? '...' : ''}
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                    {new Date(memo.updatedAt).toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
+                    {isEditing ? (
+                      <View>
+                        <TextInput
+                          style={{
+                            color: colors.text,
+                            fontSize: 16,
+                            fontWeight: '600',
+                            marginBottom: 8,
+                            padding: 8,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                            borderRadius: 8,
+                          }}
+                          value={newMemoTitle}
+                          onChangeText={setNewMemoTitle}
+                          placeholder={t('newMemo')}
+                          placeholderTextColor={colors.textMuted}
+                          autoFocus
+                        />
+                        <TextInput
+                          style={{
+                            color: colors.text,
+                            fontSize: 14,
+                            minHeight: 100,
+                            textAlignVertical: 'top',
+                            padding: 8,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                            borderRadius: 8,
+                          }}
+                          value={newMemoText}
+                          onChangeText={setNewMemoText}
+                          placeholder={t('memoPlaceholder')}
+                          placeholderTextColor={colors.textMuted}
+                          multiline
+                        />
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setEditingMemoId(null);
+                              setNewMemoTitle('');
+                              setNewMemoText('');
+                            }}
+                            style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+                          >
+                            <Text style={{ color: colors.textMuted }}>{t('cancel')}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => updateQuickMemo(memo.id, newMemoTitle || memo.title, newMemoText || memo.content)}
+                            style={{
+                              backgroundColor: isDark ? '#60a5fa' : '#3b82f6',
+                              paddingHorizontal: 20,
+                              paddingVertical: 8,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text style={{ color: '#fff', fontWeight: '600' }}>{t('save')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setEditingMemoId(memo.id);
+                          setNewMemoTitle(memo.title);
+                          setNewMemoText(memo.content);
+                        }}
+                      >
+                        <Text style={{
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 20,
+                          opacity: memo.content ? 1 : 0.5,
+                        }}>
+                          {memo.content || t('memoPlaceholder')}
+                        </Text>
+                        <Text style={{
+                          color: isDark ? '#60a5fa' : '#3b82f6',
+                          fontSize: 12,
+                          marginTop: 12,
+                        }}>
+                          {t('tapToEdit') || 'Tap to edit'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          })
+        )}
+      </View>
+      </ScrollView>
 
       {/* Day Detail Modal */}
       <Modal visible={showDetail} animationType="slide" transparent>
